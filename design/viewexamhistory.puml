@@ -1,0 +1,122 @@
+@startuml
+' Class Diagram for View Exam History Feature
+
+title View Exam History Class Diagram
+
+hide empty members
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam defaultFontSize 14
+skinparam defaultFontName Arial
+skinparam classFontSize 12
+skinparam classFontName Arial
+skinparam noteFontSize 11
+skinparam noteFontName Arial
+
+' Increase spacing and sizing
+skinparam class {
+    BackgroundColor LightBlue
+    BorderColor DarkBlue
+    ArrowColor DarkBlue
+    FontSize 12
+}
+
+skinparam package {
+    BackgroundColor LightYellow
+    BorderColor DarkOrange
+    FontSize 14
+    FontStyle bold
+}
+
+skinparam interface {
+    BackgroundColor LightGreen
+    BorderColor DarkGreen
+    FontSize 12
+}
+
+skinparam enum {
+    BackgroundColor LightCyan
+    BorderColor DarkCyan
+    FontSize 12
+}
+
+package "Controllers" {
+    class StudentExamController <<Controller>> {
+        - _iService: IExamService
+        + GetHistoryExams(search: SearchStudentExamVM): Task<IActionResult>
+    }
+}
+
+package "Services" {
+    interface IStudentExamService <<Interface>> {
+        + GetHistoryExams(search: SearchStudentExamVM, usertoken: string): Task<(string, SearchResult?)>
+    }
+    class StudentExamService <<Service>> {
+        - _context: DbContext
+        + GetHistoryExams(search: SearchStudentExamVM, usertoken: string): Task<(string, SearchResult?)>
+    }
+}
+
+package "Models" {
+    class SearchStudentExamVM <<DTO>> {
+        + StartDate: DateTime?
+        + EndDate: DateTime?
+        + TextSearch: string
+        + PageSize: int
+        + CurrentPage: int
+    }
+    class SearchResult <<DTO>> {
+        + Result: object?
+        + TotalPage: int
+        + PageSize: int
+        + CurrentPage: int
+        + Total: int
+    }
+    class StudentExamResultVM <<DTO>> {
+        + StudentExamId: string
+        + ExamId: string
+        + ExamTitle: string
+        + Score: decimal
+        + ExamDate: DateTime
+        + SubmitTime: DateTime?
+        + DurationSpent: int
+    }
+}
+
+package "Entities" {
+    class StudentExam {
+        + StudentExamId: string
+        + StudentId: string
+        + ExamId: string
+        + Score: decimal?
+        + Status: int
+        + CreatedAt: DateTime
+        + SubmitTime: DateTime?
+        + StartTime: DateTime?
+        + Exam: Exam
+    }
+    class Exam {
+        + ExamId: string
+        + Title: string
+    }
+}
+
+package "Enums" {
+    enum StudentExamStatus {
+        Submitted
+    }
+}
+
+' Relationships
+StudentExamController ..> IStudentExamService : <<uses>>
+IStudentExamService <|.. StudentExamService
+StudentExamController ..> SearchStudentExamVM : <<uses>>
+StudentExamService ..> StudentExam : <<uses>>
+StudentExamService ..> Exam : <<uses>>
+StudentExamService ..> StudentExamResultVM : <<maps to>>
+StudentExam o-- Exam : <<has>>
+StudentExamResultVM --> StudentExam : <<maps from>>
+SearchResult o-- StudentExamResultVM : <<has>>
+StudentExam ..> StudentExamStatus : <<uses>>
+
+@enduml 

@@ -1,0 +1,126 @@
+@startuml
+' Class Diagram for InputOtp (AccessExam) Feature
+
+title InputOtp (AccessExam) Class Diagram
+
+hide empty members
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam defaultFontSize 14
+skinparam defaultFontName Arial
+skinparam classFontSize 12
+skinparam classFontName Arial
+skinparam noteFontSize 11
+skinparam noteFontName Arial
+
+' Increase spacing and sizing
+skinparam class {
+    BackgroundColor LightBlue
+    BorderColor DarkBlue
+    ArrowColor DarkBlue
+    FontSize 12
+}
+
+skinparam package {
+    BackgroundColor LightYellow
+    BorderColor DarkOrange
+    FontSize 14
+    FontStyle bold
+}
+
+skinparam interface {
+    BackgroundColor LightGreen
+    BorderColor DarkGreen
+    FontSize 12
+}
+
+skinparam enum {
+    BackgroundColor LightCyan
+    BorderColor DarkCyan
+    FontSize 12
+}
+
+package "Controllers" {
+    class StudentExamController <<Controller>> {
+        - _iService: IStudentExamService
+        - _httpContextAccessor: IHttpContextAccessor
+        + StudentExamController(iService: IStudentExamService, httpContextAccessor: IHttpContextAccessor)
+        + AccessExam(otp: StudentExamRequest): Task<IActionResult>
+    }
+}
+
+package "Services" {
+    interface IStudentExamService <<Interface>> {
+        + AccessExam(otp: StudentExamRequest, usertoken: string, context: HttpContext): Task<(string, object?)>
+    }
+    class StudentExamService <<Service>> {
+        - _context: DbContext
+        + AccessExam(otp: StudentExamRequest, usertoken: string, context: HttpContext): Task<(string, object?)>
+    }
+}
+
+package "Entities" {
+    class Exam {
+        + ExamId: string
+        + StartTime: DateTime
+        + EndTime: DateTime
+        + Room: Room
+    }
+    class Room {
+        + RoomId: int
+        + RoomUsers: List<RoomUser>
+    }
+    class RoomUser {
+        + UserId: string
+    }
+    class StudentExam {
+        + StudentExamId: string
+        + StudentId: string
+        + ExamId: string
+        + Status: int
+        + StartTime: DateTime
+        + CreatedAt: DateTime
+        + UpdatedAt: DateTime
+        + IpAddress: string
+        + BrowserInfo: string
+    }
+    class ExamOtp {
+        + ExamId: string
+        + OtpCode: int
+        + ExpiredAt: DateTime
+    }
+}
+
+package "Models & DTOs" {
+    class StudentExamRequest <<DTO>> {
+        + ExamId: string
+        + OtpCode: int
+    }
+}
+
+package "Utilities" {
+    class Utils <<static>> {
+        + GetClientIpAddress(context: HttpContext): string
+        + GetClientBrowser(context: HttpContext): string
+    }
+}
+
+' Relationships
+StudentExamController ..> IStudentExamService : <<uses>>
+StudentExamController ..> StudentExamRequest : <<uses>>
+IStudentExamService <|.. StudentExamService
+StudentExamService ..> Exam : <<uses>>
+StudentExamService ..> ExamOtp : <<uses>>
+StudentExamService ..> StudentExam : <<uses>>
+StudentExamService ..> Room : <<uses>>
+StudentExamService ..> RoomUser : <<uses>>
+StudentExamService ..> Utils : <<uses>>
+StudentExamService ..> StudentExamRequest : <<uses>>
+
+Exam o-- Room : <<has>>
+Room o-- RoomUser : <<has>>
+ExamOtp --> Exam : <<for>>
+StudentExam --> Exam : <<for>>
+StudentExam --> StudentExamRequest : <<created from>>
+
+@enduml

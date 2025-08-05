@@ -1,0 +1,141 @@
+@startuml
+' Class Diagram for Send Violation Feature
+
+title Send Violation Class Diagram
+
+hide empty members
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam defaultFontSize 14
+skinparam defaultFontName Arial
+skinparam classFontSize 12
+skinparam classFontName Arial
+skinparam noteFontSize 11
+skinparam noteFontName Arial
+
+skinparam class {
+    BackgroundColor LightBlue
+    BorderColor DarkBlue
+    ArrowColor DarkBlue
+    FontSize 12
+}
+
+skinparam package {
+    BackgroundColor LightYellow
+    BorderColor DarkOrange
+    FontSize 14
+    FontStyle bold
+}
+
+skinparam interface {
+    BackgroundColor LightGreen
+    BorderColor DarkGreen
+    FontSize 12
+}
+
+skinparam enum {
+    BackgroundColor LightCyan
+    BorderColor DarkCyan
+    FontSize 12
+}
+
+package "Controllers" {
+    class StudentViolationController <<Controller>> {
+        - _studentViolationService: IStudentViolationService
+        + Create(send: SendStudentViolationVM): Task<IActionResult>
+    }
+}
+
+package "Services" {
+    interface IStudentViolationService <<Interface>> {
+        + Create(send: SendStudentViolationVM, usertoken: string): Task<string>
+    }
+    class StudentViolationService <<Service>> {
+        - _context: DbContext
+        - _s3Service: IAmazonS3Service
+        - _logger: ILog
+        + Create(send: SendStudentViolationVM, usertoken: string): Task<string>
+    }
+    interface IAmazonS3Service <<Interface>> {
+        + UploadFileAsync(key: string, file: IFormFile): Task<string>
+    }
+    interface ILog <<Interface>> {
+        + WriteActivity(log: AddUserLogVM): Task<string>
+    }
+    class EmailHandler <<static>> {
+        + SendEmailAsync(to: string, subject: string, body: string): Task<string>
+    }
+}
+
+package "Models & DTOs" {
+    class SendStudentViolationVM <<DTO>> {
+        + StudentExamId: string
+        + ViolateName: string
+        + Message: string
+        + ScreenshotPath: IFormFile
+        + IsSendMail: bool
+    }
+    class AddUserLogVM <<DTO>> {
+        + UserId: string
+        + ObjectId: string
+        + ActionType: string
+        + Description: string
+        + Metadata: string
+        + Status: int
+    }
+}
+
+package "Entities" {
+    class StudentViolation {
+        + Id: string
+        + StudentExamId: string
+        + Message: string
+        + ViolationName: string
+        + ScreenshotPath: string
+        + CreatedAt: DateTime
+        + CreatedBy: string
+    }
+    class StudentExam {
+        + StudentExamId: string
+        + User: User
+        + Exam: Exam
+    }
+    class User {
+        + UserId: string
+        + FullName: string
+        + UserCode: string
+        + Email: string
+    }
+    class Exam {
+        + ExamId: string
+        + Title: string
+        + StartTime: DateTime
+    }
+}
+
+package "Enums" {
+    enum LogStatus {
+        Success
+        Failed
+    }
+}
+
+' Relationships
+StudentViolationController ..> IStudentViolationService : <<uses>>
+StudentViolationController ..> SendStudentViolationVM : <<uses>>
+IStudentViolationService <|.. StudentViolationService
+StudentViolationService ..> StudentViolation : <<creates>>
+StudentViolationService ..> StudentExam : <<queries>>
+StudentViolationService ..> User : <<uses>>
+StudentViolationService ..> Exam : <<uses>>
+StudentViolationService ..> IAmazonS3Service : <<uploads file>>
+StudentViolationService ..> ILog : <<logs>>
+StudentViolationService ..> AddUserLogVM : <<logs>>
+StudentViolationService ..> EmailHandler : <<sends email>>
+SendStudentViolationVM o-- StudentViolation : <<creates>>
+StudentViolation o-- StudentExam : <<for>>
+StudentExam o-- User : <<for>>
+StudentExam o-- Exam : <<for>>
+AddUserLogVM ..> LogStatus : <<uses>>
+
+@enduml 

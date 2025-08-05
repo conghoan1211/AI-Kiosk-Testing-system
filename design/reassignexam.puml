@@ -1,0 +1,141 @@
+@startuml
+' Class Diagram for ReAssign Exam Feature
+
+title ReAssign Exam Class Diagram
+
+hide empty members
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam defaultFontSize 14
+skinparam defaultFontName Arial
+skinparam classFontSize 12
+skinparam classFontName Arial
+skinparam noteFontSize 11
+skinparam noteFontName Arial
+
+skinparam class {
+    BackgroundColor LightBlue
+    BorderColor DarkBlue
+    ArrowColor DarkBlue
+    FontSize 12
+}
+
+skinparam package {
+    BackgroundColor LightYellow
+    BorderColor DarkOrange
+    FontSize 14
+    FontStyle bold
+}
+
+skinparam interface {
+    BackgroundColor LightGreen
+    BorderColor DarkGreen
+    FontSize 12
+}
+
+skinparam enum {
+    BackgroundColor LightCyan
+    BorderColor DarkCyan
+    FontSize 12
+}
+
+package "Controllers" {
+    class MonitoringController <<Controller>> {
+        - _monitoringService: IMonitoringService
+        + ReAssignStudent(assignStudent: ReAssignStudent): Task<IActionResult>
+    }
+}
+
+package "Services" {
+    interface IMonitoringService <<Interface>> {
+        + ReAssignStudent(assignStudent: ReAssignStudent, usertoken: string): Task<string>
+    }
+    class MonitoringService <<Service>> {
+        - _context: DbContext
+        - _examHub: ExamHub
+        - _log: ILog
+        - _s3Service: IAmazonS3Service
+        + ReAssignStudent(assignStudent: ReAssignStudent, usertoken: string): Task<string>
+    }
+    class ExamHub {
+        + SendReAssignExamToGroup(groupName: string, data: object): Task
+    }
+    interface ILog <<Interface>> {
+        + WriteActivity(log: AddUserLogVM): Task<string>
+    }
+    interface IAmazonS3Service <<Interface>> {
+        + DeleteFileAsync(key: string): Task
+    }
+}
+
+package "Models & DTOs" {
+    class ReAssignStudent <<DTO>> {
+        + ExamId: string
+        + StudentId: string
+    }
+    class AddUserLogVM <<DTO>> {
+        + ActionType: string
+        + UserId: string
+        + Description: string
+        + Metadata: string
+        + ObjectId: string
+        + Status: int
+    }
+}
+
+package "Entities" {
+    class Exam {
+        + ExamId: string
+        + Title: string
+        + Status: int
+        + StartTime: DateTime
+        + EndTime: DateTime
+        + Duration: int
+    }
+    class StudentExam {
+        + StudentExamId: string
+        + ExamId: string
+        + StudentId: string
+        + Status: int
+    }
+    class StudentAnswer {
+        + StudentExamId: string
+        + QuestionId: string
+        + UserAnswer: string
+    }
+    class FaceCapture {
+        + StudentExamId: string
+        + ImageUrl: string
+    }
+}
+
+package "Enums" {
+    enum LogStatus {
+        Success
+        Failed
+    }
+    enum StudentExamStatus {
+        InProgress
+        Submitted
+    }
+}
+
+' Relationships
+MonitoringController ..> IMonitoringService : <<uses>>
+MonitoringController ..> ReAssignStudent : <<uses>>
+IMonitoringService <|.. MonitoringService
+MonitoringService ..> Exam : <<queries>>
+MonitoringService ..> StudentExam : <<queries/removes>>
+MonitoringService ..> StudentAnswer : <<removes>>
+MonitoringService ..> FaceCapture : <<removes/files>>
+MonitoringService ..> IAmazonS3Service : <<deletes file>>
+MonitoringService ..> ExamHub : <<notifies>>
+MonitoringService ..> ILog : <<logs>>
+MonitoringService ..> AddUserLogVM : <<logs>>
+StudentExam o-- Exam : <<for>>
+StudentAnswer o-- StudentExam : <<for>>
+FaceCapture o-- StudentExam : <<for>>
+AddUserLogVM ..> LogStatus : <<uses>>
+StudentExam ..> StudentExamStatus : <<uses>>
+
+@enduml 

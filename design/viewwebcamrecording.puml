@@ -1,0 +1,155 @@
+@startuml
+' Class Diagram for View Webcam Recording Feature
+
+title View Webcam Recording Class Diagram
+
+hide empty members
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam defaultFontSize 14
+skinparam defaultFontName Arial
+skinparam classFontSize 12
+skinparam classFontName Arial
+skinparam noteFontSize 11
+skinparam noteFontName Arial
+
+' Increase spacing and sizing
+skinparam class {
+    BackgroundColor LightBlue
+    BorderColor DarkBlue
+    ArrowColor DarkBlue
+    FontSize 12
+}
+
+skinparam package {
+    BackgroundColor LightYellow
+    BorderColor DarkOrange
+    FontSize 14
+    FontStyle bold
+}
+
+skinparam interface {
+    BackgroundColor LightGreen
+    BorderColor DarkGreen
+    FontSize 12
+}
+
+skinparam enum {
+    BackgroundColor LightCyan
+    BorderColor DarkCyan
+    FontSize 12
+}
+
+package "Controllers" {
+    class FaceCaptureController <<Controller>> {
+        - _faceCaptureService: IFaceCaptureService
+        + GetList(input: FaceCaptureSearchVM): Task<IActionResult>
+    }
+}
+
+package "Services" {
+    interface IFaceCaptureService <<Interface>> {
+        + GetList(input: FaceCaptureSearchVM): Task<(string, SearchResult?)>
+    }
+    class FaceCaptureService <<Service>> {
+        - _context: DbContext
+        + GetList(input: FaceCaptureSearchVM): Task<(string, SearchResult?)>
+    }
+}
+
+package "Models & DTOs" {
+    class FaceCaptureSearchVM <<DTO>> {
+        + StudentExamId: string
+        + ExamId: string
+        + LogType: LogType?
+    }
+    class SearchRequestVM <<Base DTO>> {
+        + PageSize: int
+        + CurrentPage: int
+        + TextSearch: string
+    }
+    class FaceCaptureVM <<DTO>> {
+        + StudentExamId: string
+        + UserId: string
+        + FullName: string
+        + UserCode: string
+        + Captures: List<CaptureImages>
+    }
+    class CaptureImages <<DTO>> {
+        + CaptureId: string
+        + ImageUrl: string
+        + Description: string
+        + IsDetected: bool
+        + LogType: int
+        + Emotions: string
+        + DominantEmotion: string
+        + CreatedAt: DateTime
+        + UpdatedAt: DateTime
+    }
+    class SearchResult <<DTO>> {
+        + Result: object
+        + TotalPage: int
+        + PageSize: int
+        + CurrentPage: int
+        + Total: int
+    }
+}
+
+package "Entities" {
+    class FaceCapture {
+        + CaptureId: string
+        + StudentExamId: string
+        + ImageUrl: string
+        + Description: string
+        + IsDetected: bool
+        + LogType: int
+        + Emotions: string
+        + DominantEmotion: string
+        + CreatedAt: DateTime
+        + UpdatedAt: DateTime
+    }
+    class StudentExam {
+        + StudentExamId: string
+        + StudentId: string
+        + ExamId: string
+        + User: User
+    }
+    class User {
+        + UserId: string
+        + UserCode: string
+        + FullName: string
+    }
+}
+
+package "Enums" {
+    enum LogType {
+        + Login
+        + Logout
+        + StartExam
+        + SubmitExam
+        + Warning
+    }
+}
+
+' Relationships
+FaceCaptureController ..> IFaceCaptureService : <<uses>>
+FaceCaptureController ..> FaceCaptureSearchVM : <<uses>>
+FaceCaptureController ..> SearchResult : <<uses>>
+
+IFaceCaptureService <|.. FaceCaptureService
+FaceCaptureService ..> FaceCapture : <<uses>>
+FaceCaptureService ..> StudentExam : <<uses>>
+FaceCaptureService ..> User : <<uses>>
+FaceCaptureService ..> FaceCaptureSearchVM : <<uses>>
+FaceCaptureService ..> SearchResult : <<uses>>
+FaceCaptureService ..> FaceCaptureVM : <<uses>>
+FaceCaptureService ..> CaptureImages : <<uses>>
+
+FaceCaptureSearchVM --|> SearchRequestVM : <<inherits>>
+FaceCaptureSearchVM ..> LogType : <<uses>>
+
+FaceCapture --> StudentExam : <<belongs to>>
+StudentExam o-- User : <<has>>
+FaceCaptureVM o-- CaptureImages : <<contains>>
+
+@enduml 

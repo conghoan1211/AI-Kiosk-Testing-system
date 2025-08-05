@@ -1,0 +1,104 @@
+@startuml
+' Class Diagram for Resume Interrupted Exam Feature
+
+title Resume Interrupted Exam Class Diagram
+
+hide empty members
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam defaultFontSize 14
+skinparam defaultFontName Arial
+skinparam classFontSize 12
+skinparam classFontName Arial
+skinparam noteFontSize 11
+skinparam noteFontName Arial
+
+' Increase spacing and sizing
+skinparam class {
+    BackgroundColor LightBlue
+    BorderColor DarkBlue
+    ArrowColor DarkBlue
+    FontSize 12
+}
+
+skinparam package {
+    BackgroundColor LightYellow
+    BorderColor DarkOrange
+    FontSize 14
+    FontStyle bold
+}
+
+skinparam interface {
+    BackgroundColor LightGreen
+    BorderColor DarkGreen
+    FontSize 12
+}
+
+skinparam enum {
+    BackgroundColor LightCyan
+    BorderColor DarkCyan
+    FontSize 12
+}
+
+package "Controllers" {
+    class StudentExamController <<Controller>> {
+        - _iService: IStudentExamService
+        + GetSavedAnswers(examId: string): Task<IActionResult>
+    }
+}
+
+package "Services" {
+    interface IStudentExamService <<Interface>> {
+        + GetSavedAnswers(examId: string, usertoken: string): Task<(string, List<StudentAnswerVM>?)>
+    }
+    class StudentExamService <<Service>> {
+        - _context: DbContext
+        + GetSavedAnswers(examId: string, usertoken: string): Task<(string, List<StudentAnswerVM>?)>
+    }
+}
+
+package "Models" {
+    class StudentAnswerVM <<DTO>> {
+        + QuestionId: string
+        + UserAnswer: string
+    }
+}
+
+package "Entities" {
+    class StudentExam {
+        + StudentExamId: string
+        + StudentId: string
+        + ExamId: string
+        + Status: int
+        + Exam: Exam
+    }
+    class Exam {
+        + ExamId: string
+        + EndTime: DateTime
+    }
+    class StudentAnswer {
+        + StudentAnswerId: string
+        + StudentExamId: string
+        + QuestionId: string
+        + UserAnswer: string
+    }
+}
+
+package "Enums" {
+    enum StudentExamStatus {
+        InProgress
+    }
+}
+
+' Relationships
+StudentExamController ..> IStudentExamService : <<uses>>
+IStudentExamService <|.. StudentExamService
+StudentExamService ..> StudentExam : <<uses>>
+StudentExamService ..> StudentAnswer : <<uses>>
+StudentExamService ..> StudentAnswerVM : <<uses>>
+StudentExamService ..> StudentExamStatus : <<uses>>
+StudentExam o-- Exam : <<has>>
+StudentExam o-- StudentAnswer : <<has>>
+StudentAnswer --> StudentAnswerVM : <<maps to>>
+
+@enduml 

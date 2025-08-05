@@ -1,0 +1,62 @@
+@startuml
+
+title View Exam Monitor Detail (View All Connections) Sequence Diagram
+
+actor "User" as Client
+boundary "c:MonitoringController" as Controller
+control "s:MonitoringService" as Service
+database "Database" as DB
+
+== View Exam Monitor Detail (View All Connections) ==
+
+Client -> Controller: GET /exam-monitor-detail (MonitorExamDetailSearchVM)
+activate Controller
+
+alt User not authenticated
+    Controller -> Controller: Log unauthorized access attempt
+    Controller --> Client: 401 Unauthorized { message: "User not authenticated." }
+    deactivate Controller
+else User authenticated
+    Controller -> Service: GetExamMonitorDetail(search, usertoken)
+    activate Service
+
+    Service -> DB: Check user is admin (UserId, RoleId=Admin)
+    activate DB
+    DB --> Service: isAdmin result
+    deactivate DB
+
+    Service -> DB: Check permission (ExamSupervisor)
+    activate DB
+    alt No permission
+        DB --> Service: Not found
+        deactivate DB
+        Service -> Service: Log authorization failure
+        Service --> Controller: ("You do not have permission to view this exam.", null)
+        deactivate Service
+        Controller --> Client: 403 Forbidden { success: false, message }
+        deactivate Controller
+    else Has permission
+        DB --> Service: Found
+        deactivate DB
+
+        Service -> DB: Query StudentExams (ExamId, include User, Exam, Room, Subject)
+        activate DB
+        DB --> Service: IQueryable<StudentExam>
+        deactivate DB
+
+        Service -> Service: Apply filters (Status, TextSearch)
+        Service -> Service: Count total, calculate totalPage
+        Service -> DB: Get paged MonitorExamDetailVMs
+        activate DB
+        DB --> Service: List<MonitorExamDetailVM>
+        deactivate DB
+
+        Service -> Service: Wrap in SearchResult
+        Service --> Controller: ("", SearchResult)
+        deactivate Service
+        Controller --> Client: 200 OK { success: true, message, data }
+        deactivate Controller
+    end alt
+end alt
+
+@enduml 

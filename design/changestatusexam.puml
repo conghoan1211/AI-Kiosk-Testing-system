@@ -1,0 +1,125 @@
+@startuml
+' Class Diagram for Change Status Exam Feature
+
+title Change Status Exam Class Diagram
+
+hide empty members
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam defaultFontSize 14
+skinparam defaultFontName Arial
+skinparam classFontSize 12
+skinparam classFontName Arial
+skinparam noteFontSize 11
+skinparam noteFontName Arial
+
+' Increase spacing and sizing
+skinparam class {
+    BackgroundColor LightBlue
+    BorderColor DarkBlue
+    ArrowColor DarkBlue
+    FontSize 12
+}
+
+skinparam package {
+    BackgroundColor LightYellow
+    BorderColor DarkOrange
+    FontSize 14
+    FontStyle bold
+}
+
+skinparam interface {
+    BackgroundColor LightGreen
+    BorderColor DarkGreen
+    FontSize 12
+}
+
+skinparam enum {
+    BackgroundColor LightCyan
+    BorderColor DarkCyan
+    FontSize 12
+}
+
+package "Controllers" {
+    class ExamController <<Controller>> {
+        - _examService: IExamService
+        + ChangeStatus(examId: string, request: ChangeStatusRequest): Task<IActionResult>
+    }
+}
+
+package "Services" {
+    interface IExamService <<Interface>> {
+        + ChangeExamStatusAsync(examId: string, newStatus: int, userId: string): Task<(bool Success, string Message)>
+    }
+    class ExamService <<Service>> {
+        - _context: DbContext
+        + ChangeExamStatusAsync(examId: string, newStatus: int, userId: string): Task<(bool Success, string Message)>
+    }
+}
+
+package "Models & DTOs" {
+    class ChangeStatusRequest <<DTO>> {
+        + NewStatus: int
+    }
+}
+
+package "Entities" {
+    class Exam {
+        + ExamId: string
+        + Status: int
+        + LiveStatus: int
+        + UpdatedAt: DateTime
+        + UpdateUser: string
+    }
+    class User {
+        + UserId: string
+        + UserRoles: List<UserRole>
+    }
+    class UserRole {
+        + UserId: string
+        + RoleId: int
+    }
+}
+
+package "Enums" {
+    enum RoleEnum {
+        Lecture
+        Admin
+    }
+    enum ExamStatus {
+        Draft
+        Published
+        Cancelled
+        Archived
+    }
+    enum ExamLiveStatus {
+        NotStarted
+        Ongoing
+        Completed
+    }
+}
+
+package "Utilities" {
+    class UserToken <<static>> {
+        + UserID: string
+    }
+}
+
+' Relationships
+ExamController ..> IExamService : <<uses>>
+ExamController ..> ChangeStatusRequest : <<uses>>
+ExamController ..> UserToken : <<uses>>
+IExamService <|.. ExamService
+ExamService ..> Exam : <<uses>>
+ExamService ..> User : <<uses>>
+ExamService ..> UserRole : <<uses>>
+ExamService ..> RoleEnum : <<uses>>
+ExamService ..> ExamStatus : <<uses>>
+ExamService ..> ExamLiveStatus : <<uses>>
+
+User o-- UserRole : <<has>>
+Exam ..> ExamStatus : <<uses>>
+Exam ..> ExamLiveStatus : <<uses>>
+UserRole ..> RoleEnum : <<uses>>
+
+@enduml 

@@ -1,0 +1,70 @@
+@startuml
+
+title View Detail Live Exam Sequence Diagram
+
+actor "User" as Client
+boundary "c:StudentExamController" as Controller
+control "s:StudentExamService" as Service
+database "Database" as DB
+
+== View Detail Live Exam ==
+
+Client -> Controller: GET /exam-detail/{examId}
+activate Controller
+
+alt User not authenticated
+    Controller -> Controller: Log unauthorized access attempt
+    Controller --> Client: 401 Unauthorized { message: "User not authenticated" }
+    deactivate Controller
+else User authenticated
+    Controller -> Service: GetExamDetail(examId, usertoken)
+    activate Service
+
+    Service -> DB: Check user role and permissions (UserId, RoleId)
+    activate DB
+    alt User is not student
+        DB --> Service: Not found or invalid role
+        deactivate DB
+        Service -> Service: Log authorization failure
+        Service --> Controller: ("You do not have permission to view exam details.", null)
+        deactivate Service
+        Controller --> Client: 403 Forbidden { success: false, message }
+        deactivate Controller
+    else User is student
+        DB --> Service: User role confirmed
+        deactivate DB
+        
+        Service -> DB: Get Exam details (ExamId)
+        activate DB
+        alt Exam not found
+            DB --> Service: Not found
+            deactivate DB
+            Service --> Controller: ("Exam not found.", null)
+            deactivate Service
+            Controller --> Client: 404 Not Found { success: false, message }
+            deactivate Controller
+        else Exam found
+            DB --> Service: Return Exam details
+            deactivate DB
+            
+            Service -> Service: Check user access to this exam
+            alt User not in exam room
+                Service --> Controller: ("You do not have access to this exam.", null)
+                deactivate Service
+                Controller --> Client: 403 Forbidden { success: false, message }
+                deactivate Controller
+            else User has access
+                Service -> Service: Map to ExamDetailVM
+                Service --> Controller: ("", examDetail)
+                deactivate Service
+                Controller -> Controller: Log successful access
+                Controller --> Client: 200 OK { success: true, message, data }
+                deactivate Controller
+            end
+        end
+    end
+end
+
+deactivate Controller
+
+@enduml 

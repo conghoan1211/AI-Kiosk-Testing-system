@@ -1,0 +1,72 @@
+@startuml
+
+title View Users In Room Sequence Diagram
+
+actor "User" as Client
+boundary "c:RoomUserController" as Controller
+control "s:RoomUserService" as Service
+database "Database" as DB
+
+== View Users In Room ==
+
+Client -> Controller: GET /GetUsersInRoom (SearchRoomUserVM)
+activate Controller
+
+alt User not authenticated
+    Controller -> Controller: Log unauthorized access attempt
+    Controller --> Client: 401 Unauthorized { message: "User not authenticated" }
+    deactivate Controller
+else User authenticated
+    Controller -> Service: GetUsersInRoom(search)
+    activate Service
+
+    Service -> DB: Check user role and permissions (UserId, RoleId)
+    activate DB
+    alt User is not allowed
+        DB --> Service: Not found or invalid role
+        deactivate DB
+        Service -> Service: Log authorization failure
+        Service --> Controller: ("You do not have permission to view users in room.", null)
+        deactivate Service
+        Controller --> Client: 403 Forbidden { success: false, message }
+        deactivate Controller
+    else User is allowed
+        DB --> Service: User role confirmed
+        deactivate DB
+
+        alt RoomId is empty
+            Service --> Controller: ("RoomId is required.", null)
+            deactivate Service
+            Controller --> Client: 400 BadRequest { success: false, message }
+            deactivate Controller
+        else RoomId provided
+            Service -> DB: Query RoomUsers (include User, Room) by RoomId
+            activate DB
+            DB --> Service: IQueryable<RoomUser>
+            deactivate DB
+
+            Service -> Service: Apply filters (Role, Status, TextSearch)
+            Service -> Service: Count total, calculate totalPage
+            Service -> DB: Get paged RoomUserList
+            activate DB
+            DB --> Service: List<RoomUser>
+            deactivate DB
+
+            alt No users found
+                Service --> Controller: ("No users found.", null)
+                deactivate Service
+                Controller --> Client: 400 BadRequest { success: false, message }
+                deactivate Controller
+            else Users found
+                Service -> Service: Map to RoomWithUserVM
+                Service -> Service: Wrap in SearchResult
+                Service --> Controller: ("", SearchResult)
+                deactivate Service
+                Controller --> Client: 200 OK { success: true, message, data }
+                deactivate Controller
+            end alt
+        end alt
+    end
+end
+
+@enduml 

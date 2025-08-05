@@ -1,0 +1,120 @@
+image: node:20
+
+stages:
+  - build
+  - deploy_backend
+  - deploy_frontend
+  - test
+
+variables:
+  SAST_ANALYZER_IMAGE: "registry.gitlab.com/gitlab-org/security-products/analyzers/semgrep:latest"
+
+build_frontend:
+  stage: build
+  script:
+    - cd frontend
+    - echo "VITE_BASE_URL=$VITE_BASE_URL" > .env
+    - npm install
+    - npm run build
+    - cp dist/index.html dist/404.html
+    - mv dist ../public
+  artifacts:
+    paths:
+      - public
+
+deploy_backend:
+  stage: deploy_backend
+  tags:
+    - linux
+  only:
+    - dev
+  script:
+    - echo "🔄 Pull code mới từ nhánh dev..."
+    - git pull origin dev
+    - echo "🔁 Restart backend bằng Docker Compose..."
+    - docker compose up --build -d
+
+pages:
+  stage: deploy_frontend
+  script:
+    - echo "🚀 Deploy GitLab Pages từ thư mục public/"
+  artifacts:
+    paths:
+      - public
+  only:
+    - dev
+
+sast:
+  stage: test
+
+custom_semgrep:
+  image: returntocorp/semgrep:latest
+  stage: test
+  script:
+    - semgrep --config=auto --json > semgrep-report.json || true
+  only:
+    - dev
+  allow_failure: false
+  artifacts:
+    when: always
+    reports:
+      sast: semgrep-report.json
+    paths:
+      - semgrep-report.json
+
+zap_scan:
+  image:
+    name: ictu/zap2docker-weekly
+    entrypoint: [""]
+  stage: test
+  variables:
+    TARGET_URL: "https://g77-sep490-su25-ab4781.gitlab.io"
+  script:
+    - zap-baseline.py -t $TARGET_URL -J zap-report.json -r zap-report.html -w . || true
+  artifacts:
+    when: always
+    paths:
+      - zap-report.html
+      - zap-report.json
+  only:
+    - dev
+
+
+
+snyk_sast:
+  image: node:20
+  stage: test
+  variables:
+    SNYK_TOKEN: $SNYK_TOKEN
+  before_script:
+    - npm install -g snyk
+  script:
+    - snyk auth $SNYK_TOKEN
+    - snyk test --all-projects --json > snyk-report.json || true
+  only:
+    - dev
+  artifacts:
+    when: always
+    reports:
+      sast: snyk-report.json
+    paths:
+      - snyk-report.json
+
+trivy_scan:
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
+  stage: test
+  script:
+    - echo "🔍 Quét bảo mật bằng Trivy..."
+    - trivy --version
+    - trivy fs . --format json --output trivy-report.json || true
+  only:
+    - dev
+  artifacts:
+    when: always
+    paths:
+      - trivy-report.json
+    
+include:
+  - template: Security/SAST.gitlab-ci.yml

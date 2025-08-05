@@ -1,0 +1,102 @@
+@startuml
+' Class Diagram for Save Exam Progress Feature
+
+title Save Exam Progress Class Diagram
+
+hide empty members
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam defaultFontSize 14
+skinparam defaultFontName Arial
+skinparam classFontSize 12
+skinparam classFontName Arial
+skinparam noteFontSize 11
+skinparam noteFontName Arial
+
+' Increase spacing and sizing
+skinparam class {
+    BackgroundColor LightBlue
+    BorderColor DarkBlue
+    ArrowColor DarkBlue
+    FontSize 12
+}
+
+skinparam package {
+    BackgroundColor LightYellow
+    BorderColor DarkOrange
+    FontSize 14
+    FontStyle bold
+}
+
+skinparam interface {
+    BackgroundColor LightGreen
+    BorderColor DarkGreen
+    FontSize 12
+}
+
+skinparam enum {
+    BackgroundColor LightCyan
+    BorderColor DarkCyan
+    FontSize 12
+}
+
+package "Controllers" {
+    class StudentExamController <<Controller>> {
+        - _iService: IStudentExamService
+        + SaveAnswerTemporary(input: SubmitExamRequest): Task<IActionResult>
+    }
+}
+
+package "Services" {
+    interface IStudentExamService <<Interface>> {
+        + SaveAnswerTemporary(input: SubmitExamRequest, usertoken: string): Task<string>
+    }
+    class StudentExamService <<Service>> {
+        - _context: DbContext
+        + SaveAnswerTemporary(input: SubmitExamRequest, usertoken: string): Task<string>
+    }
+}
+
+package "Models" {
+    class SubmitExamRequest <<DTO>> {
+        + StudentExamId: string
+        + ExamId: string
+        + Answers: List<StudentAnswerVM>
+    }
+    class StudentAnswerVM <<DTO>> {
+        + QuestionId: string
+        + UserAnswer: string
+    }
+}
+
+package "Entities" {
+    class StudentExam {
+        + StudentExamId: string
+        + StudentId: string
+        + ExamId: string
+    }
+    class StudentAnswer {
+        + StudentAnswerId: string
+        + StudentExamId: string
+        + QuestionId: string
+        + UserAnswer: string
+        + IsCorrect: bool?
+        + PointsEarned: decimal
+        + TimeSpent: int
+        + CreatedAt: DateTime
+        + UpdatedAt: DateTime
+    }
+}
+
+' Relationships
+StudentExamController ..> IStudentExamService : <<uses>>
+StudentExamController ..> SubmitExamRequest : <<uses>>
+IStudentExamService <|.. StudentExamService
+StudentExamService ..> StudentExam : <<uses>>
+StudentExamService ..> StudentAnswer : <<uses>>
+StudentExamService ..> SubmitExamRequest : <<uses>>
+SubmitExamRequest o-- StudentAnswerVM : <<has>>
+StudentAnswerVM --> StudentAnswer : <<for>>
+StudentExam o-- StudentAnswer : <<has>>
+
+@enduml 

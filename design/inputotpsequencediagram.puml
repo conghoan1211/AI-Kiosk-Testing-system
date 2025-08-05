@@ -1,0 +1,105 @@
+@startuml
+
+title Input OTP for Access Exam Sequence Diagram
+
+actor "User" as Client
+
+boundary "c:StudentExamController" as Controller
+control "s:StudentExamService" as Service
+database "Database" as DB
+
+== Input OTP to Access Exam ==
+
+Client -> Controller: POST /access-exam (ExamId, OtpCode)
+activate Controller
+
+alt User not authenticated
+    Controller -> Controller: Log unauthorized access attempt
+    Controller --> Client: 401 Unauthorized { message: "User not authenticated" }
+    deactivate Controller
+else User authenticated
+    Controller -> Service: AccessExam(otp, usertoken, context)
+    activate Service
+
+    Service -> DB: Check user role and permissions (UserId, RoleId)
+    activate DB
+    alt User is not student
+        DB --> Service: Not found or invalid role
+        deactivate DB
+        Service -> Service: Log authorization failure
+        Service --> Controller: ("You do not have permission to access student exams.", null)
+        deactivate Service
+        Controller --> Client: 403 Forbidden { success: false, message }
+        deactivate Controller
+    else User is student
+        DB --> Service: User role confirmed
+        deactivate DB
+
+        Service -> DB: Query Exam (Include Room, RoomUsers)\nWhere ExamId = otp.ExamId
+        activate DB
+        DB --> Service: Return Exam (with Room, RoomUsers)
+        deactivate DB
+
+        alt Exam not found
+            Service --> Controller: ("Exam not found.", null)
+            deactivate Service
+            Controller --> Client: 400 Bad Request { success: false, message }
+        else
+            Service -> Service: Check if user in RoomUsers
+            alt User not in Room
+                Service --> Controller: ("You do not have permission to access this exam.", null)
+                deactivate Service
+                Controller --> Client: 403 Forbidden { success: false, message }
+            else
+                Service -> Service: Check exam time (StartTime, EndTime)
+                alt Exam not started
+                    Service --> Controller: ("The exam is not available at this time, exam has not started yet.", null)
+                    deactivate Service
+                    Controller --> Client: 400 Bad Request { success: false, message }
+                else alt Exam ended
+                    Service --> Controller: ("The exam is not available at this time, exam has already ended.", null)
+                    deactivate Service
+                    Controller --> Client: 400 Bad Request { success: false, message }
+                else
+                    Service -> DB: Query ExamOtp\nWhere ExamId = otp.ExamId, OtpCode = otp.OtpCode, ExpiredAt > now
+                    activate DB
+                    DB --> Service: Return OTP valid/invalid
+                    deactivate DB
+
+                    alt OTP invalid or expired
+                        Service --> Controller: ("Invalid or expired OTP.", null)
+                        deactivate Service
+                        Controller --> Client: 400 Bad Request { success: false, message }
+                    else
+                        Service -> DB: Query StudentExam\nWhere ExamId = otp.ExamId, StudentId = usertoken, Status = InProgress
+                        activate DB
+                        DB --> Service: Return existing StudentExam/null
+                        deactivate DB
+
+                        alt No existing StudentExam
+                            Service -> DB: Add new StudentExam (Status=InProgress, StartTime, ...etc)
+                            activate DB
+                            DB --> Service: StudentExam created
+                            deactivate DB
+                        else
+                            Service -> DB: Update existing StudentExam (Status=InProgress, Update fields)
+                            activate DB
+                            DB --> Service: StudentExam updated
+                            deactivate DB
+                        end
+
+                        Service -> DB: SaveChanges
+                        DB --> Service: Saved
+                        Service --> Controller: ("", { StudentExamId, ExamId, StartTime })
+                        deactivate Service
+                        Controller --> Client: 200 OK { success: true, data }
+                    end
+                end
+            end
+        end
+    end
+end
+
+deactivate Controller
+
+@enduml 

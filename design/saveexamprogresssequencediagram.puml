@@ -1,0 +1,64 @@
+@startuml
+
+title Save Exam Progress Sequence Diagram
+
+actor "User" as Client
+boundary "c:StudentExamController" as Controller
+control "s:StudentExamService" as Service
+database "Database" as DB
+
+== Save Exam Progress ==
+
+Client -> Controller: POST /save-answer-temporary (SubmitExamRequest)
+activate Controller
+Controller -> Service: SaveAnswerTemporary(request, usertoken)
+activate Service
+
+Service -> DB: Check StudentExam exists (StudentExamId, StudentId, ExamId)
+activate DB
+alt StudentExam not found
+    DB --> Service: Not found
+    deactivate DB
+    Service --> Controller: "Student is not found in this exam."
+    deactivate Service
+    Controller --> Client: 400 BadRequest { success: false, message }
+    deactivate Controller
+else StudentExam exists
+    DB --> Service: Exists
+    deactivate DB
+    Service -> DB: Get existing StudentAnswers (StudentExamId, QuestionIds)
+    activate DB
+    DB --> Service: Return existing StudentAnswers
+    deactivate DB
+
+    loop For each answer in request.Answers
+        alt Answer exists
+            alt UserAnswer unchanged
+                Service -> Service: Skip update
+            else UserAnswer changed
+                Service -> DB: Update StudentAnswer (UserAnswer, UpdatedAt)
+            end alt
+        else
+            Service -> DB: Add new StudentAnswer
+        end alt
+    end loop
+
+    alt Has answers to update
+        Service -> DB: UpdateRange StudentAnswers
+    end alt
+    alt Has answers to add
+        Service -> DB: AddRange StudentAnswers
+    end alt
+
+    Service -> DB: SaveChanges
+    activate DB
+    DB --> Service: Saved
+    deactivate DB
+
+    Service --> Controller: "Save answer temporarily successfully"
+    deactivate Service
+    Controller --> Client: 200 OK { success: true, message }
+    deactivate Controller
+end alt
+
+@enduml 

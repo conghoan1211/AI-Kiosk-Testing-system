@@ -1,0 +1,122 @@
+@startuml
+' Class Diagram for Assign OTP Feature
+
+title Assign OTP Class Diagram
+
+hide empty members
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam defaultFontSize 14
+skinparam defaultFontName Arial
+skinparam classFontSize 12
+skinparam classFontName Arial
+skinparam noteFontSize 11
+skinparam noteFontName Arial
+
+' Increase spacing and sizing
+skinparam class {
+    BackgroundColor LightBlue
+    BorderColor DarkBlue
+    ArrowColor DarkBlue
+    FontSize 12
+}
+
+skinparam package {
+    BackgroundColor LightYellow
+    BorderColor DarkOrange
+    FontSize 14
+    FontStyle bold
+}
+
+skinparam interface {
+    BackgroundColor LightGreen
+    BorderColor DarkGreen
+    FontSize 12
+}
+
+skinparam enum {
+    BackgroundColor LightCyan
+    BorderColor DarkCyan
+    FontSize 12
+}
+
+package "Controllers" {
+    class ExamController <<Controller>> {
+        - _examService: IExamService
+        + AssignOTP(input: CreateExamOtpVM): Task<IActionResult>
+    }
+}
+
+package "Services" {
+    interface IExamService <<Interface>> {
+        + AssignOTP(input: CreateExamOtpVM, usertoken: string): Task<(string, ExamOtpVM?)>
+    }
+    class ExamService <<Service>> {
+        - _context: DbContext
+        + AssignOTP(input: CreateExamOtpVM, usertoken: string): Task<(string, ExamOtpVM?)>
+    }
+}
+
+package "Models" {
+    class CreateExamOtpVM <<DTO>> {
+        + ExamId: string
+        + TimeValid: int
+    }
+    class ExamOtpVM <<DTO>> {
+        + ExamOtpId: string
+        + ExamId: string
+        + OtpCode: string
+        + TimeValid: int
+        + ExpiredAt: DateTime
+    }
+}
+
+package "Entities" {
+    class Exam {
+        + ExamId: string
+        + Status: int
+        + EndTime: DateTime
+        + Room: Room
+    }
+    class ExamOtp {
+        + ExamOtpId: string
+        + ExamId: string
+        + OtpCode: int
+        + TimeValid: int
+        + CreatedAt: DateTime
+        + CreatedBy: string
+        + ExpiredAt: DateTime
+    }
+    class Room {
+        + RoomId: string
+    }
+}
+
+package "Utilities" {
+    class Utils <<static>> {
+        + Generate6Number(): int
+    }
+}
+
+package "Enums" {
+    enum ExamStatus {
+        Draft
+        Published
+        Archived
+    }
+}
+
+' Relationships
+ExamController ..> IExamService : <<uses>>
+IExamService <|.. ExamService
+ExamController ..> CreateExamOtpVM : <<uses>>
+ExamService ..> Exam : <<uses>>
+ExamService ..> ExamOtp : <<creates/updates>>
+ExamService ..> Utils : <<uses>>
+CreateExamOtpVM o-- ExamOtp : <<creates/updates>>
+Exam o-- Room : <<has>>
+Exam ..> ExamStatus : <<uses>>
+ExamOtp o-- Exam : <<for>>
+ExamOtpVM --> ExamOtp : <<maps from>>
+
+@enduml 

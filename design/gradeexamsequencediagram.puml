@@ -1,0 +1,77 @@
+@startuml
+
+title Grade Exam Sequence Diagram
+
+actor "Teacher" as Client
+boundary "c:ExamController" as Controller
+control "s:ExamService" as Service
+database "Database" as DB
+
+== Grade Exam ==
+
+Client -> Controller: POST /grade-exam (GradeExamRequest)
+activate Controller
+
+alt User not authenticated
+    Controller -> Controller: Log unauthorized access attempt
+    Controller --> Client: 401 Unauthorized { message: "User not authenticated" }
+    deactivate Controller
+else User authenticated
+    Controller -> Service: GradeExam(gradeExamRequest)
+    activate Service
+
+    Service -> DB: Check user role and permissions (UserId, RoleId)
+    activate DB
+    alt User is not teacher
+        DB --> Service: Not found or invalid role
+        deactivate DB
+        Service -> Service: Log authorization failure
+        Service --> Controller: ("You do not have permission to grade exams.", null)
+        deactivate Service
+        Controller --> Client: 403 Forbidden { success: false, message }
+        deactivate Controller
+    else User is teacher
+        DB --> Service: User role confirmed
+        deactivate DB
+
+        Service -> DB: Get StudentExam (examId, studentId)
+        activate DB
+        alt StudentExam not found
+            DB --> Service: Not found
+            deactivate DB
+            Service --> Controller: ("StudentExam not found.", null)
+            deactivate Service
+            Controller --> Client: 400 BadRequest { success: false, message }
+            deactivate Controller
+        else StudentExam found
+            DB --> Service: Return StudentExam
+            deactivate DB
+            
+            Service -> Service: CheckTeacherAccess(examId, teacherId)
+            alt Teacher not assigned to exam
+                Service -> Service: Log authorization failure
+                Service --> Controller: ("You are not assigned to this exam.", null)
+                deactivate Service
+                Controller --> Client: 403 Forbidden { success: false, message }
+                deactivate Controller
+            else Teacher assigned to exam
+                loop For each answer in gradeExamRequest.Answers
+                    Service -> DB: Update StudentAnswer (IsCorrect, PointsEarned, TeacherComment)
+                end loop
+                
+                Service -> DB: Update StudentExam (Status=Graded, Score, GradedAt)
+                Service -> DB: SaveChanges
+                activate DB
+                DB --> Service: Saved
+                deactivate DB
+                
+                Service --> Controller: ("Grading successful.", null)
+                deactivate Service
+                Controller --> Client: 200 OK { success: true, message }
+                deactivate Controller
+            end
+        end
+    end
+end
+
+@enduml 

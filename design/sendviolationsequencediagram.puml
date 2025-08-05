@@ -1,0 +1,107 @@
+@startuml
+
+title Send Violation Sequence Diagram
+
+actor "User" as Client
+boundary "c:StudentViolationController" as Controller
+control "s:StudentViolationService" as Service
+database "Database" as DB
+control "S3Service" as S3
+control "EmailHandler" as Email
+control "LogService" as Log
+
+== Send Violation ==
+
+Client -> Controller: POST /create (SendStudentViolationVM)
+activate Controller
+
+alt User not authenticated
+    Controller -> Controller: Log unauthorized access attempt
+    Controller --> Client: 401 Unauthorized { success: false, message: "User not authenticated." }
+    deactivate Controller
+else User authenticated
+    Controller -> Service: Create(send, usertoken)
+    activate Service
+
+    Service -> DB: Check user role and permissions (UserId, RoleId)
+    activate DB
+    alt User is not allowed
+        DB --> Service: Not found or invalid role
+        deactivate DB
+        Service -> Service: Log authorization failure
+        Service --> Controller: "You do not have permission to send violation."
+        deactivate Service
+        Controller --> Client: 403 Forbidden { success: false, message }
+        deactivate Controller
+    else User is allowed
+        DB --> Service: User role confirmed
+        deactivate DB
+
+        alt Data is null
+            Service --> Controller: "Student violation data is null"
+            deactivate Service
+            Controller --> Client: 400 BadRequest { success: false, message }
+            deactivate Controller
+        else Valid data
+            Service -> DB: Get StudentExam (StudentExamId, include User, Exam)
+            activate DB
+            alt StudentExam not found
+                DB --> Service: Not found
+                deactivate DB
+                Service --> Controller: "Student exam not found"
+                deactivate Service
+                Controller --> Client: 400 BadRequest { success: false, message }
+                deactivate Controller
+            else StudentExam found
+                DB --> Service: StudentExam
+                deactivate DB
+                alt Has ScreenshotPath
+                    Service -> S3: UploadFileAsync(key, ScreenshotPath)
+                    activate S3
+                    S3 --> Service: uploadedUrls
+                    deactivate S3
+                else No ScreenshotPath
+                    Service -> Service: Set uploadedUrls = ""
+                end alt
+                Service -> DB: Add new StudentViolation
+                activate DB
+                DB --> Service: Added
+                deactivate DB
+                Service -> DB: SaveChanges
+                activate DB
+                DB --> Service: Saved
+                deactivate DB
+                alt IsSendMail
+                    alt Student email not found
+                        Service --> Controller: "Student email not found."
+                        deactivate Service
+                        Controller --> Client: 400 BadRequest { success: false, message }
+                        deactivate Controller
+                    else Email found
+                        Service -> Email: SendEmailAsync(email, ...)
+                        activate Email
+                        Email --> Service: msgMail
+                        deactivate Email
+                    end alt
+                end alt
+                Service -> Log: WriteActivity(AddUserLogVM)
+                activate Log
+                Log --> Service: msg
+                deactivate Log
+                alt Log error
+                    Service --> Controller: msg
+                    deactivate Service
+                    Controller --> Client: 400 BadRequest { success: false, message }
+                    deactivate Controller
+                else Log success
+                    Service --> Controller: ""
+                    deactivate Service
+                    Controller --> Client: 200 OK { success: true, message }
+                    deactivate Controller
+                end alt
+            end alt
+        end alt
+    end alt
+end alt
+
+@enduml 

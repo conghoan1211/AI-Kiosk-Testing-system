@@ -1,0 +1,156 @@
+@startuml
+' Class Diagram for View List Question Bank Feature
+
+title View List Question Bank Class Diagram
+
+hide empty members
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam defaultFontSize 14
+skinparam defaultFontName Arial
+skinparam classFontSize 12
+skinparam classFontName Arial
+skinparam noteFontSize 11
+skinparam noteFontName Arial
+
+' Increase spacing and sizing
+skinparam class {
+    BackgroundColor LightBlue
+    BorderColor DarkBlue
+    ArrowColor DarkBlue
+    FontSize 12
+}
+
+skinparam package {
+    BackgroundColor LightYellow
+    BorderColor DarkOrange
+    FontSize 14
+    FontStyle bold
+}
+
+skinparam interface {
+    BackgroundColor LightGreen
+    BorderColor DarkGreen
+    FontSize 12
+}
+
+skinparam enum {
+    BackgroundColor LightCyan
+    BorderColor DarkCyan
+    FontSize 12
+}
+
+package "Controllers" {
+    class QuestionBankController <<Controller>> {
+        - _questionBankService: IQuestionBankService
+        + GetQuestionBankList(input: QuestionBankFilterVM): Task<IActionResult>
+    }
+}
+
+package "Services" {
+    interface IQuestionBankService <<Interface>> {
+        + GetList(input: QuestionBankFilterVM, userTokenId: string): Task<(string, QuestionBankListResponse?)>
+    }
+    class QuestionBankService <<Service>> {
+        - _context: DbContext
+        + GetList(input: QuestionBankFilterVM, userTokenId: string): Task<(string, QuestionBankListResponse?)>
+    }
+}
+
+package "Models" {
+    class QuestionBankFilterVM <<DTO>> {
+        + Status: ActiveStatus?
+        + IsMyQuestion: bool?
+        + PageSize: int
+        + CurrentPage: int
+        + TextSearch: string
+    }
+    class SearchRequestVM <<DTO>> {
+        + PageSize: int
+        + CurrentPage: int
+        + TextSearch: string
+    }
+    class QuestionBankListResponse <<DTO>> {
+        + TotalQuestionBanks: int
+        + TotalQuestionsQB: int
+        + TotalSubjects: int
+        + TotalSharedQB: int
+    }
+     class SearchResult <<DTO>> {
+        + Result: object?
+        + TotalPage: int
+        + PageSize: int
+        + CurrentPage: int
+        + Total: int
+    }
+    
+    class QuestionBankListVM <<DTO>> {
+        + QuestionBankId: string
+        + Title: string
+        + CreateBy: string
+        + SubjectName: string
+        + TotalQuestions: int
+        + MultipleChoiceCount: int
+        + EssayCount: int
+        + TrueFalseCount: int
+        + FillInTheBlank: int
+        + Status: int
+    }
+}
+
+package "Entities" {
+    class QuestionBank {
+        + QuestionBankId: string
+        + Title: string
+        + Status: int
+        + CreateUserId: string
+        + CreatedAt: DateTime
+        + Subject: Subject
+        + CreatedByUser: User
+    }
+    class Subject {
+        + SubjectId: string
+        + SubjectName: string
+    }
+    class User {
+        + UserId: string
+    }
+    class Question {
+        + QuestionId: string
+        + QuestionBankId: string
+        + Type: int
+    }
+}
+
+package "Enums" {
+    enum ActiveStatus {
+        Inactive
+        Active
+    }
+    enum QuestionTypeChoose {
+        MultipleChoice
+        Essay
+        TrueFalse
+        FillInTheBlank
+        ShortAnswer
+        Matching
+    }
+}
+
+' Relationships
+QuestionBankController ..> IQuestionBankService : <<uses>>
+IQuestionBankService <|.. QuestionBankService
+QuestionBankController ..> QuestionBankFilterVM : <<uses>>
+QuestionBankService ..> QuestionBank : <<uses>>
+QuestionBankService ..> Question : <<uses>>
+QuestionBankService ..> QuestionBankListResponse : <<maps to>>
+QuestionBankService ..> QuestionBankListVM : <<maps to>>
+QuestionBankFilterVM --|> SearchRequestVM
+QuestionBankListResponse --|> SearchResult
+QuestionBank o-- Subject : <<has>>
+QuestionBank o-- User : <<has>>
+QuestionBank o-- Question : <<has>>
+Question ..> QuestionTypeChoose : <<uses>>
+QuestionBank ..> ActiveStatus : <<uses>>
+
+@enduml 

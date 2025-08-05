@@ -1,0 +1,66 @@
+@startuml
+
+title View Exam History Sequence Diagram
+
+actor "User" as Client
+boundary "c:StudentExamController" as Controller
+control "s:StudentExamService" as Service
+database "Database" as DB
+
+== View Exam History ==
+
+Client -> Controller: GET /history-exams (SearchStudentExamVM)
+activate Controller
+
+alt User not authenticated
+    Controller -> Controller: Log unauthorized access attempt
+    Controller --> Client: 401 Unauthorized { message: "User not authenticated" }
+    deactivate Controller
+else User authenticated
+    Controller -> Service: GetHistoryExams(search, usertoken)
+    activate Service
+
+    Service -> DB: Check user role and permissions (UserId, RoleId)
+    activate DB
+    alt User is not student
+        DB --> Service: Not found or invalid role
+        deactivate DB
+        Service -> Service: Log authorization failure
+        Service --> Controller: ("You do not have permission to view exam history.", null)
+        deactivate Service
+        Controller --> Client: 403 Forbidden { success: false, message }
+        deactivate Controller
+    else User is student
+        DB --> Service: User role confirmed
+        deactivate DB
+
+        Service -> DB: Query StudentExams (StudentId, Status=Submitted, include Exam)
+        activate DB
+        DB --> Service: IQueryable<StudentExam>
+        deactivate DB
+
+        Service -> Service: Apply filters (StartDate, EndDate, TextSearch)
+        Service -> Service: Count total, calculate totalPage
+        Service -> Service: Paging (Skip, Take)
+        Service -> DB: Get paged StudentExamResultVMs
+        activate DB
+        DB --> Service: List<StudentExamResultVM>
+        deactivate DB
+
+        alt No exams found
+            Service --> Controller: ("No exams found for you.", null)
+            deactivate Service
+            Controller --> Client: 400 BadRequest { success: false, message }
+            deactivate Controller
+        else Exams found
+            Service -> Service: Wrap in SearchResult
+            Service --> Controller: ("", SearchResult)
+            deactivate Service
+            Controller -> Controller: Log successful access
+            Controller --> Client: 200 OK { success: true, message, data }
+            deactivate Controller
+        end alt
+    end
+end
+
+@enduml 

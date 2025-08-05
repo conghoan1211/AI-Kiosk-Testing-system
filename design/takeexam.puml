@@ -1,0 +1,125 @@
+@startuml
+' Class Diagram for Take Exam Feature
+
+title Take Exam Class Diagram
+
+hide empty members
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam defaultFontSize 14
+skinparam defaultFontName Arial
+skinparam classFontSize 12
+skinparam classFontName Arial
+skinparam noteFontSize 11
+skinparam noteFontName Arial
+
+' Increase spacing and sizing
+skinparam class {
+    BackgroundColor LightBlue
+    BorderColor DarkBlue
+    ArrowColor DarkBlue
+    FontSize 12
+}
+
+skinparam package {
+    BackgroundColor LightYellow
+    BorderColor DarkOrange
+    FontSize 14
+    FontStyle bold
+}
+
+skinparam interface {
+    BackgroundColor LightGreen
+    BorderColor DarkGreen
+    FontSize 12
+}
+
+skinparam enum {
+    BackgroundColor LightCyan
+    BorderColor DarkCyan
+    FontSize 12
+}
+
+package "Controllers" {
+    class ExamController <<Controller>> {
+        - _iService: IExamService
+        + GetExamDetailById(examId: string): Task<IActionResult>
+    }
+}
+
+package "Services" {
+    interface IExamService <<Interface>> {
+        + GetExamDetail(examId: string): Task<(string, ExamDetailVM?)>
+    }
+    class ExamService <<Service>> {
+        - _context: DbContext
+        + GetExamDetail(examId: string): Task<(string, ExamDetailVM?)>
+    }
+}
+
+package "Models" {
+    class ExamDetailVM <<DTO>> {
+        + ExamId: string
+        + Title: string
+        + Duration: int
+        + StartTime: DateTime
+        + EndTime: DateTime
+        + TotalQuestions: int
+        + Questions: List<ExamQuestionVM>
+    }
+    class ExamQuestionVM <<DTO>> {
+        + QuestionId: string
+        + Content: string
+        + QuestionType: string
+        + Point: decimal
+        + DifficultLevel: int
+        + Options: List<string>
+    }
+}
+
+package "Entities" {
+    class Exam {
+        + ExamId: string
+        + Title: string
+        + Duration: int
+        + StartTime: DateTime
+        + EndTime: DateTime
+        + TotalQuestions: int
+    }
+    class ExamQuestion {
+        + ExamQuestionId: string
+        + ExamId: string
+        + QuestionId: string
+        + Point: decimal
+    }
+    class Question {
+        + QuestionId: string
+        + Content: string
+        + Type: int
+        + Point: decimal
+        + Options: string
+        + DifficultLevel: int
+        + CorrectAnswer: string
+    }
+}
+
+package "Utilities" {
+    class JsonHandler <<static>> {
+        + SafeDeserializeOptions(json: string?): List<string>
+    }
+}
+
+' Relationships
+ExamController ..> IExamService : <<uses>>
+IExamService <|.. ExamService
+ExamController ..> ExamDetailVM : <<uses>>
+ExamService ..> Exam : <<uses>>
+ExamService ..> ExamQuestion : <<uses>>
+ExamService ..> Question : <<uses>>
+ExamService ..> ExamDetailVM : <<maps to>>
+ExamDetailVM o-- ExamQuestionVM : <<has>>
+ExamQuestion o-- Question : <<has>>
+ExamQuestionVM --> Question : <<maps from>>
+JsonHandler ..> ExamQuestionVM : <<uses for options>>
+
+@enduml 

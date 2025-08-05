@@ -1,0 +1,105 @@
+@startuml
+' Class Diagram for View Exam Answer Feature
+
+title View Exam Answer Class Diagram
+
+hide empty members
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam defaultFontSize 14
+skinparam defaultFontName Arial
+skinparam classFontSize 12
+skinparam classFontName Arial
+skinparam noteFontSize 11
+skinparam noteFontName Arial
+
+' Increase spacing and sizing
+skinparam class {
+    BackgroundColor LightBlue
+    BorderColor DarkBlue
+    ArrowColor DarkBlue
+    FontSize 12
+}
+
+skinparam package {
+    BackgroundColor LightYellow
+    BorderColor DarkOrange
+    FontSize 14
+    FontStyle bold
+}
+
+skinparam interface {
+    BackgroundColor LightGreen
+    BorderColor DarkGreen
+    FontSize 12
+}
+
+skinparam enum {
+    BackgroundColor LightCyan
+    BorderColor DarkCyan
+    FontSize 12
+}
+
+package "Controllers" {
+    class ExamController <<Controller>> {
+        - _iService: IExamService
+        + ViewExamAnswer(examId: string, studentId: string): Task<IActionResult>
+    }
+}
+
+package "Services" {
+    interface IExamService <<Interface>> {
+        + ViewExamAnswer(examId: string, studentId: string): Task<(string, List<ExamAnswerVM>?)>
+    }
+    class ExamService <<Service>> {
+        - _context: DbContext
+        + ViewExamAnswer(examId: string, studentId: string): Task<(string, List<ExamAnswerVM>?)>
+    }
+}
+
+package "Models" {
+    class ExamAnswerVM <<DTO>> {
+        + QuestionId: string
+        + QuestionContent: string
+        + UserAnswer: string
+        + CorrectAnswer: string
+        + IsCorrect: bool
+        + PointsEarned: decimal
+    }
+}
+
+package "Entities" {
+    class StudentExam {
+        + StudentExamId: string
+        + StudentId: string
+        + ExamId: string
+    }
+    class StudentAnswer {
+        + StudentAnswerId: string
+        + StudentExamId: string
+        + QuestionId: string
+        + UserAnswer: string
+        + IsCorrect: bool
+        + PointsEarned: decimal
+    }
+    class Question {
+        + QuestionId: string
+        + Content: string
+        + CorrectAnswer: string
+    }
+}
+
+' Relationships
+ExamController ..> IExamService : <<uses>>
+IExamService <|.. ExamService
+ExamController ..> ExamAnswerVM : <<uses>>
+ExamService ..> StudentExam : <<uses>>
+ExamService ..> StudentAnswer : <<uses>>
+ExamService ..> Question : <<uses>>
+ExamService ..> ExamAnswerVM : <<maps to>>
+StudentExam o-- StudentAnswer : <<has>>
+StudentAnswer o-- Question : <<has>>
+ExamAnswerVM --> StudentAnswer : <<maps from>>
+ExamAnswerVM --> Question : <<maps from>>
+
+@enduml 

@@ -1,0 +1,110 @@
+@startuml
+
+title Create Exam Sequence Diagram
+
+actor "User" as Client
+boundary "c:ExamController" as Controller
+control "s:ExamService" as Service
+control "ExamRepository" as ExamRepo
+control "ExamSubject" as Subject
+control "ExamLogObserver" as Observer
+control "LogService" as Log
+database "Database" as DB
+
+== Create Exam ==
+
+Client -> Controller: POST /CreateExam (AddExamRequest)
+activate Controller
+
+alt User not authenticated
+    Controller -> Controller: Log unauthorized access attempt
+    Controller --> Client: 401 Unauthorized { success: false, message: "User not authenticated." }
+    deactivate Controller
+else User authenticated
+    Controller -> Service: Handle(request, userId)
+    activate Service
+
+    Service -> Service: AddExamValidator.ValidateAsync(request, ExamRepo)
+    alt Invalid data
+        Service --> Controller: error
+        deactivate Service
+        Controller --> Client: 400 BadRequest { success: false, message }
+        deactivate Controller
+    else Valid data
+        Service -> ExamRepo: GetWithQuestionsAsync(QuestionBankId)
+        ExamRepo -> DB: Query QuestionBank & Questions
+        DB --> ExamRepo: questionBank
+        ExamRepo --> Service: questionBank
+        alt Invalid or empty question bank
+            Service --> Controller: "Invalid or empty question bank."
+            deactivate Service
+            Controller --> Client: 400 BadRequest { success: false, message }
+            deactivate Controller
+        else Valid question bank
+            Service -> Service: Filter selectedQuestions
+            alt Some selected questions not found
+                Service --> Controller: "Some selected questions were not found."
+                deactivate Service
+                Controller --> Client: 400 BadRequest { success: false, message }
+                deactivate Controller
+            else All questions found
+                Service -> Service: Check question types
+                alt Type mismatch
+                    Service --> Controller: "All questions must be of the same type and match ExamType."
+                    deactivate Service
+                    Controller --> Client: 400 BadRequest { success: false, message }
+                    deactivate Controller
+                else Total points = 0
+                    Service --> Controller: "Total points must be greater than 0."
+                    deactivate Service
+                    Controller --> Client: 400 BadRequest { success: false, message }
+                    deactivate Controller
+                else Valid
+                    Service -> DB: BeginTransaction
+                    DB --> Service: Transaction started
+                    Service -> Service: Build Exam
+                    Service -> ExamRepo: AddExam(exam)
+                    ExamRepo -> DB: Insert Exam
+                    DB --> ExamRepo: Inserted
+                    ExamRepo --> Service: Inserted
+                    Service -> Service: Build ExamQuestions
+                    loop For each question
+                        Service -> ExamRepo: AddExamQuestion(examQuestion)
+                        ExamRepo -> DB: Insert ExamQuestion
+                        DB --> ExamRepo: Inserted
+                        ExamRepo --> Service: Inserted
+                    end loop
+                    Service -> Service: Build ExamSupervisor
+                    Service -> ExamRepo: AddExamSupervisor(examSupervisor)
+                    ExamRepo -> DB: Insert ExamSupervisor
+                    DB --> ExamRepo: Inserted
+                    ExamRepo --> Service: Inserted
+                    Service -> DB: SaveChanges
+                    DB --> Service: Saved
+                    Service -> DB: CommitTransaction
+                    DB --> Service: Committed
+                    Service -> Subject: Notify(exam, userId)
+                    Subject -> Observer: OnExamAdded(exam, userId)
+                    Observer -> Log: WriteActivity(AddUserLogVM)
+                    Log --> Observer: Logged
+                    Observer --> Subject: Done
+                    Subject --> Service: Notified
+                    Service --> Controller: ""
+                    deactivate Service
+                    Controller --> Client: 200 OK { success: true, message }
+                    deactivate Controller
+                end alt
+            end alt
+        end alt
+    end alt
+    alt Exception
+        Service -> DB: RollbackTransaction
+        DB --> Service: Rolled back
+        Service --> Controller: "Error adding exam: ..."
+        deactivate Service
+        Controller --> Client: 400 BadRequest { success: false, message }
+        deactivate Controller
+    end alt
+end alt
+
+@enduml 

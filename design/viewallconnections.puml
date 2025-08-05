@@ -1,0 +1,189 @@
+@startuml
+' Class Diagram for View All Connections (Exam Monitor Detail) Feature
+
+title View All Connections (Exam Monitor Detail) Class Diagram
+
+hide empty members
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam defaultFontSize 14
+skinparam defaultFontName Arial
+skinparam classFontSize 12
+skinparam classFontName Arial
+skinparam noteFontSize 11
+skinparam noteFontName Arial
+
+' Increase spacing and sizing
+skinparam class {
+    BackgroundColor LightBlue
+    BorderColor DarkBlue
+    ArrowColor DarkBlue
+    FontSize 12
+}
+
+skinparam package {
+    BackgroundColor LightYellow
+    BorderColor DarkOrange
+    FontSize 14
+    FontStyle bold
+}
+
+skinparam interface {
+    BackgroundColor LightGreen
+    BorderColor DarkGreen
+    FontSize 12
+}
+
+skinparam enum {
+    BackgroundColor LightCyan
+    BorderColor DarkCyan
+    FontSize 12
+}
+
+package "Controllers" {
+    class MonitoringController <<Controller>> {
+        - _monitoringService: IMonitoringService
+        + GetExamMonitorDetail(search: MonitorExamDetailSearchVM): Task<IActionResult>
+    }
+}
+
+package "Services" {
+    interface IMonitoringService <<Interface>> {
+        + GetExamMonitorDetail(search: MonitorExamDetailSearchVM, usertoken: string): Task<(string, SearchResult?)>
+    }
+    class MonitoringService <<Service>> {
+        - _context: DbContext
+        + GetExamMonitorDetail(search: MonitorExamDetailSearchVM, usertoken: string): Task<(string, SearchResult?)>
+    }
+}
+
+package "Models" {
+    class MonitorExamDetailSearchVM <<DTO>> {
+        + ExamId: string?
+        + Status: StudentExamStatus?
+        + PageSize: int
+        + CurrentPage: int
+        + TextSearch: string
+    }
+    class SearchRequestVM <<DTO>> {
+        + PageSize: int
+        + CurrentPage: int
+        + TextSearch: string
+    }
+    class MonitorExamDetailVM <<DTO>> {
+        + StudentExamId: string
+        + ExamId: string
+        + SubjectName: string
+        + Title: string
+        + Duration: int
+        + UserId: string
+        + FullName: string
+        + UserCode: string
+        + Email: string
+        + IpAddress: string
+        + BrowserInfo: string
+        + StartTime: DateTime
+        + SubmitTime: DateTime?
+        + Status: int
+        + TotalQuestions: int
+        + AnsweredQuestions: int
+        + Score: decimal?
+    }
+    class SearchResult <<DTO>> {
+        + Result: object?
+        + TotalPage: int
+        + PageSize: int
+        + CurrentPage: int
+        + Total: int
+    }
+}
+
+package "Entities" {
+    class StudentExam {
+        + StudentExamId: string
+        + ExamId: string
+        + StudentId: string
+        + IpAddress: string
+        + BrowserInfo: string
+        + StartTime: DateTime?
+        + SubmitTime: DateTime?
+        + Status: int?
+        + Score: decimal?
+        + User: User
+        + Exam: Exam
+    }
+    class User {
+        + UserId: string
+        + FullName: string
+        + UserCode: string
+        + Email: string
+        + UserRoles: List<UserRole>
+    }
+    class UserRole {
+        + UserId: string
+        + RoleId: int
+    }
+    class Exam {
+        + ExamId: string
+        + Title: string
+        + Duration: int
+        + TotalQuestions: int
+        + Room: Room
+    }
+    class Room {
+        + RoomId: string
+        + Subject: Subject
+    }
+    class Subject {
+        + SubjectId: string
+        + SubjectName: string
+    }
+    class ExamSupervisor {
+        + ExamId: string
+        + SupervisorId: string
+        + CreatedBy: string
+    }
+    class StudentAnswer {
+        + StudentExamId: string
+        + UserAnswer: string
+    }
+}
+
+package "Enums" {
+    enum RoleEnum {
+        Admin
+    }
+    enum StudentExamStatus {
+        NotStarted
+        InProgress
+        Submitted
+        Failed
+        Passed
+    }
+}
+
+' Relationships
+MonitoringController ..> IMonitoringService : <<uses>>
+IMonitoringService <|.. MonitoringService
+MonitoringController ..> MonitorExamDetailSearchVM : <<uses>>
+MonitoringService ..> StudentExam : <<uses>>
+MonitoringService ..> User : <<uses>>
+MonitoringService ..> UserRole : <<uses>>
+MonitoringService ..> Exam : <<uses>>
+MonitoringService ..> ExamSupervisor : <<uses>>
+MonitoringService ..> StudentAnswer : <<uses>>
+MonitoringService ..> MonitorExamDetailVM : <<maps to>>
+MonitorExamDetailSearchVM --|> SearchRequestVM
+StudentExam o-- User : <<has>>
+StudentExam o-- Exam : <<has>>
+User o-- UserRole : <<has>>
+Exam o-- Room : <<has>>
+Room o-- Subject : <<has>>
+ExamSupervisor o-- Exam : <<for>>
+StudentAnswer o-- StudentExam : <<for>>
+UserRole ..> RoleEnum : <<uses>>
+StudentExam ..> StudentExamStatus : <<uses>>
+MonitorExamDetailSearchVM ..> StudentExamStatus : <<uses>>
+SearchResult o-- MonitorExamDetailVM : <<has>>
+
+@enduml 

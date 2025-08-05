@@ -1,0 +1,64 @@
+@startuml
+
+title Get Supervisors Sequence Diagram
+
+actor "User" as Client
+boundary "c:ExamSupervisorController" as Controller
+control "s:ExamSupervisorService" as Service
+database "Database" as DB
+
+== View Exam Supervisors ==
+
+Client -> Controller: GET /get-supervisors (SearchRequestVM)
+activate Controller
+
+alt User not authenticated
+    Controller -> Controller: Log unauthorized access attempt
+    Controller --> Client: 401 Unauthorized { success: false, message: "User not authenticated." }
+    deactivate Controller
+else User authenticated
+    Controller -> Service: GetSupervisors(search)
+    activate Service
+
+    Service -> DB: Check user role and permissions (UserId, RoleId)
+    activate DB
+    alt User is not allowed
+        DB --> Service: Not found or invalid role
+        deactivate DB
+        Service -> Service: Log authorization failure
+        Service --> Controller: ("You do not have permission to view supervisors.", null)
+        deactivate Service
+        Controller --> Client: 403 Forbidden { success: false, message }
+        deactivate Controller
+    else User is allowed
+        DB --> Service: User role confirmed
+        deactivate DB
+
+        Service -> DB: Query Users (include UserRoles, RoomUsers, Room, Subject, filter role != Student, status=Active)
+        activate DB
+        DB --> Service: IQueryable<User>
+        deactivate DB
+
+        Service -> Service: Apply filters (TextSearch)
+        Service -> Service: Count total, calculate totalPage
+        Service -> DB: Get paged users
+        activate DB
+        DB --> Service: List<User>
+        deactivate DB
+
+        alt No users found
+            Service --> Controller: ("No users found.", null)
+            deactivate Service
+            Controller --> Client: 400 BadRequest { success: false, message }
+            deactivate Controller
+        else Users found
+            Service -> Service: Wrap in SearchResult (Result, TotalPage, PageSize, CurrentPage, Total)
+            Service --> Controller: ("", SearchResult)
+            deactivate Service
+            Controller --> Client: 200 OK { success: true, message, data }
+            deactivate Controller
+        end alt
+    end alt
+end alt
+
+@enduml 

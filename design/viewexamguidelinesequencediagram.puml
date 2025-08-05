@@ -1,0 +1,57 @@
+@startuml
+
+title View Exam Guideline Sequence Diagram
+
+actor "User" as Client
+
+boundary "c:StudentExamController" as Controller
+control "s:StudentExamService" as Service
+database "Database" as DB
+
+== View Exam Guideline ==
+
+Client -> Controller: GET /exam-guideline (ExamId)
+activate Controller
+
+alt User not authenticated
+    Controller -> Controller: Log unauthorized access attempt
+    Controller --> Client: 401 Unauthorized { message: "User not authenticated" }
+    deactivate Controller
+else User authenticated
+    Controller -> Service: GetExamGuideline(ExamId, usertoken)
+    activate Service
+
+    Service -> DB: Check user role and permissions (UserId, RoleId)
+    activate DB
+    alt User is not student
+        DB --> Service: Not found or invalid role
+        deactivate DB
+        Service -> Service: Log authorization failure
+        Service --> Controller: ("You do not have permission to access student exams.", null)
+        deactivate Service
+        Controller --> Client: 403 Forbidden { success: false, message }
+        deactivate Controller
+    else User is student
+        DB --> Service: User role confirmed
+        deactivate DB
+
+        Service -> DB: Query ExamGuideline Where ExamId = ExamId
+        activate DB
+        DB --> Service: Return ExamGuideline
+        deactivate DB
+
+        alt ExamGuideline not found
+            Service --> Controller: ("Exam guideline not found.", null)
+            deactivate Service
+            Controller --> Client: 400 Bad Request { success: false, message }
+        else
+            Service --> Controller: ("", data)
+            deactivate Service
+            Controller --> Client: 200 OK { success: true, message, data }
+        end
+    end
+end
+
+deactivate Controller
+
+@enduml 

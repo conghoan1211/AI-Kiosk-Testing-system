@@ -1,0 +1,164 @@
+@startuml
+' Class Diagram for View List Exam Feature
+
+title View List Exam Class Diagram
+
+hide empty members
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam defaultFontSize 14
+skinparam defaultFontName Arial
+skinparam classFontSize 12
+skinparam classFontName Arial
+skinparam noteFontSize 11
+skinparam noteFontName Arial
+
+' Increase spacing and sizing
+skinparam class {
+    BackgroundColor LightBlue
+    BorderColor DarkBlue
+    ArrowColor DarkBlue
+    FontSize 12
+}
+
+skinparam package {
+    BackgroundColor LightYellow
+    BorderColor DarkOrange
+    FontSize 14
+    FontStyle bold
+}
+
+skinparam interface {
+    BackgroundColor LightGreen
+    BorderColor DarkGreen
+    FontSize 12
+}
+
+skinparam enum {
+    BackgroundColor LightCyan
+    BorderColor DarkCyan
+    FontSize 12
+}
+
+package "Controllers" {
+    class ExamController <<Controller>> {
+        - _examService: IExamService
+        + GetExamList(request: ExamListRequest): Task<IActionResult>
+    }
+}
+
+package "Services" {
+    interface IExamService <<Interface>> {
+        + GetExamListAsync(request: ExamListRequest, userId: string): Task<(bool, string, SearchResult?)>
+    }
+    class ExamService <<Service>> {
+        - _context: DbContext
+        + GetExamListAsync(request: ExamListRequest, userId: string): Task<(bool, string, SearchResult?)>
+    }
+}
+
+package "Models" {
+    class ExamListRequest <<DTO>> {
+        + Status: int?
+        + IsMyQuestion: bool?
+        + PageSize: int
+        + CurrentPage: int
+        + TextSearch: string
+    }
+    class SearchRequestVM <<DTO>> {
+        + PageSize: int
+        + CurrentPage: int
+        + TextSearch: string
+    }
+    class ExamListVM <<DTO>> {
+        + ExamId: string
+        + Title: string
+        + RoomName: string
+        + TotalQuestions: int
+        + TotalPoints: decimal
+        + Duration: int
+        + StartTime: string
+        + EndTime: string
+        + CreatedBy: string
+        + Status: string
+        + IsShowResult: bool
+        + IsShowCorrectAnswer: bool
+        + ExamType: string
+        + GuideLines: string
+        + LiveStatus: int
+    }
+    class SearchResult <<DTO>> {
+        + Result: object?
+        + TotalPage: int
+        + PageSize: int
+        + CurrentPage: int
+        + Total: int
+    }
+}
+
+package "Entities" {
+    class Exam {
+        + ExamId: string
+        + Title: string
+        + RoomId: string
+        + TotalQuestions: int
+        + TotalPoints: decimal
+        + Duration: int
+        + StartTime: DateTime
+        + EndTime: DateTime
+        + Status: int
+        + IsShowResult: bool
+        + IsShowCorrectAnswer: bool
+        + ExamType: int
+        + GuildeLines: string
+        + CreatedAt: DateTime
+        + CreateUser: string
+        + LiveStatus: int
+        + Room: Room
+        + Creator: User
+    }
+    class Room {
+        + RoomId: string
+        + RoomCode: string
+    }
+    class User {
+        + UserId: string
+        + FullName: string
+    }
+}
+
+package "Enums" {
+    enum RoleEnum {
+        Lecture
+        Admin
+    }
+    enum ExamStatus {
+        Draft
+        Published
+        Archived
+    }
+    enum QuestionTypeChoose {
+        Essay
+        MultipleChoice
+        TrueFalse
+        FillInTheBlank
+    }
+}
+
+' Relationships
+ExamController ..> IExamService : <<uses>>
+IExamService <|.. ExamService
+ExamController ..> ExamListRequest : <<uses>>
+ExamService ..> Exam : <<uses>>
+ExamService ..> Room : <<uses>>
+ExamService ..> User : <<uses>>
+ExamService ..> ExamListVM : <<maps to>>
+ExamListRequest --|> SearchRequestVM
+Exam o-- Room : <<has>>
+Exam o-- User : <<has>>
+Exam ..> ExamStatus : <<uses>>
+Exam ..> QuestionTypeChoose : <<uses>>
+User ..> RoleEnum : <<uses>>
+SearchResult o-- ExamListVM : <<has>>
+
+@enduml 

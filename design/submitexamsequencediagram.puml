@@ -1,0 +1,104 @@
+@startuml
+
+title Submit Exam Sequence Diagram
+
+actor "User" as Client
+
+boundary "c:StudentExamController" as Controller
+control "s:StudentExamService" as Service
+database "Database" as DB
+
+== Submit Exam ==
+
+Client -> Controller: POST /submit-exam (SubmitExamRequest)
+activate Controller
+
+alt User not authenticated
+    Controller -> Controller: Log unauthorized access attempt
+    Controller --> Client: 401 Unauthorized { message: "User not authenticated" }
+    deactivate Controller
+else User authenticated
+    Controller -> Service: SubmitExam(request, usertoken, context)
+    activate Service
+
+    Service -> DB: Check user role and permissions (UserId, RoleId)
+    activate DB
+    alt User is not student
+        DB --> Service: Not found or invalid role
+        deactivate DB
+        Service -> Service: Log authorization failure
+        Service --> Controller: ("You do not have permission to access student exams.", null)
+        deactivate Service
+        Controller --> Client: 403 Forbidden { success: false, message }
+        deactivate Controller
+    else User is student
+        DB --> Service: User role confirmed
+        deactivate DB
+
+        Service -> DB: Find StudentExam (ExamId, StudentExamId, StudentId, Status)
+        activate DB
+        DB --> Service: Return StudentExam
+        deactivate DB
+
+        alt StudentExam not found or already submitted
+            Service --> Controller: "You have not started this exam or it has already been submitted."
+            deactivate Service
+            Controller --> Client: 400 BadRequest { success: false, message }
+            deactivate Controller
+        else StudentExam found and in progress
+            Service -> DB: Get existing StudentAnswers
+            activate DB
+            DB --> Service: Return StudentAnswers
+            deactivate DB
+
+            loop For each answer in request.Answers
+                alt Answer exists
+                    Service -> DB: Update StudentAnswer
+                else
+                    Service -> DB: Add new StudentAnswer
+                end
+            end loop
+
+            Service -> DB: Save StudentAnswers
+            activate DB
+            DB --> Service: Saved
+            deactivate DB
+
+            alt Exam is not Essay
+                Service -> DB: Get all StudentAnswers for StudentExam
+                activate DB
+                DB --> Service: Return all StudentAnswers
+                deactivate DB
+
+                Service -> DB: Get Questions for those answers
+                activate DB
+                DB --> Service: Return Questions
+                deactivate DB
+
+                loop For each answer
+                    Service -> Service: Check correct, calculate score
+                    Service -> DB: Update StudentAnswer (IsCorrect, PointsEarned)
+                end loop
+
+                Service -> DB: Save updated StudentAnswers
+                activate DB
+                DB --> Service: Saved
+                deactivate DB
+            end alt
+
+            Service -> Service: Update StudentExam (Status, Score, SubmitTime, etc.)
+            Service -> DB: Save StudentExam
+            activate DB
+            DB --> Service: Saved
+            deactivate DB
+
+            Service -> Service: Commit transaction
+            Service --> Controller: Submission success
+            deactivate Service
+            Controller --> Client: 200 OK { success: true, message }
+            deactivate Controller
+        end alt
+    end
+end
+
+@enduml

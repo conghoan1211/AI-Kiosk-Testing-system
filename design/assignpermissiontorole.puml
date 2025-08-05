@@ -1,0 +1,121 @@
+@startuml
+' Class Diagram for Assign Permission to Role Feature
+
+title Assign Permission to Role Class Diagram
+
+hide empty members
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam defaultFontSize 14
+skinparam defaultFontName Arial
+skinparam classFontSize 12
+skinparam classFontName Arial
+skinparam noteFontSize 11
+skinparam noteFontName Arial
+
+skinparam class {
+    BackgroundColor LightBlue
+    BorderColor DarkBlue
+    ArrowColor DarkBlue
+    FontSize 12
+}
+
+skinparam package {
+    BackgroundColor LightYellow
+    BorderColor DarkOrange
+    FontSize 14
+    FontStyle bold
+}
+
+skinparam interface {
+    BackgroundColor LightGreen
+    BorderColor DarkGreen
+    FontSize 12
+}
+
+skinparam enum {
+    BackgroundColor LightCyan
+    BorderColor DarkCyan
+    FontSize 12
+}
+
+package "Controllers" {
+    class AuthorizeController <<Controller>> {
+        - _authorizeService: IAuthorizeService
+        + AddPermissionsToRole(rolePermission: AddPermissionToRoleVM): Task<IActionResult>
+    }
+}
+
+package "Services" {
+    interface IAuthorizeService <<Interface>> {
+        + AddPermissionsToRole(rolePermission: AddPermissionToRoleVM, usertoken: string): Task<string>
+    }
+    class AuthorizeService <<Service>> {
+        - _context: DbContext
+        - _dataCached: IDataCached
+        - _log: ILog
+        + AddPermissionsToRole(rolePermission: AddPermissionToRoleVM, usertoken: string): Task<string>
+    }
+    interface IDataCached <<Interface>> {
+        + ClearCache(): Task
+    }
+    interface ILog <<Interface>> {
+        + WriteActivity(log: AddUserLogVM): Task<string>
+    }
+}
+
+package "Models & DTOs" {
+    class AddPermissionToRoleVM <<DTO>> {
+        + RoleId: int
+        + Permissions: List<string>
+    }
+    class AddUserLogVM <<DTO>> {
+        + ActionType: string
+        + Description: string
+        + UserId: string
+        + Metadata: string
+        + ObjectId: string
+        + Status: int
+    }
+}
+
+package "Entities" {
+    class Role {
+        + Id: int
+        + Name: string
+        + RolePermissions: List<RolePermission>
+    }
+    class RolePermission {
+        + RoleId: int
+        + PermissionId: string
+    }
+    class Permission {
+        + Id: string
+        + Name: string
+    }
+}
+
+package "Enums" {
+    enum LogStatus {
+        Success
+        Failed
+    }
+}
+
+' Relationships
+AuthorizeController ..> IAuthorizeService : <<uses>>
+AuthorizeController ..> AddPermissionToRoleVM : <<uses>>
+IAuthorizeService <|.. AuthorizeService
+AuthorizeService ..> Role : <<queries>>
+AuthorizeService ..> RolePermission : <<queries/add/remove>>
+AuthorizeService ..> Permission : <<queries>>
+AuthorizeService ..> IDataCached : <<uses>>
+AuthorizeService ..> ILog : <<uses>>
+AuthorizeService ..> AddUserLogVM : <<logs>>
+AddPermissionToRoleVM o-- Role : <<for>>
+AddPermissionToRoleVM o-- Permission : <<for>>
+Role o-- RolePermission : has
+RolePermission o-- Permission : has
+AddUserLogVM ..> LogStatus : <<uses>>
+
+@enduml 

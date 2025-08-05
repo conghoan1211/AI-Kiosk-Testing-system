@@ -1,0 +1,131 @@
+@startuml
+' Automatically generated based on the provided C# code.
+' This diagram reflects the ViewLiveExam system architecture.
+
+title ViewLiveExam System Architecture
+
+hide empty members
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam defaultFontSize 14
+skinparam defaultFontName Arial
+skinparam classFontSize 12
+skinparam classFontName Arial
+skinparam noteFontSize 11
+skinparam noteFontName Arial
+
+' Increase spacing and sizing
+skinparam class {
+    BackgroundColor LightBlue
+    BorderColor DarkBlue
+    ArrowColor DarkBlue
+    FontSize 12
+}
+
+skinparam package {
+    BackgroundColor LightYellow
+    BorderColor DarkOrange
+    FontSize 14
+    FontStyle bold
+}
+
+skinparam interface {
+    BackgroundColor LightGreen
+    BorderColor DarkGreen
+    FontSize 12
+}
+
+skinparam enum {
+    BackgroundColor LightCyan
+    BorderColor DarkCyan
+    FontSize 12
+}
+
+' Increase diagram size
+skinparam maxMessageSize 150
+skinparam maxClassSize 200
+skinparam maxPackageSize 300
+
+package "Controllers" {
+    class StudentExamController <<Controller>> {
+        - _iService: IStudentExamService
+        + GetListExams(): Task<IActionResult>
+    }
+}
+
+package "Services" {
+    interface IStudentExamService <<Interface>> {
+        + {abstract} GetList(usertoken: string): Task<(string, object?)>
+    }
+    class StudentExamService <<Service>> {
+        - _context: DbContext
+        + GetList(usertoken: string): Task<(string, object?)>
+    }
+}
+
+package "Entities" {
+    class Exam <<Entity>> {
+        + ExamId: int
+        + Title: string
+        + StartTime: DateTime
+        + EndTime: DateTime
+        + Duration: int
+        + Status: int
+        + Room: Room
+    }
+    class Room <<Entity>> {
+        + RoomId: int
+        + RoomUsers: List<RoomUser>
+    }
+    class RoomUser <<Entity>> {
+        + UserId: string
+        + Status: int
+    }
+    class StudentExam <<Entity>> {
+        + ExamId: int
+        + StudentId: string
+        + Status: int
+        + SubmitTime: DateTime
+    }
+}
+
+package "Models & DTOs" {
+    class UserToken <<DTO>> {
+        + UserID: string
+    }
+    enum ExamStatus {
+        Published
+    }
+    enum ActiveStatus {
+        Active
+    }
+    enum StudentExamStatus {
+        NotStarted
+        InProgress
+        Submitted
+    }
+}
+
+package "Utilities" {
+    class ExamUtils <<Utility>> {
+        + {static} CalculateStatus(start: DateTime, end: DateTime, now: DateTime): string
+    }
+}
+
+' Relationships
+StudentExamController ..> IStudentExamService : <<uses>>
+StudentExamController ..> UserToken : <<uses>>
+
+StudentExamService .up.|> IStudentExamService
+StudentExamService ..> Exam : <<uses>>
+StudentExamService ..> ExamUtils : <<uses>>
+StudentExamService ..> UserToken : <<uses>>
+
+Exam o-- Room : <<has>>
+Room o-- RoomUser : <<has>>
+StudentExam ..> StudentExamStatus : <<uses>>
+Exam ..> ExamStatus : <<uses>>
+RoomUser ..> ActiveStatus : <<uses>>
+ExamUtils ..> StudentExamStatus : <<returns>>
+
+@enduml

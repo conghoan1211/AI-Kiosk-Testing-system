@@ -1,0 +1,169 @@
+@startuml
+' Class Diagram for View List Question Feature
+
+title View List Question Class Diagram
+
+hide empty members
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam defaultFontSize 14
+skinparam defaultFontName Arial
+skinparam classFontSize 12
+skinparam classFontName Arial
+skinparam noteFontSize 11
+skinparam noteFontName Arial
+
+' Increase spacing and sizing
+skinparam class {
+    BackgroundColor LightBlue
+    BorderColor DarkBlue
+    ArrowColor DarkBlue
+    FontSize 12
+}
+
+skinparam package {
+    BackgroundColor LightYellow
+    BorderColor DarkOrange
+    FontSize 14
+    FontStyle bold
+}
+
+skinparam interface {
+    BackgroundColor LightGreen
+    BorderColor DarkGreen
+    FontSize 12
+}
+
+skinparam enum {
+    BackgroundColor LightCyan
+    BorderColor DarkCyan
+    FontSize 12
+}
+
+package "Controllers" {
+    class QuestionController <<Controller>> {
+        - _questionService: IQuestionService
+        + GetListQuestion(request: QuestionRequestVM): Task<IActionResult>
+    }
+}
+
+package "Services" {
+    interface IQuestionService <<Interface>> {
+        + GetListQuestionAsync(request: QuestionRequestVM, userId: string): Task<(bool, string, QuestionListResponse)>
+    }
+    class QuestionService <<Service>> {
+        - _context: DbContext
+        + GetListQuestionAsync(request: QuestionRequestVM, userId: string): Task<(bool, string, QuestionListResponse)>
+    }
+}
+
+package "Models" {
+    class QuestionRequestVM <<DTO>> {
+        + Status: ActiveStatus?
+        + IsMyQuestion: bool?
+        + DifficultyLevel: DifficultyLevel?
+        + PageSize: int
+        + CurrentPage: int
+        + TextSearch: string
+    }
+    class SearchRequestVM <<DTO>> {
+        + PageSize: int
+        + CurrentPage: int
+        + TextSearch: string
+    }
+    class QuestionListResponse <<DTO>> {
+        + TotalQuestions: int
+        + Result: object?
+        + TotalPage: int
+        + PageSize: int
+        + CurrentPage: int
+        + Total: int
+    }
+    class SearchResult <<DTO>> {
+        + Result: object?
+        + TotalPage: int
+        + PageSize: int
+        + CurrentPage: int
+        + Total: int
+    }
+    class QuestionListVM <<DTO>> {
+        + QuestionId: string
+        + SubjectId: string
+        + SubjectName: string
+        + QuestionBankId: string
+        + QuestionBankName: string
+        + Content: string
+        + Type: int
+        + DifficultLevel: int
+        + Point: decimal
+        + Options: List<string>
+        + CorrectAnswer: string
+        + Explanation: string
+        + ObjectFile: string
+        + Status: int
+        + CreatorId: string
+    }
+}
+
+package "Entities" {
+    class Question {
+        + QuestionId: string
+        + SubjectId: string
+        + QuestionBankId: string
+        + Content: string
+        + Type: int
+        + DifficultLevel: int
+        + Point: decimal
+        + Options: string
+        + CorrectAnswer: string
+        + Explanation: string
+        + ObjectFile: string
+        + Status: int
+        + CreateUser: string
+        + CreatedAt: DateTime
+        + Subject: Subject
+        + QuestionBank: QuestionBank
+    }
+    class Subject {
+        + SubjectId: string
+        + SubjectName: string
+    }
+    class QuestionBank {
+        + QuestionBankId: string
+        + Title: string
+    }
+    class User {
+        + UserId: string
+    }
+}
+
+package "Enums" {
+    enum ActiveStatus {
+        Inactive
+        Active
+        Pending
+    }
+    enum DifficultyLevel {
+        Easy
+        Medium
+        Hard
+        VeryHard
+    }
+}
+
+' Relationships
+QuestionController ..> IQuestionService : <<uses>>
+IQuestionService <|.. QuestionService
+QuestionController ..> QuestionRequestVM : <<uses>>
+QuestionService ..> Question : <<uses>>
+QuestionService ..> QuestionListResponse : <<maps to>>
+QuestionService ..> QuestionListVM : <<maps to>>
+QuestionRequestVM --|> SearchRequestVM
+QuestionListResponse --|> SearchResult
+Question o-- Subject : <<has>>
+Question o-- QuestionBank : <<has>>
+Question ..> ActiveStatus : <<uses>>
+Question ..> DifficultyLevel : <<uses>>
+QuestionListVM --> Question : <<maps from>>
+
+@enduml 

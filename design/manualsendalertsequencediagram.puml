@@ -1,0 +1,64 @@
+@startuml
+
+title Manual Send Alert Sequence Diagram
+
+actor "User" as Client
+boundary "c:NotificationController" as Controller
+control "s:NotificationService" as Service
+database "Database" as DB
+control "NotifyHub" as Hub
+
+== Manual Send Alert ==
+
+Client -> Controller: POST /Create (NotificationCreateVM)
+activate Controller
+
+alt User not authenticated
+    Controller -> Controller: Log unauthorized access attempt
+    Controller --> Client: 401 Unauthorized { success: false, message: "User not authenticated." }
+    deactivate Controller
+else User authenticated
+    Controller -> Service: Create(notificationVM, usertoken)
+    activate Service
+
+    Service -> DB: Check user role and permissions (UserId, RoleId)
+    activate DB
+    alt User is not allowed
+        DB --> Service: Not found or invalid role
+        deactivate DB
+        Service -> Service: Log authorization failure
+        Service --> Controller: "You do not have permission to send notification."
+        deactivate Service
+        Controller --> Client: 403 Forbidden { success: false, message }
+        deactivate Controller
+    else User is allowed
+        DB --> Service: User role confirmed
+        deactivate DB
+
+        alt Notification data is null
+            Service --> Controller: "Notification data is null"
+            deactivate Service
+            Controller --> Client: 400 BadRequest { success: false, message }
+            deactivate Controller
+        else Valid data
+            Service -> DB: Add new Notification
+            activate DB
+            DB --> Service: Added
+            deactivate DB
+            Service -> DB: SaveChanges
+            activate DB
+            DB --> Service: Saved
+            deactivate DB
+            Service -> Hub: SendAsync(RECEIVE_NEW_NOTIFY, NotificationVM)
+            activate Hub
+            Hub --> Service: Sent
+            deactivate Hub
+            Service --> Controller: ""
+            deactivate Service
+            Controller --> Client: 200 OK { success: true, message }
+            deactivate Controller
+        end alt
+    end alt
+end alt
+
+@enduml 

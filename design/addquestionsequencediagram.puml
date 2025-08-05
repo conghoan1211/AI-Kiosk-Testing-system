@@ -1,0 +1,131 @@
+@startuml
+
+title Add Question Sequence Diagram
+
+actor "User" as Client
+boundary "c:QuestionController" as Controller
+control "s:QuestionService" as Service
+database "Database" as DB
+
+== Add Question ==
+
+Client -> Controller: POST /add (AddQuestionRequest)
+activate Controller
+
+alt Request is null
+    Controller --> Client: 400 BadRequest { message: "Invalid request body, required field(s) are missing." }
+    deactivate Controller
+else User not authenticated
+    Controller --> Client: 401 Unauthorized { message: "User not authenticated." }
+    deactivate Controller
+else Valid request & authenticated
+    Controller -> Service: AddQuestionAsync(request, userId)
+    activate Service
+
+    Service -> DB: Check user is lecturer (UserId, RoleId)
+    activate DB
+    alt User is not allowed
+        DB --> Service: Not found
+        deactivate DB
+        Service --> Controller: (false, "The user is not a lecturer and does not have permission to view exams.")
+        deactivate Service
+        Controller --> Client: 403 Forbidden { message }
+        deactivate Controller
+    else User is allowed
+        DB --> Service: Found
+        deactivate DB
+
+        Service -> DB: Get QuestionBank (QuestionBankId)
+        activate DB
+        alt Question bank not found
+            DB --> Service: Not found
+            deactivate DB
+            Service --> Controller: (false, "Question bank not found.")
+            deactivate Service
+            Controller --> Client: 400 BadRequest { message }
+            deactivate Controller
+        else Question bank found
+            DB --> Service: QuestionBank
+            deactivate DB
+
+            Service -> DB: Get Subject (SubjectId)
+            activate DB
+            alt Subject not found
+                DB --> Service: Not found
+                deactivate DB
+                Service --> Controller: (false, "Subject not found.")
+                deactivate Service
+                Controller --> Client: 400 BadRequest { message }
+                deactivate Controller
+            else Subject found
+                DB --> Service: Subject
+                deactivate DB
+
+                Service -> Service: Validate common fields (Content, Point, Type, DifficultLevel)
+                alt Invalid common fields
+                    Service --> Controller: (false, "Content and point must be provided. Point must be > 0 and <= 10.")
+                    deactivate Service
+                    Controller --> Client: 400 BadRequest { message }
+                    deactivate Controller
+                else Invalid question type
+                    Service --> Controller: (false, "Invalid question type. (0: Essay, 1: MultipleChoice, 2: TrueFalse, 3: FillInTheBlank)")
+                    deactivate Service
+                    Controller --> Client: 400 BadRequest { message }
+                    deactivate Controller
+                else Invalid difficulty
+                    Service --> Controller: (false, "Difficulty must be a value between 1 and 4. (1: Easy, 2: Medium, 3: Hard, 4: VeryHard)")
+                    deactivate Service
+                    Controller --> Client: 400 BadRequest { message }
+                    deactivate Controller
+                else Type-specific validation
+                    alt Essay missing answer
+                        Service --> Controller: (false, "Essay must have a sample correct answer.")
+                        deactivate Service
+                        Controller --> Client: 400 BadRequest { message }
+                        deactivate Controller
+                    else MultipleChoice invalid options
+                        Service --> Controller: (false, "Multiple choice must have at least 2 options.")
+                        deactivate Service
+                        Controller --> Client: 400 BadRequest { message }
+                        deactivate Controller
+                    else MultipleChoice missing correct answer
+                        Service --> Controller: (false, "Correct answer is required.")
+                        deactivate Service
+                        Controller --> Client: 400 BadRequest { message }
+                        deactivate Controller
+                    else MultipleChoice invalid correct answer
+                        Service --> Controller: (false, "Correct answer(s) [...] not found in options.")
+                        deactivate Service
+                        Controller --> Client: 400 BadRequest { message }
+                        deactivate Controller
+                    else TrueFalse invalid correct answer
+                        Service --> Controller: (false, "Correct answer must be one of the options (True, False, Not Given).")
+                        deactivate Service
+                        Controller --> Client: 400 BadRequest { message }
+                        deactivate Controller
+                    else FillInTheBlank missing answer
+                        Service --> Controller: (false, "Fill in the blank must have a correct answer.")
+                        deactivate Service
+                        Controller --> Client: 400 BadRequest { message }
+                        deactivate Controller
+                    else Valid
+                        Service -> DB: Add new Question
+                        activate DB
+                        DB --> Service: Added
+                        deactivate DB
+                        Service -> DB: SaveChanges
+                        activate DB
+                        DB --> Service: Saved
+                        deactivate DB
+                        Service --> Controller: (true, "Question has been created successfully.")
+                        deactivate Service
+                        Controller --> Client: 200 OK { message }
+                        deactivate Controller
+                    end alt
+                end alt
+            end alt
+        end alt
+    end alt
+end alt
+
+@enduml 
