@@ -12,7 +12,7 @@ import {
 import { Progress } from '@/components/ui/progress';
 import BaseUrl from '@/consts/baseUrl';
 import { DateTimeFormat } from '@/consts/dates';
-import { convertUTCToVietnamTime } from '@/helpers/common';
+import { convertUTCToVietnamTime, formatScore } from '@/helpers/common';
 import { showError, showSuccess } from '@/helpers/toast';
 import useFiltersHandler from '@/hooks/useFiltersHandler';
 import useToggleDialog from '@/hooks/useToggleDialog';
@@ -29,6 +29,7 @@ import {
   Activity,
   AlertTriangle,
   Ban,
+  BarChart,
   BookOpen,
   Calendar,
   CheckCircle,
@@ -53,10 +54,13 @@ import { useNavigate, useParams } from 'react-router-dom';
 import ExamHeader from '../components/ExamHeader';
 import DialogAssignMoreTime, { AssignMoreTimeValues } from '../dialogs/DialogAssignMoreTime';
 import DialogCreateViolation from '../dialogs/DialogCreateViolation';
+import { useTranslation } from 'react-i18next';
+import DialogStatistic from '../dialogs/DialogStatistic';
 
 const DetailExamSupervision = () => {
   //!State
-  const roleId = Number(httpService.getUserStorage()?.roleId) || 0;
+  const { t } = useTranslation('shared');
+  const roleId = Number(httpService.getUserStorage()?.roleId) ?? 0;
   const navigate = useNavigate();
   const { examId } = useParams();
   const [isOpenAssignMoreTime, toggleOpenAssignMoreTime, shouldRenderOpenAssignMoreTime] =
@@ -67,9 +71,13 @@ const DetailExamSupervision = () => {
   const handleToggleAssignMoreTime = useCallback(() => {
     toggleOpenAssignMoreTime();
   }, [toggleOpenAssignMoreTime]);
+  const [isReAssignLoading, setIsReAssignLoading] = useState(false);
+  const [isOpenViewStatistic, toggleOpenViewStatistic, shouldRenderViewStatistic] =
+    useToggleDialog();
+  const [studentExamId, setStudentExamId] = useState<string | null>(null);
 
   const { filters, setFilters } = useFiltersHandler({
-    ExamId: examId || '',
+    ExamId: examId ?? '',
     PageSize: 10,
     CurrentPage: 1,
     TextSearch: '',
@@ -80,44 +88,45 @@ const DetailExamSupervision = () => {
     data: dataMonitorDetail,
     isLoading: isLoadingMonitorDetail,
     refetch,
-  } = useGetListMonitorDetail(filters, examId || '', {
+  } = useGetListMonitorDetail(filters, examId ?? '', {
     isTrigger: true,
   });
 
   const dataStudents = useMemo(() => {
-    return dataMonitorDetail?.students || [];
+    return dataMonitorDetail?.students ?? [];
   }, [dataMonitorDetail]);
 
   const statItems = useMemo(() => {
-    const totalConnections = dataStudents?.length || 0;
+    const totalConnections = dataStudents?.length ?? 0;
     const activeConnections =
-      dataStudents?.filter((item: any) => item.studentExamStatus === 1).length || 0;
+      dataStudents?.filter((item: any) => item.studentExamStatus === 1).length ?? 0;
     const studentsParticipating =
-      dataStudents?.filter((item: any) => item.studentExamStatus === 1).length || 0;
+      dataStudents?.filter((item: any) => item.studentExamStatus === 1).length ?? 0;
     const completedStudents =
-      dataStudents?.filter((item: any) => item.studentExamStatus === 2).length || 0;
+      dataStudents?.filter((item: any) => item.studentExamStatus === 2).length ?? 0;
     const notStartedStudents =
-      dataStudents?.filter((item: any) => item.studentExamStatus === 0).length || 0;
+      dataStudents?.filter((item: any) => item.studentExamStatus === 0).length ?? 0;
 
     // Advanced calculations
     const totalWarnings =
-      dataStudents?.reduce((sum: number, student: any) => sum + (student.warningCount || 0), 0) ||
+      dataStudents?.reduce((sum: number, student: any) => sum + (student.warningCount ?? 0), 0) ??
       0;
     const totalViolations =
-      dataStudents?.reduce((sum: number, student: any) => sum + (student.violinCount || 0), 0) || 0;
-    const studentsWithScores = dataStudents?.filter((item: any) => item.score !== null) || [];
+      dataStudents?.reduce((sum: number, student: any) => sum + (student.violationCount ?? 0), 0) ??
+      0;
+    const studentsWithScores = dataStudents?.filter((item: any) => item.score !== null) ?? [];
     const averageScore =
       studentsWithScores.length > 0
         ? studentsWithScores.reduce((sum: number, student: any) => sum + student.score, 0) /
           studentsWithScores.length
         : 0;
 
-    const totalQuestions = dataStudents?.[0]?.totalQuestions || 0;
+    const totalQuestions = dataStudents?.[0]?.totalQuestions ?? 0;
     const totalAnsweredQuestions =
       dataStudents?.reduce(
-        (sum: number, student: any) => sum + (student.answeredQuestions || 0),
+        (sum: number, student: any) => sum + (student.answeredQuestions ?? 0),
         0,
-      ) || 0;
+      ) ?? 0;
     const averageProgress =
       totalConnections > 0 && totalQuestions > 0
         ? (totalAnsweredQuestions / (totalConnections * totalQuestions)) * 100
@@ -130,7 +139,7 @@ const DetailExamSupervision = () => {
 
     return [
       {
-        title: 'Tổng học sinh',
+        title: t('ExamSupervision.TotalStudents'),
         value: totalConnections,
         subtitle: `/${dataMonitorDetail?.maxCapacity} sức chứa`,
         icon: <Users className="h-6 w-6 text-emerald-600" />,
@@ -143,74 +152,74 @@ const DetailExamSupervision = () => {
             : 'normal',
       },
       {
-        title: 'Đang làm bài',
+        title: t('ExamSupervision.OnGoing'),
         value: activeConnections,
-        subtitle: `${studentsParticipating} đang tham gia`,
+        subtitle: `${studentsParticipating} ${t('ExamSupervision.StudentsParticipating')}`,
         icon: <Activity className="h-6 w-6 text-blue-600" />,
         bgColor: 'bg-gradient-to-br from-blue-50 to-blue-100',
         progress: totalConnections > 0 ? (activeConnections / totalConnections) * 100 : 0,
         trend: 'normal',
       },
       {
-        title: 'Đã hoàn thành',
+        title: t('ExamSupervision.Completed'),
         value: completedStudents,
-        subtitle: `${Math.round((completedStudents / totalConnections) * 100)}% hoàn thành`,
+        subtitle: `${Math.round((completedStudents / totalConnections) * 100)}% ${t('ExamSupervision.CompletedSubtitle')}`,
         icon: <CheckCircle className="h-6 w-6 text-green-600" />,
         bgColor: 'bg-gradient-to-br from-green-50 to-green-100',
         progress: totalConnections > 0 ? (completedStudents / totalConnections) * 100 : 0,
         trend: 'positive',
       },
       {
-        title: 'Chưa bắt đầu',
+        title: t('ExamSupervision.NoNotStartedExams'),
         value: notStartedStudents,
-        subtitle: `${Math.round((notStartedStudents / totalConnections) * 100)}% chưa vào`,
+        subtitle: `${Math.round((notStartedStudents / totalConnections) * 100)}% ${t('ExamSupervision.NoNotStartedExams')}`,
         icon: <Clock className="h-6 w-6 text-orange-600" />,
         bgColor: 'bg-gradient-to-br from-orange-50 to-orange-100',
         progress: totalConnections > 0 ? (notStartedStudents / totalConnections) * 100 : 0,
         trend: notStartedStudents > totalConnections * 0.3 ? 'warning' : 'normal',
       },
       {
-        title: 'Điểm trung bình',
+        title: t('ExamSupervision.AverageScore'),
         value: averageScore.toFixed(1),
-        subtitle: `${studentsWithScores.length} bài đã chấm`,
+        subtitle: `${studentsWithScores.length} ${t('ExamSupervision.ScoresGraded')}`,
         icon: <Trophy className="h-6 w-6 text-yellow-600" />,
         bgColor: 'bg-gradient-to-br from-yellow-50 to-yellow-100',
         progress: (averageScore / 10) * 100,
         trend: averageScore >= 7 ? 'positive' : averageScore >= 5 ? 'normal' : 'warning',
       },
       {
-        title: 'Tiến độ trung bình',
-        value: `${Math.round(averageProgress)}%`,
-        subtitle: `${totalAnsweredQuestions}/${totalConnections * totalQuestions} câu`,
+        title: t('ExamSupervision.AverageProgress'),
+        value: `${Math.round(averageProgress) ?? 0}%`,
+        subtitle: `${totalAnsweredQuestions}/${totalConnections * totalQuestions} ${t('ExamSupervision.Questions')}`,
         icon: <TrendingUp className="h-6 w-6 text-purple-600" />,
         bgColor: 'bg-gradient-to-br from-purple-50 to-purple-100',
         progress: averageProgress,
         trend: averageProgress >= 70 ? 'positive' : 'normal',
       },
       {
-        title: 'Cảnh báo',
+        title: t('ExamSupervision.Alerts'),
         value: totalWarnings,
-        subtitle: `${dataStudents?.filter((s: any) => s.warningCount > 0).length} học sinh`,
+        subtitle: `${dataStudents?.filter((s: any) => s.warningCount > 0).length} ${t('ExamSupervision.Students')} ${t('ExamSupervision.AlertsSubtitle')}`,
         icon: <AlertTriangle className="h-6 w-6 text-amber-600" />,
         bgColor: 'bg-gradient-to-br from-amber-50 to-amber-100',
         progress: totalConnections > 0 ? (totalWarnings / (totalConnections * 3)) * 100 : 0,
         trend: totalWarnings > totalConnections * 0.5 ? 'warning' : 'normal',
       },
       {
-        title: 'Vi phạm',
+        title: t('ExamSupervision.Violations'),
         value: totalViolations,
-        subtitle: `${dataStudents?.filter((s: any) => s.violinCount > 0).length} học sinh`,
+        subtitle: `${dataStudents?.filter((s: any) => s.violinCount > 0).length} ${t('ExamSupervision.Students')}`,
         icon: <Shield className="h-6 w-6 text-red-600" />,
         bgColor: 'bg-gradient-to-br from-red-50 to-red-100',
         progress: totalConnections > 0 ? (totalViolations / totalConnections) * 100 : 0,
         trend: totalViolations > 0 ? 'danger' : 'positive',
       },
     ];
-  }, [dataStudents, dataMonitorDetail]);
+  }, [dataStudents, dataMonitorDetail, t]);
 
   const columns = [
     {
-      label: 'Thông tin người dùng',
+      label: t('ExamSupervision.StudentInfo'),
       accessor: 'userInfo',
       sortable: false,
       Cell: (row: Student) => (
@@ -223,7 +232,7 @@ const DetailExamSupervision = () => {
               className="max-w-[200px] truncate text-sm font-semibold text-gray-900 dark:text-gray-100"
               title={row.fullName}
             >
-              {row.fullName || 'N/A'}
+              {row.fullName ?? 'N/A'}
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -232,14 +241,14 @@ const DetailExamSupervision = () => {
               className="truncate text-sm font-medium text-gray-800 dark:text-gray-200"
               title={row.userCode}
             >
-              {row.userCode || 'N/A'}
+              {row.userCode ?? 'N/A'}
             </p>
           </div>
         </div>
       ),
     },
     {
-      label: 'Email',
+      label: t('ExamSupervision.Email'),
       accessor: 'email',
       sortable: false,
       Cell: (row: Student) => (
@@ -255,7 +264,7 @@ const DetailExamSupervision = () => {
       ),
     },
     {
-      label: 'Thông tin kết nối',
+      label: t('ExamSupervision.ConnectionInfo'),
       accessor: 'connectionInfo',
       sortable: false,
       Cell: (row: Student) => (
@@ -263,7 +272,7 @@ const DetailExamSupervision = () => {
           <div className="flex items-center gap-2">
             <Globe className="h-4 w-4 text-gray-500 dark:text-gray-400" color="green" />
             <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-              {row.ipAddress || 'N/A'}
+              {row.ipAddress ?? 'N/A'}
             </span>
           </div>
           <div className="flex max-w-[150px] items-center gap-2">
@@ -272,14 +281,14 @@ const DetailExamSupervision = () => {
               className="truncate text-xs text-gray-600 dark:text-gray-400"
               title={row.browserInfo}
             >
-              {row.browserInfo || 'N/A'}
+              {row.browserInfo ?? 'N/A'}
             </span>
           </div>
         </div>
       ),
     },
     {
-      label: 'Thời Gian',
+      label: t('ExamSupervision.Time'),
       accessor: 'startTime',
       sortable: false,
       Cell: (row: Student) => (
@@ -309,31 +318,31 @@ const DetailExamSupervision = () => {
       ),
     },
     {
-      label: 'Trạng Thái',
+      label: t('ExamSupervision.Status'),
       accessor: 'studentExamStatus',
       sortable: false,
       Cell: (row: Student) => {
         const statusConfig = {
           0: {
-            label: 'Chưa bắt đầu',
+            label: t('ExamSupervision.NotStarted'),
             variant: 'secondary' as const,
             icon: Clock,
             color: 'text-gray-600 dark:text-gray-400',
           },
           1: {
-            label: 'Đang làm bài',
+            label: t('ExamSupervision.InProgress'),
             variant: 'default' as const,
             icon: MessageSquare,
             color: 'text-blue-600 dark:text-blue-400',
           },
           2: {
-            label: 'Đã nộp bài',
+            label: t('ExamSupervision.Submitted'),
             variant: 'default' as const,
             icon: CheckCircle,
             color: 'text-green-600 dark:text-green-400',
           },
         };
-        const config = statusConfig[row.studentExamStatus as keyof typeof statusConfig] || {
+        const config = statusConfig[row.studentExamStatus as keyof typeof statusConfig] ?? {
           label: 'Không rõ',
           variant: 'destructive' as const,
           icon: XCircle,
@@ -349,7 +358,7 @@ const DetailExamSupervision = () => {
       },
     },
     {
-      label: 'Tiến Độ',
+      label: t('ExamSupervision.Progress'),
       accessor: 'totalQuestions',
       sortable: false,
       Cell: (row: Student) => {
@@ -369,7 +378,7 @@ const DetailExamSupervision = () => {
       },
     },
     {
-      label: 'Điểm Số',
+      label: t('ExamSupervision.Score'),
       accessor: 'score',
       sortable: false,
       Cell: (row: Student) => (
@@ -386,13 +395,13 @@ const DetailExamSupervision = () => {
                     : 'text-gray-400 dark:text-gray-500'
             }`}
           >
-            {row.score !== null ? `${row.score}/10` : 'Chưa có'}
+            {row.score !== null ? `${formatScore(row.score)}` : 'Chưa có'}
           </span>
         </div>
       ),
     },
     {
-      label: 'Cảnh Báo & Vi Phạm',
+      label: t('ExamSupervision.WarningAndViolation'),
       accessor: 'warningCount',
       sortable: false,
       Cell: (row: Student) => (
@@ -419,7 +428,7 @@ const DetailExamSupervision = () => {
       ),
     },
     {
-      label: 'Thao Tác',
+      label: t('ExamSupervision.Actions'),
       accessor: 'actions',
       width: 80,
       sortable: false,
@@ -432,7 +441,7 @@ const DetailExamSupervision = () => {
                 className="h-8 w-8 rounded-full p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
               >
                 <MoreHorizontal className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-                <span className="sr-only">Mở menu thao tác</span>
+                <span className="sr-only">{t('ExamSupervision.OpenMenuActions')}</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
@@ -445,12 +454,12 @@ const DetailExamSupervision = () => {
                   if (row) {
                     handleRowClick(row);
                   } else {
-                    showError('Không thể điều hướng: studentExamId không hợp lệ.');
+                    showError(t('ExamSupervision.CannotNavigate'));
                   }
                 }}
               >
                 <Eye className="h-4 w-4 text-blue-500 dark:text-blue-400" />
-                Xem chi tiết
+                {t('ExamSupervision.ViewDetails')}
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="flex cursor-pointer items-center gap-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700"
@@ -466,12 +475,12 @@ const DetailExamSupervision = () => {
                       }/${examId}/examLog/${row?.studentExamId}`,
                     );
                   } else {
-                    showError('Không thể điều hướng: studentExamId không hợp lệ.');
+                    showError(t('ExamSupervision.CannotNavigate'));
                   }
                 }}
               >
                 <Activity className="h-4 w-4 text-blue-500 dark:text-blue-400" />
-                Nhật ký hoạt động
+                {t('ExamSupervision.ActivityLog')}
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="flex cursor-pointer items-center gap-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700"
@@ -487,12 +496,12 @@ const DetailExamSupervision = () => {
                       }/${examId}/violation/${row?.studentExamId}`,
                     );
                   } else {
-                    showError('Không thể điều hướng: studentExamId không hợp lệ.');
+                    showError(t('ExamSupervision.CannotNavigate'));
                   }
                 }}
               >
                 <Ban className="mr-2 h-3.5 w-3.5 text-blue-500" />
-                <span>Lịch sử vi phạm</span>
+                <span>{t('ExamSupervision.ViolationHistory')}</span>
               </DropdownMenuItem>
               {row?.studentExamStatus === 1 && (
                 <>
@@ -504,52 +513,71 @@ const DetailExamSupervision = () => {
                         setRow(row);
                         toggleOpenAssignMoreTime();
                       } else {
-                        showError('Không thể mở dialog: studentExamId không hợp lệ.');
+                        showError(t('ExamSupervision.CannotNavigate'));
                       }
                     }}
                   >
                     <Plus className="h-4 w-4 text-blue-500 dark:text-blue-400" />
-                    Cấp thêm thời gian
+                    {t('ExamSupervision.GrantMoreTime')}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     className="flex cursor-pointer items-center gap-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700"
                     onClick={async () => {
                       try {
+                        setIsReAssignLoading(true);
                         await monitorService.finishStudentExam({
-                          examId: examId || '',
-                          studentExamId: row.studentExamId || '',
+                          examId: examId ?? '',
+                          studentExamId: row.studentExamId ?? '',
                         });
-                        showSuccess('Kết thúc bài thi thành công!');
+                        showSuccess(t('ExamSupervision.FinishExamSuccess'));
                         refetch();
                       } catch (error) {
-                        showError('Không thể kết thúc bài thi');
+                        showError(t('ExamSupervision.FinishExamError'));
+                      } finally {
+                        setIsReAssignLoading(false);
                       }
                     }}
                   >
                     <Pause className="h-4 w-4 text-red-500 dark:text-red-400" />
-                    Kết thúc bài thi
+                    {t('ExamSupervision.FinishExam')}
                   </DropdownMenuItem>
                 </>
               )}
               {row.studentExamStatus === 2 && (
-                <DropdownMenuItem
-                  className="flex cursor-pointer items-center gap-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700"
-                  onClick={async () => {
-                    try {
-                      await monitorService.reAssignExam({
-                        examId: examId || '',
-                        studentId: row.userId,
-                      });
-                      showSuccess('Đã cấp lại bài thi cho học sinh!');
-                      refetch();
-                    } catch (error) {
-                      showError('Lỗi khi cấp lại bài thi');
-                    }
-                  }}
-                >
-                  <BookOpen className="h-4 w-4 text-green-500 dark:text-green-400" />
-                  Cấp lại bài thi
-                </DropdownMenuItem>
+                <>
+                  <DropdownMenuItem
+                    className="flex cursor-pointer items-center gap-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700"
+                    onClick={async () => {
+                      try {
+                        setIsReAssignLoading(true);
+                        await monitorService.reAssignExam({
+                          examId: examId ?? '',
+                          studentId: row.userId,
+                        });
+                        showSuccess(t('ExamSupervision.ReAssignExamSuccess'));
+                        refetch();
+                      } catch (error) {
+                        showError(t('ExamSupervision.ReAssignExamError'));
+                      } finally {
+                        setIsReAssignLoading(false);
+                      }
+                    }}
+                  >
+                    <BookOpen className="h-4 w-4 text-green-500 dark:text-green-400" />
+                    {t('ExamSupervision.ReAssignExam')}
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem
+                    className="flex cursor-pointer items-center gap-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700"
+                    onClick={async () => {
+                      setStudentExamId(row.studentExamId ?? null);
+                      toggleOpenViewStatistic();
+                    }}
+                  >
+                    <BarChart className="h-4 w-4 text-green-500 dark:text-green-400" />
+                    {'View Statistics'}
+                  </DropdownMenuItem>
+                </>
               )}
             </DropdownMenuContent>
           </DropdownMenu>
@@ -559,13 +587,13 @@ const DetailExamSupervision = () => {
                 setRow(row);
                 toggleOpenCreateViolation();
               } else {
-                showError('Không thể mở dialog: studentExamId không hợp lệ.');
+                showError(t('ExamSupervision.CannotNavigate'));
               }
             }}
             variant="outline"
             className="border-red-500 hover:bg-red-50 hover:text-red-700"
           >
-            Vi phạm
+            {t('ExamSupervision.Violation')}
           </Button>
         </div>
       ),
@@ -606,24 +634,24 @@ const DetailExamSupervision = () => {
   const handleAssignMoreTime = useCallback(
     async (values: AssignMoreTimeValues) => {
       if (!row?.studentExamId) {
-        showError('Không thể cấp thêm thời gian: studentExamId không hợp lệ.');
+        showError(t('ExamSupervision.NoStudentExamId'));
         return;
       }
       try {
         const payload = {
           studentExamId: row.studentExamId,
-          extraMinutes: Number.parseInt(`${values.extraMinutes}`) || 0,
+          extraMinutes: Number.parseInt(`${values.extraMinutes}`) ?? 0,
         };
         await monitorService.assignMoreTime(payload);
         toggleOpenAssignMoreTime();
         setRow(null); // Clear row after submission
         refetch();
-        showSuccess('Cấp thêm thời gian thành công!');
+        showSuccess(t('ExamSupervision.AssignMoreTimeSuccess'));
       } catch (error) {
         showError(error);
       }
     },
-    [toggleOpenAssignMoreTime, refetch, row?.studentExamId],
+    [toggleOpenAssignMoreTime, refetch, row?.studentExamId, t],
   );
 
   const handleRowClick = useCallback(
@@ -639,10 +667,10 @@ const DetailExamSupervision = () => {
           }/${examId}/connection/${row?.studentExamId}`,
         );
       } else {
-        showError('Không thể điều hướng: Thiếu studentExamId hoặc examId.');
+        showError(t('ExamSupervision.NoStudentExamId'));
       }
     },
-    [navigate, examId, roleId],
+    [navigate, examId, roleId, t],
   );
 
   const handleSearch = useCallback(
@@ -650,7 +678,7 @@ const DetailExamSupervision = () => {
       setFilters((prev: any) => {
         const newParams = {
           ...prev,
-          TextSearch: values?.textSearch || '',
+          TextSearch: values?.textSearch ?? '',
           CurrentPage: 1,
         };
         return newParams;
@@ -661,77 +689,94 @@ const DetailExamSupervision = () => {
 
   //!Render
   return (
-    <PageWrapper name="Chi tiết giám sát thi">
-      <div className="space-y-6">
-        <ExamHeader
-          title="Tất cả kết nối"
-          subtitle="Theo dõi tất cả kết nối của học sinh"
-          className="border-b border-white/20 bg-gradient-to-r from-green-600 to-blue-700 px-6 py-6 shadow-lg"
-          icon={<Globe className="h-8 w-8 text-white" />}
-        />
-        <UserStats
-          statItems={statItems}
-          className="mt-2 grid-cols-1 md:grid-cols-2 lg:grid-cols-4"
-        />
-        <GenericFilters
-          className="md:grid-cols-3"
-          searchPlaceholder="Tìm kiếm..."
-          onSearch={handleSearch}
-          initialSearchQuery={filters?.TextSearch}
-          filters={[
-            {
-              key: 'StudentExamStatus',
-              placeholder: 'Chọn trạng thái',
-              options: [
-                { label: 'Tất cả', value: undefined },
-                { label: 'Chưa bắt đầu', value: 0 },
-                { label: 'Đang làm bài', value: 1 },
-                { label: 'Đã nộp bài', value: 2 },
-                { label: 'Đã hủy', value: 3 },
-              ],
-            },
-          ]}
-          onFilterChange={(
-            newFilters: Record<string, string | number | boolean | null | undefined>,
-          ) => {
-            setFilters((prev) => {
-              const updatedFilters = {
-                ...prev,
-                ...newFilters,
-              };
-              return updatedFilters;
-            });
-          }}
-        />
-        <MemoizedTablePaging
-          id="exam-supervision-detail-table"
-          columns={columns}
-          data={dataStudents || []}
-          currentPage={1}
-          currentSize={50}
-          totalPage={1}
-          total={0}
-          loading={isLoadingMonitorDetail}
-          // handleChangePage={handleChangePage}
-          // handleChangeSize={handleChangePageSize}
-        />
+    <div className="relative">
+      {/* Loading Overlay */}
+      {isReAssignLoading && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-t-2 border-blue-500"></div>
+        </div>
+      )}
+      {/* Main Content with Conditional Blur */}
+      <div className={`transition-all duration-300 ${isReAssignLoading ? 'blur-sm' : ''}`}>
+        <PageWrapper name={t('ExamSupervision.DetailExamSupervision')}>
+          <div className="space-y-6">
+            <ExamHeader
+              title={t('ExamSupervision.AllConnections')}
+              subtitle={t('ExamSupervision.TrackAllConnections')}
+              className="border-b border-white/20 bg-gradient-to-r from-green-600 to-blue-700 px-6 py-6 shadow-lg"
+              icon={<Globe className="h-8 w-8 text-white" />}
+            />
+            <UserStats
+              statItems={statItems}
+              className="mt-2 grid-cols-1 md:grid-cols-2 lg:grid-cols-4"
+            />
+            <GenericFilters
+              className="md:grid-cols-3"
+              searchPlaceholder={t('ExamSupervision.SearchByNameOrCode')}
+              onSearch={handleSearch}
+              initialSearchQuery={filters?.TextSearch}
+              filters={[
+                {
+                  key: 'StudentExamStatus',
+                  placeholder: t('ExamSupervision.SelectStatus'),
+                  options: [
+                    { label: t('ExamSupervision.AllStatus'), value: undefined },
+                    { label: t('ExamSupervision.NotStarted'), value: 0 },
+                    { label: t('ExamSupervision.InProgress'), value: 1 },
+                    { label: t('ExamSupervision.Submitted'), value: 2 },
+                    { label: t('ExamSupervision.Cancelled'), value: 3 },
+                  ],
+                },
+              ]}
+              onFilterChange={(
+                newFilters: Record<string, string | number | boolean | null | undefined>,
+              ) => {
+                setFilters((prev) => {
+                  const updatedFilters = {
+                    ...prev,
+                    ...newFilters,
+                  };
+                  return updatedFilters;
+                });
+              }}
+            />
+            <MemoizedTablePaging
+              columns={columns}
+              data={dataStudents ?? []}
+              currentPage={1}
+              currentSize={50}
+              totalPage={1}
+              total={0}
+              loading={isLoadingMonitorDetail}
+              // handleChangePage={handleChangePage}
+              // handleChangePageSize={handleChangePageSize}
+            />
+          </div>
+          {shouldRenderOpenAssignMoreTime && (
+            <DialogAssignMoreTime
+              isOpen={isOpenAssignMoreTime}
+              toggle={handleToggleAssignMoreTime}
+              onSubmit={handleAssignMoreTime}
+              row={row}
+            />
+          )}
+          {shouldRenderOpenCreateViolation && (
+            <DialogCreateViolation
+              isOpen={isOpenCreateViolation}
+              toggle={toggleOpenCreateViolation}
+              row={row}
+            />
+          )}
+          {shouldRenderViewStatistic && (
+            <DialogStatistic
+              isOpen={isOpenViewStatistic}
+              toggle={toggleOpenViewStatistic}
+              studentExamId={studentExamId}
+            />
+          )}
+        </PageWrapper>
       </div>
-      {shouldRenderOpenAssignMoreTime && (
-        <DialogAssignMoreTime
-          isOpen={isOpenAssignMoreTime}
-          toggle={handleToggleAssignMoreTime}
-          onSubmit={handleAssignMoreTime}
-          row={row}
-        />
-      )}
-      {shouldRenderOpenCreateViolation && (
-        <DialogCreateViolation
-          isOpen={isOpenCreateViolation}
-          toggle={toggleOpenCreateViolation}
-          row={row}
-        />
-      )}
-    </PageWrapper>
+    </div>
   );
 };
 

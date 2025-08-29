@@ -6,7 +6,7 @@ import {
 import httpService from '../httpService';
 import { TEACHER_EXAM_URL } from '@/consts/apiUrl';
 
-class teacherExamService {
+class TeacherExamService {
   getAllTeacherExam(
     filter: ITeacherExamRequest,
     config: AxiosRequestConfig,
@@ -43,4 +43,4 @@ class teacherExamService {
   }
 }
 
-export default new teacherExamService();
+export default new TeacherExamService();

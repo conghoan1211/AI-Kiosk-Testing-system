@@ -80,7 +80,7 @@ export enum ExamLiveStatus {
   Completed = 3,
 }
 
-export const essay = 'Essay';
+export const essay = 'essay';
 export const multipleChoice = 'multiple-choice';
 
 export enum RoleEnum {
@@ -101,3 +101,7 @@ export enum AccessMode {
   View = 0,
   Edit = 1,
 }
+
+export const MAX_QUESTION_LENGTH = 500
+
+export const PASSWORD_AFTER_RESET = 'Aa123456789@'

@@ -8,7 +8,7 @@ import {
   ResponseGetListHistoryExam,
 } from './interfaces/studentexam.interface';
 
-class studentExamService {
+class StudentExamService {
   getListExams(config: AxiosRequestConfig) {
     return httpService.get(`${STUDENT_EXAM_URL}/list-exams`, config);
   }
@@ -60,4 +60,4 @@ class studentExamService {
   }
 }
 
-export default new studentExamService();
+export default new StudentExamService();

@@ -1,107 +1,128 @@
 @startuml
-
-title Send Violation Sequence Diagram
+title Send Violation — Sequence Diagram
 
 actor "User" as Client
-boundary "c:StudentViolationController" as Controller
-control "s:StudentViolationService" as Service
-database "Database" as DB
-control "S3Service" as S3
-control "EmailHandler" as Email
-control "LogService" as Log
+boundary ":ViolationUI" as UI <<boundary>>
+control "StudentViolationController" as Controller <<controller>>
+participant ":StudentViolationService" as Service <<service>>
+participant ":S3Service" as S3
+participant ":EmailHandler" as Email
+participant ":LogService" as Log
+
+entity "StudentExamRepository" as StuExamRepo <<repository>>
+entity "StudentViolationRepository" as ViolRepo <<repository>>
+database "DB" as DB
 
 == Send Violation ==
 
-Client -> Controller: POST /create (SendStudentViolationVM)
+Client -> UI: Open form / Submit
+activate UI
+UI -> Controller: POST /violations/create (SendStudentViolationVM)
 activate Controller
 
 alt User not authenticated
-    Controller -> Controller: Log unauthorized access attempt
-    Controller --> Client: 401 Unauthorized { success: false, message: "User not authenticated." }
-    deactivate Controller
+  Controller --> UI: 401 Unauthorized
+  deactivate Controller
+  UI --> Client: Show unauthorized
+  deactivate UI
 else User authenticated
-    Controller -> Service: Create(send, usertoken)
-    activate Service
+  Controller -> Service: Create(send, userId)
+  activate Service
 
-    Service -> DB: Check user role and permissions (UserId, RoleId)
-    activate DB
-    alt User is not allowed
-        DB --> Service: Not found or invalid role
-        deactivate DB
-        Service -> Service: Log authorization failure
-        Service --> Controller: "You do not have permission to send violation."
+  ' permission check (optional)
+  Service -> DB: [SQL] SELECT 1 FROM UserRoles WHERE UserId=? AND Role IN('Admin','Supervisor') LIMIT 1
+  DB --> Service: 1|null
+
+  alt Not allowed
+    Service --> Controller: 403 Forbidden
+    deactivate Service
+    Controller --> UI: 403 Forbidden
+    deactivate Controller
+    UI --> Client: Show forbidden
+    deactivate UI
+  else Allowed
+    alt send is null
+      Service --> Controller: 400 BadRequest "Student violation data is null"
+      deactivate Service
+      Controller --> UI: 400 BadRequest
+      deactivate Controller
+      UI --> Client: Show error
+      deactivate UI
+    else Valid data
+      ' verify StudentExam exists
+      Service -> StuExamRepo: GetById(send.StudentExamId)
+      activate StuExamRepo
+      StuExamRepo -> DB: [SQL] SELECT Id,StudentId,Email FROM StudentExams WHERE Id=? LIMIT 1
+      DB --> StuExamRepo: studentExam|null
+      StuExamRepo --> Service: studentExam|null
+      deactivate StuExamRepo
+
+      alt StudentExam not found
+        Service --> Controller: 400 BadRequest "Student exam not found"
         deactivate Service
-        Controller --> Client: 403 Forbidden { success: false, message }
+        Controller --> UI: 400 BadRequest
         deactivate Controller
-    else User is allowed
-        DB --> Service: User role confirmed
-        deactivate DB
+        UI --> Client: Show not found
+        deactivate UI
+      else Found
+        ' upload screenshot if provided
+        alt send.ScreenshotPath exists
+          Service -> S3: UploadFileAsync(key, file)
+          activate S3
+          S3 --> Service: screenshotUrl
+          deactivate S3
+        else no screenshot
+          Service -> Service: screenshotUrl = ""
+        end
 
-        alt Data is null
-            Service --> Controller: "Student violation data is null"
+        ' persist violation
+        Service -> ViolRepo: AddViolation(send + screenshotUrl)
+        activate ViolRepo
+        ViolRepo -> DB: [SQL] INSERT INTO StudentViolations(StudentExamId,Message,ScreenshotPath,CreatedAt) VALUES(?,?,?,UTC_TIMESTAMP())
+        DB --> ViolRepo: inserted
+        ViolRepo --> Service: ok
+        deactivate ViolRepo
+
+        ' send mail (optional)
+        alt send.IsSendMail
+          alt studentExam.Email is null
+            Service --> Controller: 400 BadRequest "Student email not found."
             deactivate Service
-            Controller --> Client: 400 BadRequest { success: false, message }
+            Controller --> UI: 400 BadRequest
             deactivate Controller
-        else Valid data
-            Service -> DB: Get StudentExam (StudentExamId, include User, Exam)
-            activate DB
-            alt StudentExam not found
-                DB --> Service: Not found
-                deactivate DB
-                Service --> Controller: "Student exam not found"
-                deactivate Service
-                Controller --> Client: 400 BadRequest { success: false, message }
-                deactivate Controller
-            else StudentExam found
-                DB --> Service: StudentExam
-                deactivate DB
-                alt Has ScreenshotPath
-                    Service -> S3: UploadFileAsync(key, ScreenshotPath)
-                    activate S3
-                    S3 --> Service: uploadedUrls
-                    deactivate S3
-                else No ScreenshotPath
-                    Service -> Service: Set uploadedUrls = ""
-                end alt
-                Service -> DB: Add new StudentViolation
-                activate DB
-                DB --> Service: Added
-                deactivate DB
-                Service -> DB: SaveChanges
-                activate DB
-                DB --> Service: Saved
-                deactivate DB
-                alt IsSendMail
-                    alt Student email not found
-                        Service --> Controller: "Student email not found."
-                        deactivate Service
-                        Controller --> Client: 400 BadRequest { success: false, message }
-                        deactivate Controller
-                    else Email found
-                        Service -> Email: SendEmailAsync(email, ...)
-                        activate Email
-                        Email --> Service: msgMail
-                        deactivate Email
-                    end alt
-                end alt
-                Service -> Log: WriteActivity(AddUserLogVM)
-                activate Log
-                Log --> Service: msg
-                deactivate Log
-                alt Log error
-                    Service --> Controller: msg
-                    deactivate Service
-                    Controller --> Client: 400 BadRequest { success: false, message }
-                    deactivate Controller
-                else Log success
-                    Service --> Controller: ""
-                    deactivate Service
-                    Controller --> Client: 200 OK { success: true, message }
-                    deactivate Controller
-                end alt
-            end alt
-        end alt
-    end alt
-end alt
+            UI --> Client: Show error
+            deactivate UI
+          else has email
+            Service -> Email: SendEmailAsync(studentExam.Email,"Violation",send.Message)
+            activate Email
+            Email --> Service: mailSent
+            deactivate Email
+          end
+        end
 
-@enduml 
+        ' write activity log
+        Service -> Log: WriteActivity(AddUserLogVM)
+        activate Log
+        Log --> Service: msg
+        deactivate Log
+
+        alt msg not empty
+          Service --> Controller: 400 BadRequest msg
+          deactivate Service
+          Controller --> UI: 400 BadRequest
+          deactivate Controller
+          UI --> Client: Show error
+          deactivate UI
+        else success
+          Service --> Controller: 200 OK { success:true }
+          deactivate Service
+          Controller --> UI: 200 OK
+          deactivate Controller
+          UI --> Client: Show success
+          deactivate UI
+        end
+      end
+    end
+  end
+end
+@enduml

@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { ActiveStatusExamStudent } from '@/consts/common';
+import { DateTimeFormat } from '@/consts/dates';
+import { convertUTCToVietnamTime } from '@/helpers/common';
 import type { DialogI } from '@/interfaces/common';
 import useGetExamDetail from '@/services/modules/manageexam/hooks/useGetExamDetail';
 import {
@@ -21,6 +23,7 @@ import {
 } from 'lucide-react';
 import moment from 'moment';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface DialogExamDetailProps extends DialogI<any> {
   isOpen: boolean;
@@ -29,6 +32,7 @@ interface DialogExamDetailProps extends DialogI<any> {
 }
 
 const DialogExamDetail = (props: DialogExamDetailProps) => {
+  const { t } = useTranslation('shared');
   const { isOpen, toggle, examId } = props;
 
   const { data: examDetail, isLoading: isLoadingExamDetail } = useGetExamDetail(examId, {
@@ -39,21 +43,21 @@ const DialogExamDetail = (props: DialogExamDetailProps) => {
     switch (status) {
       case ActiveStatusExamStudent.Published:
         return {
-          label: 'Đã xuất bản',
+          label: t('ExamManagement.Published'),
           variant: 'default' as const,
           className: 'bg-green-100 text-green-800 hover:bg-green-100',
           icon: CheckCircle,
         };
       case ActiveStatusExamStudent.Draft:
         return {
-          label: 'Bản nháp',
+          label: t('ExamManagement.Draft'),
           variant: 'secondary' as const,
           className: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100',
           icon: AlertCircle,
         };
       default:
         return {
-          label: 'Đã hủy',
+          label: t('ExamManagement.Cancelled'),
           variant: 'destructive' as const,
           className: 'bg-red-100 text-red-800 hover:bg-red-100',
           icon: XCircle,
@@ -71,7 +75,7 @@ const DialogExamDetail = (props: DialogExamDetailProps) => {
           <div className="flex h-64 items-center justify-center">
             <div className="flex items-center space-x-3">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600"></div>
-              <span className="text-lg text-gray-600">Đang tải thông tin đề thi...</span>
+              <span className="text-lg text-gray-600">{t('ExamManagement.Loading')}</span>
             </div>
           </div>
         </DialogContent>
@@ -87,9 +91,9 @@ const DialogExamDetail = (props: DialogExamDetailProps) => {
             <div className="space-y-2">
               <DialogTitle className="flex items-center space-x-2 text-2xl font-bold text-gray-900">
                 <BookOpen className="h-6 w-6 text-blue-600" />
-                <span>Chi tiết đề thi</span>
+                <span>{t('ExamManagement.ExamDetail')}</span>
               </DialogTitle>
-              <p className="text-base text-gray-600">Thông tin chi tiết về đề thi và kết quả</p>
+              <p className="text-base text-gray-600">{t('ExamManagement.ExamDetailDescription')}</p>
             </div>
           </div>
 
@@ -107,7 +111,10 @@ const DialogExamDetail = (props: DialogExamDetailProps) => {
                 <span className="flex items-center space-x-2 rounded-full bg-white/70 px-3 py-1.5 text-blue-700 shadow-sm">
                   <Calendar className="h-4 w-4" />
                   <span className="font-medium">
-                    {moment(examDetail?.startTime).format('DD/MM/YYYY')}
+                    {convertUTCToVietnamTime(
+                      examDetail?.startTime,
+                      DateTimeFormat.DateTimeWithTimezone,
+                    )?.toString()}
                   </span>
                 </span>
                 {statusConfig && StatusIcon && (
@@ -132,41 +139,47 @@ const DialogExamDetail = (props: DialogExamDetailProps) => {
                 <div className="rounded-lg bg-blue-100 p-2 transition-colors group-hover:bg-blue-200">
                   <FileText className="h-4 w-4 text-blue-600" />
                 </div>
-                <span>Thông tin cơ bản</span>
+                <span>{t('ExamManagement.BasicInfo')}</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-3">
                 <div className="flex items-center justify-between py-1">
-                  <span className="text-sm text-gray-600">ID đề thi:</span>
+                  <span className="text-sm text-gray-600">{t('ExamManagement.ExamID')}:</span>
                   <span className="rounded bg-gray-100 px-2 py-1 text-xs font-semibold text-gray-900">
                     #{examDetail?.examId}
                   </span>
                 </div>
                 <Separator className="opacity-50" />
                 <div className="flex items-center justify-between py-1">
-                  <span className="text-sm text-gray-600">Lớp học:</span>
+                  <span className="text-sm text-gray-600">{t('ExamManagement.Class')}:</span>
                   <span className="font-medium text-gray-900">{examDetail?.roomName}</span>
                 </div>
                 <div className="flex items-center justify-between py-1">
-                  <span className="text-sm text-gray-600">Môn học:</span>
-                  <span className="font-medium text-gray-900">Hóa học</span>
+                  <span className="text-sm text-gray-600">{t('ExamManagement.Subject')}:</span>
+                  <span className="font-medium text-gray-900">{examDetail?.title}</span>
                 </div>
                 <div className="flex items-center justify-between py-1">
-                  <span className="text-sm text-gray-600">Tác giả:</span>
+                  <span className="text-sm text-gray-600">{t('ExamManagement.Author')}:</span>
                   <span className="font-medium text-gray-900">{examDetail?.createdBy}</span>
                 </div>
                 <Separator className="opacity-50" />
                 <div className="flex items-center justify-between py-1">
-                  <span className="text-sm text-gray-600">Ngày tạo:</span>
+                  <span className="text-sm text-gray-600">{t('ExamManagement.CreatedAt')}:</span>
                   <span className="font-medium text-gray-900">
-                    {moment(examDetail?.startTime).format('DD/MM/YYYY')}
+                    {convertUTCToVietnamTime(
+                      examDetail?.startTime,
+                      DateTimeFormat.DateTimeWithTimezone,
+                    )?.toString()}
                   </span>
                 </div>
                 <div className="flex items-center justify-between py-1">
-                  <span className="text-sm text-gray-600">Cập nhật:</span>
+                  <span className="text-sm text-gray-600">{t('ExamManagement.UpdatedAt')}:</span>
                   <span className="font-medium text-gray-900">
-                    {moment(examDetail?.endTime).format('DD/MM/YYYY')}
+                    {convertUTCToVietnamTime(
+                      examDetail?.endTime,
+                      DateTimeFormat.DateTimeWithTimezone,
+                    )?.toString()}
                   </span>
                 </div>
               </div>
@@ -180,19 +193,19 @@ const DialogExamDetail = (props: DialogExamDetailProps) => {
                 <div className="rounded-lg bg-green-100 p-2 transition-colors group-hover:bg-green-200">
                   <Clock className="h-4 w-4 text-green-600" />
                 </div>
-                <span>Thời gian & Cấu trúc</span>
+                <span>{t('ExamManagement.TimeAndStructure')}</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-3">
                 <div className="flex items-center justify-between py-1">
-                  <span className="text-sm text-gray-600">Bắt đầu:</span>
+                  <span className="text-sm text-gray-600">{t('ExamManagement.StartTime')}:</span>
                   <span className="rounded bg-green-50 px-2 py-1 text-xs font-semibold text-green-700">
                     {moment(examDetail?.startTime).format('HH:mm')}
                   </span>
                 </div>
                 <div className="flex items-center justify-between py-1">
-                  <span className="text-sm text-gray-600">Kết thúc:</span>
+                  <span className="text-sm text-gray-600">{t('ExamManagement.EndTime')}:</span>
                   <span className="rounded bg-red-50 px-2 py-1 text-xs font-semibold text-red-700">
                     {moment(examDetail?.endTime).format('HH:mm')}
                   </span>
@@ -201,25 +214,27 @@ const DialogExamDetail = (props: DialogExamDetailProps) => {
                 <div className="flex items-center justify-between py-1">
                   <span className="flex items-center space-x-1 text-sm text-gray-600">
                     <Timer className="h-3 w-3" />
-                    <span>Thời lượng:</span>
+                    <span>{t('ExamManagement.Duration')}:</span>
                   </span>
-                  <span className="font-medium text-gray-900">{examDetail?.duration} phút</span>
+                  <span className="font-medium text-gray-900">{examDetail?.duration} minutes</span>
                 </div>
                 <div className="flex items-center justify-between py-1">
                   <span className="flex items-center space-x-1 text-sm text-gray-600">
                     <FileText className="h-3 w-3" />
-                    <span>Số câu hỏi:</span>
+                    <span>{t('ExamManagement.TotalQuestions')}:</span>
                   </span>
                   <span className="font-medium text-gray-900">
-                    {examDetail?.totalQuestions} câu
+                    {examDetail?.totalQuestions} questions
                   </span>
                 </div>
                 <div className="flex items-center justify-between py-1">
                   <span className="flex items-center space-x-1 text-sm text-gray-600">
                     <Target className="h-3 w-3" />
-                    <span>Điểm tối đa:</span>
+                    <span>{t('ExamManagement.MaxPoints')}:</span>
                   </span>
-                  <span className="font-medium text-gray-900">{examDetail?.totalPoints} điểm</span>
+                  <span className="font-medium text-gray-900">
+                    {examDetail?.totalPoints} points
+                  </span>
                 </div>
               </div>
             </CardContent>
@@ -232,13 +247,13 @@ const DialogExamDetail = (props: DialogExamDetailProps) => {
                 <div className="rounded-lg bg-purple-100 p-2 transition-colors group-hover:bg-purple-200">
                   <Settings className="h-4 w-4 text-purple-600" />
                 </div>
-                <span>Cài đặt</span>
+                <span>{t('ExamManagement.Settings')}</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-3">
                 <div className="flex items-center justify-between py-2">
-                  <span className="text-sm text-gray-600">Hiện kết quả:</span>
+                  <span className="text-sm text-gray-600">{t('ExamManagement.ShowResults')}:</span>
                   <div className="flex items-center space-x-2">
                     {examDetail?.isShowResult ? (
                       <CheckCircle className="h-4 w-4 text-green-600" />
@@ -252,13 +267,15 @@ const DialogExamDetail = (props: DialogExamDetailProps) => {
                           : 'bg-red-100 text-red-800'
                       }`}
                     >
-                      {examDetail?.isShowResult ? 'Bật' : 'Tắt'}
+                      {examDetail?.isShowResult ? 'Open' : 'Closed'}
                     </span>
                   </div>
                 </div>
                 <Separator className="opacity-50" />
                 <div className="flex items-center justify-between py-2">
-                  <span className="text-sm text-gray-600">Hiện đáp án:</span>
+                  <span className="text-sm text-gray-600">
+                    {t('ExamManagement.ShowCorrectAnswers')}:
+                  </span>
                   <div className="flex items-center space-x-2">
                     {examDetail?.isShowCorrectAnswer ? (
                       <CheckCircle className="h-4 w-4 text-green-600" />
@@ -272,17 +289,17 @@ const DialogExamDetail = (props: DialogExamDetailProps) => {
                           : 'bg-red-100 text-red-800'
                       }`}
                     >
-                      {examDetail?.isShowCorrectAnswer ? 'Bật' : 'Tắt'}
+                      {examDetail?.isShowCorrectAnswer ? 'Open' : 'Closed'}
                     </span>
                   </div>
                 </div>
                 <Separator className="opacity-50" />
                 <div className="flex items-center justify-between py-2">
-                  <span className="text-sm text-gray-600">Cho phép thi lại:</span>
+                  <span className="text-sm text-gray-600">{t('ExamManagement.AllowRetake')}:</span>
                   <div className="flex items-center space-x-2">
                     <XCircle className="h-4 w-4 text-red-600" />
                     <span className="rounded bg-red-100 px-2 py-1 text-xs font-medium text-red-800">
-                      Tắt
+                      {t('Close')}
                     </span>
                   </div>
                 </div>
@@ -293,21 +310,14 @@ const DialogExamDetail = (props: DialogExamDetailProps) => {
 
         <div className="mt-8 flex items-center justify-between border-t pt-6">
           <div className="text-sm text-gray-500">
-            Cập nhật lần cuối: {moment().format('DD/MM/YYYY HH:mm')}
+            {t('ExamManagement.LastUpdated')}: {moment().format('DD/MM/YYYY HH:mm')}
           </div>
           <div className="flex space-x-3">
-            <Button
-              variant="outline"
-              onClick={toggle}
-              className="bg-transparent px-6 transition-colors hover:bg-gray-50"
-            >
-              Hủy
-            </Button>
             <Button
               onClick={toggle}
               className="bg-blue-600 px-6 transition-colors hover:bg-blue-700"
             >
-              Đóng
+              {t('Close')}
             </Button>
           </div>
         </div>

@@ -16,6 +16,7 @@ import { DialogI } from '@/interfaces/common';
 import { PermissionList } from '@/services/modules/authorize/interfaces/role.interface';
 import { Form, Formik } from 'formik';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Fragment } from 'react/jsx-runtime';
 import * as Yup from 'yup';
 
@@ -33,15 +34,15 @@ interface DialogAddNewRoleProps extends DialogI<any> {
   editRole?: PermissionList | null;
 }
 
-const validationSchema = Yup.object({
-  name: Yup.string().required('Tên quyền hạn là bắt buộc'),
-  description: Yup.string().required('Mô tả quyền hạn là bắt buộc'),
-});
-
 const DialogAddNewRole = (props: DialogAddNewRoleProps) => {
   //!State
+  const { t } = useTranslation('shared');
   const { isOpen, toggle, onSubmit, editRole } = props;
-  console.log('editRole', editRole);
+
+  const validationSchema = Yup.object({
+    name: Yup.string().required(t('UserManagement.NameRequired')),
+    description: Yup.string().required(t('UserManagement.DescriptionRequired')),
+  });
 
   const initialValues: RoleFormValues = {
     id: editRole ? String(editRole.roleId) : undefined,
@@ -66,7 +67,7 @@ const DialogAddNewRole = (props: DialogAddNewRoleProps) => {
                 setSubmitting(true);
                 await onSubmit(values);
               } catch (error) {
-                showError('Đã có lỗi xảy ra khi xử lý yêu cầu.');
+                showError(error);
               } finally {
                 setSubmitting(false);
               }
@@ -79,11 +80,14 @@ const DialogAddNewRole = (props: DialogAddNewRoleProps) => {
                   <Form className="space-y-4">
                     <div>
                       <DialogTitle className="text-xl font-medium">
-                        {editRole ? 'Cập nhật quyền hạn' : 'Thêm quyền hạn mới'}
+                        {editRole
+                          ? t('UserManagement.UpdatePermission')
+                          : t('UserManagement.AddPermission')}
                       </DialogTitle>
                       <DialogDescription className="mt-1 text-sm text-gray-500">
-                        Nhập thông tin quyền hạn mới để quản lý người dùng trong hệ thống. Bạn có
-                        thể thêm tên quyền hạn và mô tả hành động liên quan.
+                        {editRole
+                          ? t('UserManagement.EditPermissionDescription')
+                          : t('UserManagement.AddNewPermissionDescription')}
                       </DialogDescription>
                     </div>
 
@@ -93,9 +97,9 @@ const DialogAddNewRole = (props: DialogAddNewRoleProps) => {
                           id="name"
                           component={InputField}
                           name="name"
-                          placeholder="VD: user.create"
+                          label={t('UserManagement.RoleName')}
+                          placeholder={t('UserManagement.RoleNamePlaceholder')}
                           value={values.name}
-                          label="Role Name"
                           required
                         />
                       </div>
@@ -104,29 +108,21 @@ const DialogAddNewRole = (props: DialogAddNewRoleProps) => {
                         <FormikField
                           component={Textarea}
                           name="description"
-                          placeholder="VD: Tạo người dùng"
-                          label="Role description"
+                          label={t('UserManagement.RoleDescription')}
+                          placeholder={t('UserManagement.RoleDescriptionPlaceholder')}
                           required
                         />
                       </div>
-
-                      {/* <div className="space-y-2">
-                        <FormikField
-                          component={SwitchBoxField}
-                          name="isActive"
-                          label="Trạng thái"
-                        />
-                      </div> */}
                     </div>
 
                     <div className="flex justify-end gap-2 pt-4">
                       <DialogClose asChild>
                         <Button variant="outline" type="button">
-                          Hủy
+                          {t('Close')}
                         </Button>
                       </DialogClose>
                       <Button type="submit" isLoading={isSubmitting}>
-                        {editRole ? 'Cập nhật' : 'Thêm mới'}
+                        {editRole ? t('Edit') : t('Add')}
                       </Button>
                     </div>
                   </Form>

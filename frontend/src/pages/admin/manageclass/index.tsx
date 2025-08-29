@@ -8,42 +8,42 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Switch } from '@/components/ui/switch';
 import cachedKeys from '@/consts/cachedKeys';
 import { showError, showSuccess } from '@/helpers/toast';
 import useFiltersHandler from '@/hooks/useFiltersHandler';
 import useToggleDialog from '@/hooks/useToggleDialog';
 import ExamHeader from '@/pages/teacher/examsupervision/components/ExamHeader';
-import httpService from '@/services/httpService';
 import classService from '@/services/modules/class/class.service';
 import useGetAllClasses from '@/services/modules/class/hooks/useGetAllClasses';
 import { ClassList, IClassRequest } from '@/services/modules/class/interfaces/class.interface';
 import { useGet, useSave } from '@/stores/useStores';
-import { BookOpen, Edit, HomeIcon, MoreHorizontal, Trash2, UserCheck, Users } from 'lucide-react';
+import { BookOpen, Edit, HomeIcon, MoreHorizontal, Users } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { GenericFilters, IValueFormPageHeader } from '../manageuser/components/generic-filters';
 import { UserStats } from '../manageuser/components/user-stats';
 import DialogAddNewClass from './dialogs/DialogAddNewClass';
-import { Switch } from '@/components/ui/switch';
 
 const ManageClass = () => {
   // State
-  const token = httpService.getTokenStorage();
+  const { t } = useTranslation('shared');
   const [openAskAddNewClass, toggleAskAddNewClass, shouldRenderAskNewClass] = useToggleDialog();
   const detaultData = useGet('dataClass');
   const totalClassCount = useGet('totalClassCount');
   const totalPageClassCount = useGet('totalPageClassCount');
   const cachesFilterClass = useGet('cachesFilterClass');
-  const [isTrigger, setTrigger] = useState(Boolean(!detaultData));
+  const [isTrigger, setIsTrigger] = useState(Boolean(!detaultData));
   const save = useSave();
   const [editClass, setEditClass] = useState<ClassList | null>(null);
 
   const { filters, setFilters } = useFiltersHandler({
-    PageSize: cachesFilterClass?.PageSize || 50,
-    CurrentPage: cachesFilterClass?.CurrentPage || 1,
-    TextSearch: cachesFilterClass?.TextSearch || '',
+    PageSize: cachesFilterClass?.PageSize ?? 50,
+    CurrentPage: cachesFilterClass?.CurrentPage ?? 1,
+    TextSearch: cachesFilterClass?.TextSearch ?? '',
     IsActive: cachesFilterClass?.IsActive !== undefined ? cachesFilterClass?.IsActive : null,
-    FromDate: cachesFilterClass?.FromDate || null,
-    ToDate: cachesFilterClass?.ToDate || null,
+    FromDate: cachesFilterClass?.FromDate ?? null,
+    ToDate: cachesFilterClass?.ToDate ?? null,
   });
 
   const stableFilters = useMemo(() => filters as IClassRequest, [filters]);
@@ -71,7 +71,7 @@ const ManageClass = () => {
 
   const columns = [
     {
-      label: 'Thông tin lớp học',
+      label: t('ClassManagement.ClassCode'),
       accessor: 'description',
       sortable: false,
       Cell: (row: ClassList) => (
@@ -91,22 +91,7 @@ const ManageClass = () => {
       ),
     },
     {
-      label: 'Sức chứa',
-      accessor: 'maxStudent',
-      width: 140,
-      sortable: false,
-      Cell: (row: ClassList) => (
-        <div className="flex items-center justify-center">
-          <div className="flex items-center space-x-2 rounded-full bg-gray-50 px-3 py-2">
-            <UserCheck className="h-4 w-4 text-gray-600" />
-            <span className="text-sm font-semibold text-gray-700">{row.maxStudent}</span>
-            <span className="text-xs text-gray-500">học sinh</span>
-          </div>
-        </div>
-      ),
-    },
-    {
-      label: 'Trạng thái',
+      label: t('ClassManagement.Status'),
       accessor: 'isActive',
       width: 140,
       sortable: false,
@@ -119,13 +104,13 @@ const ManageClass = () => {
             <div
               className={`mr-2 h-2 w-2 rounded-full ${row.isActive ? 'bg-emerald-500' : 'bg-gray-400'}`}
             />
-            {row.isActive ? 'Hoạt động' : 'Tạm dừng'}
+            {row.isActive ? t('ClassManagement.Active') : t('ClassManagement.Inactive')}
           </Badge>
         </div>
       ),
     },
     {
-      label: 'Hành động',
+      label: t('ClassManagement.Actions'),
       accessor: 'actions',
       width: 100,
       sortable: false,
@@ -135,10 +120,13 @@ const ManageClass = () => {
             checked={row.isActive}
             onCheckedChange={async (checked) => {
               try {
-                httpService.attachTokenToHeader(token);
-                await classService.activeDeactiveClass(row.classId || '');
+                await classService.activeDeactiveClass(row.classId ?? '');
                 refetch();
-                showSuccess(checked ? 'Class is activated!' : 'Class is deactivated!');
+                showSuccess(
+                  checked
+                    ? t('ClassManagement.ClassActivated')
+                    : t('ClassManagement.ClassDeactivated'),
+                );
               } catch (error) {
                 showError(error);
               }
@@ -148,7 +136,7 @@ const ManageClass = () => {
       ),
     },
     {
-      label: 'Chức năng',
+      label: t('ClassManagement.Functions'),
       accessor: 'functions',
       width: 100,
       sortable: false,
@@ -172,11 +160,7 @@ const ManageClass = () => {
                 }}
               >
                 <Edit className="mr-3 h-4 w-4 text-blue-600" />
-                <span className="text-blue-700">Chỉnh sửa</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer transition-colors hover:bg-red-50">
-                <Trash2 className="mr-3 h-4 w-4 text-red-600" />
-                <span className="text-red-700">Xoá lớp</span>
+                <span className="text-blue-700">{t('Edit')}</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -186,42 +170,42 @@ const ManageClass = () => {
   ];
 
   const statItems = useMemo(() => {
-    const totalClasses = dataMain?.length || 0;
-    const activeClasses = dataMain?.filter((cls: any) => cls.isActive).length || 0;
+    const totalClasses = dataMain?.length ?? 0;
+    const activeClasses = dataMain?.filter((cls: any) => cls.isActive).length ?? 0;
     const inactiveClasses = totalClasses - activeClasses;
 
     return [
       {
-        title: 'Tổng lớp học',
+        title: t('ClassManagement.TotalClasses'),
         value: totalClasses,
         icon: <Users className="h-6 w-6 text-blue-500" />,
         bgColor: 'bg-blue-50',
       },
       {
-        title: 'Đang hoạt động',
+        title: t('ClassManagement.Active'),
         value: activeClasses,
         icon: <Users className="h-6 w-6 text-green-500" />,
         bgColor: 'bg-green-50',
       },
       {
-        title: 'Không hoạt động',
+        title: t('ClassManagement.Inactive'),
         value: inactiveClasses,
         icon: <Users className="h-6 w-6 text-yellow-500" />,
         bgColor: 'bg-yellow-50',
       },
       {
-        title: 'Tỷ lệ hoạt động',
+        title: t('ClassManagement.RatioActive'),
         value: 2,
         icon: <Users className="h-6 w-6 text-purple-500" />,
         bgColor: 'bg-purple-50',
       },
     ];
-  }, [dataMain]);
+  }, [dataMain, t]);
 
   //! Functions
   const handleChangePageSize = useCallback(
     (size: number) => {
-      setTrigger(true);
+      setIsTrigger(true);
       setFilters((prev) => {
         const newParams = {
           ...prev,
@@ -250,11 +234,11 @@ const ManageClass = () => {
   );
 
   const handleSearch = (values: IValueFormPageHeader) => {
-    setTrigger(true);
+    setIsTrigger(true);
     setFilters((prev) => {
       const newParams = {
         ...prev,
-        TextSearch: values.textSearch || '',
+        TextSearch: values.textSearch ?? '',
         CurrentPage: 1,
       };
       save(cachedKeys.cachesFilterClass, newParams);
@@ -271,7 +255,6 @@ const ManageClass = () => {
 
   const handleAddEditClass = async (values: ClassList) => {
     try {
-      httpService.attachTokenToHeader(token);
       if (editClass) {
         await classService.updateClass({
           ...values,
@@ -286,7 +269,9 @@ const ManageClass = () => {
       toggleAskAddNewClass();
       setEditClass(null);
       refetch();
-      showSuccess(editClass ? 'Class list reflects changes!' : 'Thêm lớp học thành công!');
+      showSuccess(
+        editClass ? t('ClassManagement.ClassUpdated') : t('ClassManagement.ClassCreated'),
+      );
     } catch (error) {
       showError(error);
     }
@@ -294,10 +279,10 @@ const ManageClass = () => {
 
   //! Render
   return (
-    <PageWrapper name="Quản lý lớp học" className="bg-white dark:bg-gray-900">
+    <PageWrapper name={t('ClassManagement.Title')} className="bg-white dark:bg-gray-900">
       <ExamHeader
-        title="Quản lý lớp học"
-        subtitle="Quản lý các lớp học, phòng học trong hệ thống"
+        title={t('ClassManagement.Title')}
+        subtitle={t('ClassManagement.Subtitle')}
         icon={<HomeIcon className="h-8 w-8 text-white" />}
         className="border-b border-white/20 bg-gradient-to-r from-blue-600 to-green-700 px-6 py-6 shadow-lg"
       />
@@ -308,29 +293,29 @@ const ManageClass = () => {
             isOpen={openAskAddNewClass}
             toggle={handleToggleAskNewClass}
             onSubmit={handleAddEditClass}
-            editClass={editClass || null}
+            editClass={editClass ?? null}
           />
         )}
         <GenericFilters
           className="md:grid-cols-4"
-          searchPlaceholder="Tìm kiếm lớp học..."
+          searchPlaceholder={t('ClassManagement.SearchPlaceholder')}
           onSearch={handleSearch}
-          initialSearchQuery={filters.TextSearch || ''}
+          initialSearchQuery={filters.TextSearch ?? ''}
           filters={[
             {
               key: 'IsActive',
-              placeholder: 'Trạng thái',
+              placeholder: t('ClassManagement.Status'),
               options: [
-                { value: null, label: 'Tất cả' },
-                { value: true, label: 'Đang hoạt động' },
-                { value: false, label: 'Không hoạt động' },
+                { value: null, label: t('ClassManagement.AllStatuses') },
+                { value: true, label: t('ClassManagement.Active') },
+                { value: false, label: t('ClassManagement.Inactive') },
               ],
             },
           ]}
           onFilterChange={(
             newFilters: Record<string, string | number | boolean | null | undefined>,
           ) => {
-            setTrigger(true);
+            setIsTrigger(true);
             setFilters((prev) => {
               const updatedFilters = {
                 ...prev,
@@ -341,19 +326,18 @@ const ManageClass = () => {
             });
           }}
           onAddNew={toggleAskAddNewClass}
-          addNewButtonText="Tạo lớp mới"
+          addNewButtonText={t('ClassManagement.CreateNewClass')}
         />
         <TablePaging
-          id="manage-subject-table"
           columns={columns}
           keyRow="classId"
-          data={dataMain || []}
-          currentPage={filters.CurrentPage || 1}
-          currentSize={filters.PageSize || 50}
-          totalPage={totalPageClassCount || 1}
-          total={totalClassCount || 0}
+          data={dataMain ?? []}
+          currentPage={filters.CurrentPage ?? 1}
+          currentSize={filters.PageSize ?? 50}
+          totalPage={totalPageClassCount ?? 1}
+          total={totalClassCount ?? 0}
           loading={loading}
-          noResultText="Không có lớp học nào"
+          noResultText={t('NoDataFound')}
           handleChangePage={handleChangePage}
           handleChangeSize={handleChangePageSize}
         />

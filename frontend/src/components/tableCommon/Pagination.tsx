@@ -1,11 +1,10 @@
-import CommonIcons from "@/components/commonIcons";
-import { addLeadingZero } from "@/helpers/common";
-import { useCallback } from "react";
+import CommonIcons from '@/components/commonIcons';
+import { addLeadingZero } from '@/helpers/common';
+import { useCallback } from 'react';
 
 interface PaginationProps {
   totalPage: number;
   currentPage: number;
-  currentSize?: number;
   handleChangePage?: (value: number) => void;
 }
 
@@ -24,13 +23,13 @@ const Pagination = (props: PaginationProps) => {
         pages.push(`${i + 1}`);
       }
     } else {
-      pages.push("1");
+      pages.push('1');
       if (currentPage <= 3) {
-        pages = ["1", "2", "3", "4", "...", `${totalPage}`];
+        pages = ['1', '2', '3', '4', '...', `${totalPage}`];
       } else if (currentPage >= totalPage - 2) {
         pages = [
-          "1",
-          "...",
+          '1',
+          '...',
           `${totalPage - 3}`,
           `${totalPage - 2}`,
           `${totalPage - 1}`,
@@ -38,12 +37,12 @@ const Pagination = (props: PaginationProps) => {
         ];
       } else {
         pages = [
-          "1",
-          "...",
+          '1',
+          '...',
           `${currentPage - 1}`,
           `${currentPage}`,
           `${currentPage + 1}`,
-          "...",
+          '...',
           `${totalPage}`,
         ];
       }
@@ -56,9 +55,7 @@ const Pagination = (props: PaginationProps) => {
             onClick={() => {
               handleChangePage && handleChangePage(+page);
             }}
-            className={
-              "typo-7 text-main-primary mx-[5px] rounded px-2.5 py-[5px] hover:font-bold"
-            }
+            className={'typo-7 text-main-primary mx-[5px] rounded px-2.5 py-[5px] hover:font-bold'}
           >
             {addLeadingZero(+page)}
           </button>
@@ -69,14 +66,14 @@ const Pagination = (props: PaginationProps) => {
         <button
           key={`${page}-${index}`}
           className={
-            "typo-7 mx-[5px] inline-block border-separate rounded px-2.5 py-[5px] hover:font-bold"
+            'typo-7 mx-[5px] inline-block border-separate rounded px-2.5 py-[5px] hover:font-bold'
           }
           onClick={() => {
-            if (page === "...") return;
+            if (page === '...') return;
             handleChangePage && handleChangePage(+page);
           }}
         >
-          {page === "..." ? page : addLeadingZero(+page)}
+          {page === '...' ? page : addLeadingZero(+page)}
         </button>
       );
     });
@@ -94,9 +91,7 @@ const Pagination = (props: PaginationProps) => {
       >
         <div>
           <CommonIcons.ArrowLeft
-            className={
-              currentPage !== 1 ? "text-text-secondary" : "text-disabled"
-            }
+            className={currentPage !== 1 ? 'text-text-secondary' : 'text-disabled'}
           />
         </div>
       </button>
@@ -109,11 +104,7 @@ const Pagination = (props: PaginationProps) => {
       >
         <div>
           <CommonIcons.ArrowRight
-            className={
-              currentPage !== totalPage
-                ? "text-text-secondary"
-                : "text-disabled"
-            }
+            className={currentPage !== totalPage ? 'text-text-secondary' : 'text-disabled'}
           />
         </div>
       </button>

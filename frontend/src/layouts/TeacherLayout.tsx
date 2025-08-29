@@ -7,7 +7,6 @@ import { cn } from '@/lib/utils';
 import httpService from '@/services/httpService';
 import {
   Album,
-  Edit,
   FileQuestion,
   Home,
   HomeIcon,
@@ -15,7 +14,6 @@ import {
   Menu,
   MessagesSquare,
   Newspaper,
-  Settings,
   Tv,
   User,
 } from 'lucide-react';
@@ -54,40 +52,27 @@ const TeacherLayout = (props: TeacherLayoutProps) => {
       icon: HomeIcon,
     },
     {
-      title: t('SideBar.BankQuestion'),
+      title: t('SideBar.ManageQuestion'),
       href: BaseUrl.BankQuestion,
       icon: FileQuestion,
-      subItems: [
-        {
-          title: 'Tổng quan',
-          href: BaseUrl.BankQuestion,
-          icon: HomeIcon,
-        },
-        {
-          title: t('SideBar.ManageQuestion'),
-          href: BaseUrl.ManageQuestion,
-          icon: Edit,
-        },
-      ],
     },
     {
-      title: 'Quản lý đề thi',
+      title: t('SideBar.ExamManagement'),
       href: BaseUrl.ManageExam,
       icon: Album,
     },
     {
-      title: 'Quản lý phòng thi',
+      title: t('SideBar.ExamRoomManagement'),
       href: BaseUrl.TeacherManageRoom,
       icon: Home,
     },
     {
-      title: 'Kết quả thi',
+      title: t('SideBar.ExamResultManagement'),
       href: BaseUrl.ExamResultTeacher,
       icon: Newspaper,
     },
     {
-      title: 'Giám sát thi',
-      subtitle: 'Quản lý giám sát thi',
+      title: t('SideBar.ExamSupervision'),
       href: BaseUrl.ExamSupervision,
       icon: Tv,
     },
@@ -105,11 +90,6 @@ const TeacherLayout = (props: TeacherLayoutProps) => {
       action: () => {
         navigate(`${BaseUrl.TeacherProfile}`);
       },
-    },
-    {
-      label: t('Navigation.Settings'),
-      icon: <Settings className="mr-2 h-4 w-4" />,
-      action: () => {},
     },
     {
       label: t('Logout'),
@@ -146,7 +126,6 @@ const TeacherLayout = (props: TeacherLayoutProps) => {
         onToggle={toggleSidebar}
         teacherMenuItems={enhancedTeacherMenuItems}
         user={user}
-        currentPath={pathname}
       />
 
       {/* Main Content */}

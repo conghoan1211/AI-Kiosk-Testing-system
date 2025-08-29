@@ -1,9 +1,8 @@
-import { cloneDeep, isArray } from 'lodash';
-import { BankQuestionData, IBankQuestionRequest } from '../interfaces/bankquestion.interface';
-import bankquestionService from '../bankquestion.Service';
-import { useCallback, useEffect, useState } from 'react';
-import httpService from '@/services/httpService';
 import { showError } from '@/helpers/toast';
+import { cloneDeep, isArray } from 'lodash';
+import { useCallback, useEffect, useState } from 'react';
+import bankquestionService from '../bankquestion.Service';
+import { BankQuestionData, IBankQuestionRequest } from '../interfaces/bankquestion.interface';
 
 const parseRequest = (filters: IBankQuestionRequest) => {
   return cloneDeep({
@@ -27,7 +26,6 @@ const usePaginationBankQuestionList = (
   const [data, setData] = useState<BankQuestionData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<unknown>(null);
-  const token = httpService.getTokenStorage();
 
   const fetchData = useCallback(async () => {
     if (!isTrigger) {
@@ -36,7 +34,6 @@ const usePaginationBankQuestionList = (
     try {
       setLoading(true);
       const nextFilters = parseRequest(filters);
-      httpService.attachTokenToHeader(token);
       const response = await bankquestionService.getAllBankQuestions(nextFilters, {});
 
       if (isArray(response?.data?.data)) {
@@ -48,7 +45,7 @@ const usePaginationBankQuestionList = (
     } finally {
       setLoading(false);
     }
-  }, [filters, token, isTrigger]);
+  }, [filters, isTrigger]);
 
   useEffect(() => {
     fetchData();

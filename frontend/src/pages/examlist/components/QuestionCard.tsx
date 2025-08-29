@@ -2,10 +2,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
+import { CKEditor } from '@ckeditor/ckeditor5-react';
 import { Star } from 'lucide-react';
 import { useCallback } from 'react';
-import { CKEditor } from '@ckeditor/ckeditor5-react';
-import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
+import { useTranslation } from 'react-i18next';
 
 interface QuestionCardProps {
   currentQuestion: string;
@@ -21,6 +22,7 @@ interface QuestionCardProps {
   toggleMarkQuestion: () => void;
   selectedAnswer: string;
   setSelectedAnswer: (answer: string) => void;
+  questionNumber: number;
 }
 
 const QuestionCard: React.FC<QuestionCardProps> = ({
@@ -30,7 +32,9 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
   toggleMarkQuestion,
   selectedAnswer,
   setSelectedAnswer,
+  questionNumber,
 }) => {
+  const { t } = useTranslation('shared');
   const handleOptionSelect = useCallback(
     (answer: string) => {
       setSelectedAnswer(answer);
@@ -43,13 +47,8 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">
-            CÂU HỎI{' '}
-            {currentQuestionData
-              ? currentQuestionData.questionId === currentQuestion
-                ? currentQuestionData.questionId.slice(0, 8) + '...'
-                : 'N/A'
-              : 'N/A'}{' '}
-            ({currentQuestionData?.questionType || 'MultipleChoice'})
+            {t('ExamList.Question')} {questionNumber} (
+            {currentQuestionData?.questionType ?? 'MultipleChoice'})
           </CardTitle>
           <Button
             variant="outline"
@@ -58,22 +57,22 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
             className={markedQuestions.has(currentQuestion) ? 'bg-yellow-100' : ''}
           >
             <Star className="mr-1 h-4 w-4" />
-            Đánh dấu
+            {t('ExamList.Mark')}
           </Button>
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="text-base leading-relaxed">
-          {currentQuestionData?.content || 'Question not found'}
+          {currentQuestionData?.content ?? 'Question not found'}
         </div>
         {currentQuestionData?.questionType === 'Essay' ? (
           <div className="space-y-3">
             <Label htmlFor="essay-answer" className="text-sm font-medium">
-              Your Answer
+              {t('ExamList.YourAnswer')}
             </Label>
             <CKEditor
               editor={ClassicEditor as any}
-              data={selectedAnswer || ''}
+              data={selectedAnswer ?? ''}
               onChange={(_event: any, editor: any) => {
                 const data = editor.getData();
                 setSelectedAnswer(data);

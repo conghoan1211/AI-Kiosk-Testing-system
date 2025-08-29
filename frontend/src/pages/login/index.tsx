@@ -32,9 +32,9 @@ const Login = () => {
         <div className="relative z-10 flex h-full flex-col items-center justify-center">
           <img
             loading="lazy"
-            src={ImageSource.LogoFPT || ''}
+            src={ImageSource.LogoFPT ?? ''}
             alt="Logo"
-            className="rounded-›md mb-8 h-32"
+            className="mb-8 h-32 rounded-md"
           />
           <FormLogin />
         </div>

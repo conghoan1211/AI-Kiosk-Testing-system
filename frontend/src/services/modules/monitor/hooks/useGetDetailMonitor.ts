@@ -1,14 +1,12 @@
-import { useRef, useEffect, useState, useCallback } from 'react';
-import { cloneDeep, isEmpty } from 'lodash';
 import { useSave } from '@/stores/useStores';
+import { cloneDeep, isEmpty } from 'lodash';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   IMonitorDetailRequest,
   MonitorDetailList,
   ResponseGetMonitorDetailList,
 } from '../interfaces/monitorDetail.interface';
 import monitorService from '../monitor.service';
-import { showError } from '@/helpers/toast';
-import { errorHandler } from '@/helpers/errors';
 
 /**
  * Please check:
@@ -56,6 +54,7 @@ const useGetMonitorDetail = (
           });
           resolve(response);
         } catch (error) {
+          setData(undefined);
           setError(error);
           reject(error);
         }
@@ -80,7 +79,8 @@ const useGetMonitorDetail = (
       });
       checkConditionPass(response);
     } catch (error) {
-      showError(errorHandler(error));
+      setData(undefined);
+      // showError(errorHandler(error));
     } finally {
       setRefetching(false);
     }

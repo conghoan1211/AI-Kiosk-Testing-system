@@ -1,87 +1,87 @@
 @startuml
+title View Exam Answer Sequence Diagram (with repositories, concise SQL)
 
-title View Exam Answer Sequence Diagram
+actor "User" as Client
+boundary ":ExamAnswerUI" as UI <<boundary>>
+control "ExamController" as Controller <<controller>>
+participant ":ExamService" as Service <<service>>
 
-actor "Teacher" as Client
-boundary "c:ExamController" as Controller
-control "s:ExamService" as Service
+
+entity "StudentExamRepository" as StuExamRepo <<repository>>
+entity "StudentAnswerRepository" as AnswerRepo <<repository>>
+entity "QuestionRepository" as QRepo <<repository>>
+
 database "Database" as DB
 
 == View Exam Answer ==
 
-Client -> Controller: GET /view-exam-answer/{examId}/{studentId}
+Client -> UI: Click **View exam answer** (examId, studentId)
+activate UI
+UI -> Controller: GET /view-exam-answer/{examId}/{studentId}
 activate Controller
+Controller -> Service: ViewExamAnswer(examId, studentId, userId)
+activate Service
 
-alt User not authenticated
-    Controller -> Controller: Log unauthorized access attempt
-    Controller --> Client: 401 Unauthorized { message: "User not authenticated" }
+' --- Authorization (Teacher/Admin only) ---
+Service -> Service: Ensure role ∈ {Teacher, Admin}
+alt Not allowed
+  Service --> Controller: 403 Forbidden { message: "You do not have permission to view exam answers." }
+  deactivate Service
+  Controller --> UI: 403 Forbidden
+  deactivate Controller
+  UI --> Client: Show forbidden
+  deactivate UI
+else Allowed
+  ' --- Load StudentExam (must exist) ---
+  Service -> StuExamRepo: GetByExamAndStudent(examId, studentId)
+  activate StuExamRepo
+  StuExamRepo -> DB: [SQL: SELECT * FROM StudentExams WHERE ExamId=@eid AND StudentId=@sid]
+  DB --> StuExamRepo: studentExam|null
+  StuExamRepo --> Service: studentExam|null
+  deactivate StuExamRepo
+
+  alt StudentExam not found
+    Service --> Controller: 400 BadRequest { message: "StudentExam not found." }
+    deactivate Service
+    Controller --> UI: 400 BadRequest
     deactivate Controller
-else User authenticated
-    Controller -> Service: ViewExamAnswer(examId, studentId)
-    activate Service
+    UI --> Client: Show not found
+    deactivate UI
+  else Found
+    ' --- Optional: verify teacher is assigned to this exam ---
+    Service -> Service: CheckTeacherAccess(userId, studentExam.ExamId)
+    alt Not assigned
+      Service --> Controller: 403 Forbidden { message: "You are not assigned to this exam." }
+      deactivate Service
+      Controller --> UI: 403 Forbidden
+      deactivate Controller
+      UI --> Client: Show forbidden
+      deactivate UI
+    else Assigned
+      ' --- Get student's answers & related questions (single batched fetches) ---
+      Service -> AnswerRepo: GetByStudentExamId(studentExam.Id)
+      activate AnswerRepo
+      AnswerRepo -> DB: [SQL: SELECT QuestionId, UserAnswer, IsCorrect, PointsEarned FROM StudentAnswers WHERE StudentExamId=@seId]
+      DB --> AnswerRepo: answers
+      AnswerRepo --> Service: answers
+      deactivate AnswerRepo
 
-    Service -> DB: Check user role and permissions (UserId, RoleId)
-    activate DB
-    alt User is not teacher
-        DB --> Service: Not found or invalid role
-        deactivate DB
-        Service -> Service: Log authorization failure
-        Service --> Controller: ("You do not have permission to view exam answers.", null)
-        deactivate Service
-        Controller --> Client: 403 Forbidden { success: false, message }
-        deactivate Controller
-    else User is teacher
-        DB --> Service: User role confirmed
-        deactivate DB
+      Service -> QRepo: GetByIds(distinct QuestionIds)
+      activate QRepo
+      QRepo -> DB: [SQL: SELECT QuestionId, Content, CorrectAnswer, Point FROM Questions WHERE QuestionId IN (...)]
+      DB --> QRepo: questions
+      QRepo --> Service: questions
+      deactivate QRepo
 
-        Service -> DB: Get StudentExam (examId, studentId)
-        activate DB
-        alt StudentExam not found
-            DB --> Service: Not found
-            deactivate DB
-            Service --> Controller: ("StudentExam not found.", null)
-            deactivate Service
-            Controller --> Client: 400 BadRequest { success: false, message }
-            deactivate Controller
-        else StudentExam found
-            DB --> Service: Return StudentExam
-            deactivate DB
-            
-            Service -> Service: CheckTeacherAccess(examId, teacherId)
-            alt Teacher not assigned to exam
-                Service -> Service: Log authorization failure
-                Service --> Controller: ("You are not assigned to this exam.", null)
-                deactivate Service
-                Controller --> Client: 403 Forbidden { success: false, message }
-                deactivate Controller
-            else Teacher assigned to exam
-                Service -> DB: Get StudentAnswers (StudentExamId)
-                activate DB
-                DB --> Service: List<StudentAnswer>
-                deactivate DB
-                
-                loop For each StudentAnswer
-                    Service -> DB: Get Question (QuestionId)
-                    activate DB
-                    DB --> Service: Question
-                    deactivate DB
-                end loop
-                
-                Service -> Service: Map to List<ExamAnswerVM>
-                Service --> Controller: ("", List<ExamAnswerVM>)
-                deactivate Service
-                
-                alt message.Length > 0
-                    Controller --> Client: 400 Bad Request { success: false, message }
-                else
-                    Controller -> Controller: Log successful access
-                    Controller --> Client: 200 OK { success: true, data }
-                end
-            end
-        end
-    end
-end
-
-deactivate Controller
-
-@enduml 
+      ' --- Map to VMs ---
+      Service -> Service: Join answers+questions → List<ExamAnswerVM>
+      Service --> Controller: 200 OK { data: ExamAnswerVM[] }
+      deactivate Service
+      Controller --> UI: 200 OK { success: true, data }
+      deactivate Controller
+      UI --> Client: Render exam answers
+      deactivate UI
+    end alt
+  end alt
+end alt
+@enduml

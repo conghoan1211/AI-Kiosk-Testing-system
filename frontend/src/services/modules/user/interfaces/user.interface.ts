@@ -64,3 +64,8 @@ export interface Response<T> {
 }
 
 export type ResponseGetListUser = Response<IUser>;
+export interface IUserResetPass {
+  userId: string;
+  password: string;
+  rePassword: string;
+}

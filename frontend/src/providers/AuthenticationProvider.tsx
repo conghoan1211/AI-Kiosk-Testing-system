@@ -2,6 +2,7 @@ import BaseUrl from '@/consts/baseUrl';
 import cachedKeys from '@/consts/cachedKeys';
 import { ROLE_ENUM } from '@/consts/role';
 import { showError, showSuccess } from '@/helpers/toast';
+import { KEY_LANG } from '@/i18n/config';
 import { UserInfo } from '@/interfaces/user';
 import httpService from '@/services/httpService';
 import googleloginService from '@/services/modules/googlelogin/googlelogin.service';
@@ -115,6 +116,7 @@ const AuthenticationProvider = ({ children }: { children: any }) => {
           httpService.attachTokenToHeader(token);
           httpService.saveTokenStorage(token);
           httpService.saveUserStorage(user);
+          localStorage.setItem(KEY_LANG, 'en');
 
           // Send message to webview
           if (window.chrome && window.chrome.webview) {

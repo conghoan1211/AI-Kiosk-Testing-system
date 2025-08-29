@@ -1,7 +1,7 @@
 @startuml
-' Class Diagram for InputOtp (AccessExam) Feature
+' Class Diagram for InputOtp (AccessExam) Feature - Sát code thực tế (bỏ Entities & Builder)
 
-title InputOtp (AccessExam) Class Diagram
+title InputOtp Class Diagram
 
 hide empty members
 skinparam packageStyle rectangle
@@ -13,7 +13,6 @@ skinparam classFontName Arial
 skinparam noteFontSize 11
 skinparam noteFontName Arial
 
-' Increase spacing and sizing
 skinparam class {
     BackgroundColor LightBlue
     BorderColor DarkBlue
@@ -51,43 +50,34 @@ package "Controllers" {
 
 package "Services" {
     interface IStudentExamService <<Interface>> {
-        + AccessExam(otp: StudentExamRequest, usertoken: string, context: HttpContext): Task<(string, object?)>
+        + AccessExam(otp: StudentExamRequest, userToken: string, context: HttpContext): Task<(string, object?)>
     }
     class StudentExamService <<Service>> {
-        - _context: DbContext
-        + AccessExam(otp: StudentExamRequest, usertoken: string, context: HttpContext): Task<(string, object?)>
+        - _unitOfWork: IUnitOfWork
+        + AccessExam(otp: StudentExamRequest, userToken: string, context: HttpContext): Task<(string, object?)>
     }
 }
 
-package "Entities" {
-    class Exam {
-        + ExamId: string
-        + StartTime: DateTime
-        + EndTime: DateTime
-        + Room: Room
+package "UnitOfWork" {
+    interface IUnitOfWork {
+        + Exams: IExamRepository
+        + ExamOTPs: IExamOtpRepository
+        + StudentExams: IStudentExamRepository
+        + SaveChangesAsync()
     }
-    class Room {
-        + RoomId: int
-        + RoomUsers: List<RoomUser>
+}
+
+package "Repositories" {
+    interface IExamRepository {
+        + GetExamWithRoomUsers(examId: string)
     }
-    class RoomUser {
-        + UserId: string
+    interface IExamOtpRepository {
+        + IsOtpValid(examId: string, otpCode: int, now: DateTime)
     }
-    class StudentExam {
-        + StudentExamId: string
-        + StudentId: string
-        + ExamId: string
-        + Status: int
-        + StartTime: DateTime
-        + CreatedAt: DateTime
-        + UpdatedAt: DateTime
-        + IpAddress: string
-        + BrowserInfo: string
-    }
-    class ExamOtp {
-        + ExamId: string
-        + OtpCode: int
-        + ExpiredAt: DateTime
+    interface IStudentExamRepository {
+        + GetByExamAndStudent(examId: string, studentId: string)
+        + Add(studentExam)
+        + Update(studentExam)
     }
 }
 
@@ -103,24 +93,26 @@ package "Utilities" {
         + GetClientIpAddress(context: HttpContext): string
         + GetClientBrowser(context: HttpContext): string
     }
+    class AccessExamValidator <<static>> {
+        + Validate(exam, now: DateTime, userToken: string): string
+    }
+    class Common <<static>> {
+        + IsCompleted(status: int): bool
+    }
 }
 
 ' Relationships
 StudentExamController ..> IStudentExamService : <<uses>>
 StudentExamController ..> StudentExamRequest : <<uses>>
 IStudentExamService <|.. StudentExamService
-StudentExamService ..> Exam : <<uses>>
-StudentExamService ..> ExamOtp : <<uses>>
-StudentExamService ..> StudentExam : <<uses>>
-StudentExamService ..> Room : <<uses>>
-StudentExamService ..> RoomUser : <<uses>>
+StudentExamService ..> IUnitOfWork : <<uses>>
 StudentExamService ..> Utils : <<uses>>
+StudentExamService ..> AccessExamValidator : <<uses>>
+StudentExamService ..> Common : <<uses>>
 StudentExamService ..> StudentExamRequest : <<uses>>
 
-Exam o-- Room : <<has>>
-Room o-- RoomUser : <<has>>
-ExamOtp --> Exam : <<for>>
-StudentExam --> Exam : <<for>>
-StudentExam --> StudentExamRequest : <<created from>>
+IUnitOfWork ..> IExamRepository : <<has>>
+IUnitOfWork ..> IExamOtpRepository : <<has>>
+IUnitOfWork ..> IStudentExamRepository : <<has>>
 
 @enduml

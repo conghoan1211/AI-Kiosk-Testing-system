@@ -34,35 +34,10 @@ import { Fragment } from 'react/jsx-runtime';
 import * as Yup from 'yup';
 import SelectedQuestionsDisplay from '../components/selected-questions-display';
 import DialogAddQuestionBankTeacher from '../dialogs/DialogBankQuestion';
-
-const validationSchema = Yup.object({
-  title: Yup.string().required('Tiêu đề bài thi là bắt buộc'),
-  examType: Yup.number().required('Loại bài thi là bắt buộc'),
-  duration: Yup.number()
-    .required('Thời gian làm bài là bắt buộc')
-    .min(1, 'Thời gian làm bài phải lớn hơn 0'),
-  startTime: Yup.date().required('Thời gian bắt đầu là bắt buộc'),
-  endTime: Yup.date()
-    .required('Thời gian kết thúc là bắt buộc')
-    .min(Yup.ref('startTime'), 'Thời gian kết thúc phải sau thời gian bắt đầu')
-    .test(
-      'is-future',
-      'Thời gian kết thúc phải trong tương lai',
-      (value) => value && value > new Date(),
-    ),
-  isShowCorrectAnswer: Yup.boolean().required('Trạng thái hiển thị đáp án đúng là bắt buộc'),
-  status: Yup.number().required('Trạng thái bài thi là bắt buộc'),
-  isShowResult: Yup.boolean().required('Trạng thái hiển thị kết quả là bắt buộc'),
-  roomId: Yup.string().required('Phòng học là bắt buộc'),
-  guideLines: Yup.string()
-    .optional()
-    .test('is-not-empty', 'Hướng dẫn không được để trống', (value) => {
-      const strippedValue = value?.replace(/<[^>]+>/g, '') ?? '';
-      return strippedValue.trim().length > 0;
-    }),
-});
+import { useTranslation } from 'react-i18next';
 
 const AddNewExamLecture = () => {
+  const { t } = useTranslation('shared');
   const { examId } = useParams();
   const navigate = useNavigate();
   const save = useSave();
@@ -128,9 +103,40 @@ const AddNewExamLecture = () => {
           ? dataExamDetail.guideLines
           : ''
         : '',
+      verifyCamera: examId ? dataExamDetail?.verifyCamera || false : true,
     }),
     [examId, dataExamDetail, selectedQuestionBankId, selectedQuestions],
   );
+
+  const validationSchema = Yup.object({
+    title: Yup.string().required(t('ExamManagement.titleRequired')),
+    examType: Yup.number().required(t('ExamManagement.examTypeRequired')),
+    duration: Yup.number()
+      .required(t('ExamManagement.durationRequired'))
+      .min(1, t('ExamManagement.durationMin'))
+      .max(1440, t('ExamManagement.durationMax')),
+    startTime: Yup.date().required(t('ExamManagement.startTimeRequired')),
+    endTime: Yup.date()
+      .required(t('ExamManagement.endTimeRequired'))
+      .min(Yup.ref('startTime'), t('ExamManagement.endTimeMin'))
+      .test('is-future', t('ExamManagement.endTimeFuture'), (value, ctx) => {
+        if (!value) return false;
+        const now = new Date();
+        const start = ctx.parent.startTime;
+        return value >= start && (value >= now || start >= now);
+      }),
+
+    isShowCorrectAnswer: Yup.boolean().required(t('ExamManagement.isShowCorrectAnswerRequired')),
+    status: Yup.number().required(t('ExamManagement.statusRequired')),
+    isShowResult: Yup.boolean().required(t('ExamManagement.isShowResultRequired')),
+    roomId: Yup.string().required(t('ExamManagement.roomIdRequired')),
+    guideLines: Yup.string()
+      .optional()
+      .test('is-not-empty', t('ExamManagement.guideLinesRequired'), (value) => {
+        const strippedValue = value?.replace(/<[^>]+>/g, '') ?? '';
+        return strippedValue.trim().length > 0;
+      }),
+  });
 
   const handleSubmitAddNewExam = useCallback(
     async (values: IManageExamFormValue) => {
@@ -143,7 +149,7 @@ const AddNewExamLecture = () => {
           });
           save(cachedKeys.dataExamTeacher, null);
           save(cachedKeys.forceRefetchExamTeacher, true);
-          showSuccess('Cập nhật bài thi thành công!');
+          showSuccess(t('ExamManagement.updateSuccess'));
           navigate(-1);
           return;
         }
@@ -154,13 +160,13 @@ const AddNewExamLecture = () => {
         });
         save(cachedKeys.dataExamTeacher, null);
         save(cachedKeys.forceRefetchExamTeacher, true);
-        showSuccess('Thêm đề thi thành công!');
+        showSuccess(t('ExamManagement.addSuccess'));
         navigate(-1);
       } catch (error) {
         showError(error);
       }
     },
-    [selectedQuestions, selectedQuestionBankId, navigate, examId, save],
+    [selectedQuestions, selectedQuestionBankId, navigate, examId, save, t],
   );
 
   const handleQuestionBankSubmit = useCallback(
@@ -208,11 +214,9 @@ const AddNewExamLecture = () => {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">
-                  {examId ? 'Cập nhật bài thi' : 'Tạo bài thi mới'}
+                  {examId ? t('ExamManagement.updateTitle') : t('ExamManagement.createTitle')}
                 </h1>
-                <p className="mt-0.5 text-sm text-gray-600">
-                  Quản lý và tạo bài thi cho học sinh một cách dễ dàng
-                </p>
+                <p className="mt-0.5 text-sm text-gray-600">{t('ExamManagement.description')}</p>
               </div>
             </div>
           </div>
@@ -236,14 +240,14 @@ const AddNewExamLecture = () => {
                               <BookOpen className="h-3.5 w-3.5" />
                             </div>
                             <h2 className="text-lg font-semibold text-gray-900">
-                              Ngân hàng câu hỏi
+                              {t('ExamManagement.questionBank')}
                             </h2>
                             {selectedQuestions.length > 0 && (
                               <Badge
                                 variant="secondary"
                                 className="bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700"
                               >
-                                {selectedQuestions.length} câu hỏi
+                                {selectedQuestions.length} questions
                               </Badge>
                             )}
                           </div>
@@ -252,7 +256,8 @@ const AddNewExamLecture = () => {
                             <div className="space-y-3">
                               <div>
                                 <label className="mb-2 block text-xs font-medium text-gray-700">
-                                  Chọn ngân hàng câu hỏi <span className="text-red-500">*</span>
+                                  {t('ExamManagement.selectQuestionBank')}{' '}
+                                  <span className="text-red-500">*</span>
                                 </label>
                                 <Button
                                   type="button"
@@ -262,8 +267,8 @@ const AddNewExamLecture = () => {
                                 >
                                   <Plus className="mr-2 h-3.5 w-3.5" />
                                   {selectedQuestions.length > 0
-                                    ? `Đã chọn ${selectedQuestions.length} câu hỏi`
-                                    : 'Chọn câu hỏi từ ngân hàng...'}
+                                    ? `Selected ${selectedQuestions.length} questions`
+                                    : 'Select questions from the question bank...'}
                                 </Button>
                               </div>
 
@@ -289,7 +294,7 @@ const AddNewExamLecture = () => {
                               <FileText className="h-3.5 w-3.5" />
                             </div>
                             <h2 className="text-lg font-semibold text-gray-900">
-                              Thông tin cơ bản
+                              {t('ExamManagement.basicInformation')}
                             </h2>
                           </div>
 
@@ -298,13 +303,13 @@ const AddNewExamLecture = () => {
                               <FormikField
                                 component={SelectField}
                                 name="roomId"
-                                placeholder="Chọn phòng học"
-                                label="Phòng học"
+                                label={t('ExamManagement.room')}
+                                placeholder={t('ExamManagement.selectRoom')}
                                 required
                                 options={
                                   dataRoomList?.map((item) => ({
                                     value: item.roomId,
-                                    label: item.classCode,
+                                    label: item.roomCode,
                                   })) || []
                                 }
                                 shouldHideSearch
@@ -315,8 +320,8 @@ const AddNewExamLecture = () => {
                               <FormikField
                                 component={SelectField}
                                 name="examType"
-                                placeholder="Chọn loại bài thi"
-                                label="Loại bài thi"
+                                placeholder={t('ExamManagement.selectExamType')}
+                                label={t('ExamManagement.examType')}
                                 required
                                 options={ExamType.map((item) => ({
                                   value: item.value,
@@ -330,8 +335,8 @@ const AddNewExamLecture = () => {
                               <FormikField
                                 component={InputField}
                                 name="title"
-                                placeholder="Nhập tiêu đề bài thi"
-                                label="Tiêu đề bài thi"
+                                placeholder={t('ExamManagement.enterExamTitle')}
+                                label={t('ExamManagement.examTitle')}
                                 required
                               />
                             </div>
@@ -340,8 +345,8 @@ const AddNewExamLecture = () => {
                               <FormikField
                                 component={InputField}
                                 name="description"
-                                placeholder="Nhập mô tả bài thi"
-                                label="Mô tả bài thi"
+                                placeholder={t('ExamManagement.enterExamDescription')}
+                                label={t('ExamManagement.examDescription')}
                               />
                             </div>
                           </div>
@@ -356,17 +361,18 @@ const AddNewExamLecture = () => {
                               <Clock className="h-3.5 w-3.5" />
                             </div>
                             <h2 className="text-lg font-semibold text-gray-900">
-                              Cài đặt thời gian
+                              {t('ExamManagement.timeSettings')}
                             </h2>
                           </div>
 
                           <div className="grid gap-6 lg:grid-cols-3">
                             <div className="space-y-1.5">
                               <FormikField
+                                nextText={'(minutes)'}
                                 component={InputField}
                                 name="duration"
-                                placeholder="Nhập thời gian làm bài (phút)"
-                                label="Thời gian làm bài (phút)"
+                                placeholder={t('ExamManagement.enterExamDuration')}
+                                label={t('ExamManagement.examDuration')}
                                 required
                                 isNumberic
                               />
@@ -376,8 +382,8 @@ const AddNewExamLecture = () => {
                               <FormikField
                                 component={DateTimePickerField}
                                 name="startTime"
-                                placeholder="Chọn thời gian bắt đầu"
-                                label="Thời gian bắt đầu"
+                                placeholder={t('ExamManagement.enterStartTime')}
+                                label={t('ExamManagement.startTime')}
                                 required
                                 disableCallback={(date: any) => {
                                   return date <= new Date();
@@ -389,8 +395,8 @@ const AddNewExamLecture = () => {
                               <FormikField
                                 component={DateTimePickerField}
                                 name="endTime"
-                                placeholder="Chọn thời gian kết thúc"
-                                label="Thời gian kết thúc"
+                                placeholder={t('ExamManagement.enterEndTime')}
+                                label={t('ExamManagement.endTime')}
                                 required
                                 disableCallback={(date: any) => {
                                   if (values.startTime) {
@@ -412,21 +418,21 @@ const AddNewExamLecture = () => {
                               <Settings className="h-3.5 w-3.5" />
                             </div>
                             <h2 className="text-lg font-semibold text-gray-900">
-                              Cài đặt hiển thị
+                              {t('ExamManagement.displaySettings')}
                             </h2>
                           </div>
 
-                          <div className="grid gap-6 lg:grid-cols-3">
+                          <div className="grid gap-6 lg:grid-cols-4">
                             <div className="space-y-1.5">
                               <FormikField
                                 component={SelectField}
                                 name="isShowResult"
-                                placeholder="Hiển thị kết quả"
-                                label="Hiển thị kết quả"
+                                placeholder={t('ExamManagement.showResult')}
+                                label={t('ExamManagement.showResult')}
                                 required
                                 options={[
-                                  { value: true, label: 'Hiển thị kết quả' },
-                                  { value: false, label: 'Không hiển thị kết quả' },
+                                  { value: true, label: t('ExamManagement.showResult') },
+                                  { value: false, label: t('ExamManagement.hideResult') },
                                 ]}
                                 shouldHideSearch
                               />
@@ -436,12 +442,12 @@ const AddNewExamLecture = () => {
                               <FormikField
                                 component={SelectField}
                                 name="isShowCorrectAnswer"
-                                placeholder="Hiển thị đáp án đúng"
-                                label="Hiển thị đáp án đúng"
+                                placeholder={t('ExamManagement.showCorrectAnswer')}
+                                label={t('ExamManagement.showCorrectAnswer')}
                                 required
                                 options={[
-                                  { value: true, label: 'Hiển thị đáp án đúng' },
-                                  { value: false, label: 'Không hiển thị đáp án đúng' },
+                                  { value: true, label: t('ExamManagement.showCorrectAnswer') },
+                                  { value: false, label: t('ExamManagement.hideCorrectAnswer') },
                                 ]}
                                 shouldHideSearch
                               />
@@ -451,8 +457,8 @@ const AddNewExamLecture = () => {
                               <FormikField
                                 component={SelectField}
                                 name="status"
-                                placeholder="Trạng thái bài thi"
-                                label="Trạng thái bài thi"
+                                placeholder={t('ExamManagement.status')}
+                                label={t('ExamManagement.status')}
                                 required
                                 options={ExamStatus.map((item) => ({
                                   value: item.value,
@@ -461,10 +467,28 @@ const AddNewExamLecture = () => {
                                 shouldHideSearch
                               />
                             </div>
+
+                            <div className="space-y-1.5">
+                              <FormikField
+                                component={SelectField}
+                                name="verifyCamera"
+                                placeholder={t('ExamManagement.verifyCamera')}
+                                label={t('ExamManagement.verifyCamera')}
+                                required
+                                options={[
+                                  { value: true, label: t('ExamManagement.verifyCamera') },
+                                  { value: false, label: t('ExamManagement.dontVerifyCamera') },
+                                ]}
+                                shouldHideSearch
+                              />
+                            </div>
                           </div>
 
                           <div className="space-y-1.5">
-                            <CKEditorField label="Hướng dẫn làm bài" name="guideLines" />
+                            <CKEditorField
+                              label={t('ExamManagement.guideLines')}
+                              name="guideLines"
+                            />
                             {errors.guideLines && (
                               <div className="text-xs text-red-500">{errors.guideLines}</div>
                             )}
@@ -478,7 +502,7 @@ const AddNewExamLecture = () => {
                             type="button"
                             className="h-10 bg-transparent px-6 font-medium"
                           >
-                            Hủy
+                            {t('Close')}
                           </Button>
                           <Button
                             type="submit"
@@ -486,7 +510,9 @@ const AddNewExamLecture = () => {
                             className="h-10 bg-gradient-to-r from-blue-600 to-indigo-600 px-6 font-medium shadow-md hover:from-blue-700 hover:to-indigo-700"
                           >
                             <CheckCircle className="mr-2 h-3.5 w-3.5" />
-                            {examId ? 'Cập nhật bài thi' : 'Tạo bài thi mới'}
+                            {examId
+                              ? t('ExamManagement.updateExam')
+                              : t('ExamManagement.createExam')}
                           </Button>
                         </div>
                       </Form>

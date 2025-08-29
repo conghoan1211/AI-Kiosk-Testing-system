@@ -4,12 +4,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { errorHandler } from '@/helpers/errors';
 import { showError } from '@/helpers/toast';
-import httpService from '@/services/httpService';
+import bankquestionService from '../bankquestion.Service';
 import {
   QuestionBankDetail,
   ResponseGetDetailQuestionBank,
 } from '../interfaces/bankquestion.interface';
-import bankquestionService from '../bankquestion.Service';
 
 /**
  * Please check:
@@ -33,7 +32,6 @@ const useGetQuestionBankDetail = (
   const [isLoading, setLoading] = useState(false);
   const [isRefetching, setRefetching] = useState(false);
   const [error, setError] = useState<unknown>(null);
-  const token = httpService.getTokenStorage();
 
   //! Function
   const fetch: () => Promise<ResponseGetDetailQuestionBank> | undefined = useCallback(() => {
@@ -44,7 +42,6 @@ const useGetQuestionBankDetail = (
     return new Promise((resolve, reject) => {
       (async () => {
         try {
-          httpService.attachTokenToHeader(token);
           const response = await bankquestionService.getDetailBankQuestion(id as string);
           resolve(response);
         } catch (error) {
@@ -53,7 +50,7 @@ const useGetQuestionBankDetail = (
         }
       })();
     });
-  }, [id, isTrigger, token]);
+  }, [id, isTrigger]);
 
   const checkConditionPass = useCallback(
     (response: ResponseGetDetailQuestionBank) => {
@@ -71,7 +68,6 @@ const useGetQuestionBankDetail = (
     try {
       setRefetching(true);
       signal.current = new AbortController();
-      httpService.attachTokenToHeader(token);
       const response = await bankquestionService.getDetailBankQuestion(id as string);
       checkConditionPass(response);
     } catch (error: any) {
@@ -79,7 +75,7 @@ const useGetQuestionBankDetail = (
     } finally {
       setRefetching(false);
     }
-  }, [checkConditionPass, id, token]);
+  }, [checkConditionPass, id]);
 
   useEffect(() => {
     if (cachedKey) {

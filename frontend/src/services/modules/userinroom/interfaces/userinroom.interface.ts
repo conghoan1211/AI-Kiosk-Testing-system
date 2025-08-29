@@ -55,3 +55,26 @@ export interface Response<T> {
 }
 
 export type ResponseUserInRoom = Response<IUserInRoom>;
+
+export interface AllRoomUser {
+  success: boolean;
+  message: string;
+  data: Data;
+}
+
+export interface Data {
+  result: AllRoomUser[];
+  totalPage: number;
+  pageSize: number;
+  currentPage: number;
+  total: number;
+}
+
+export interface AllRoomUser {
+  userId: string;
+  userCode: string;
+  fullName: string;
+  major: string;
+}
+
+export type ResponseAllRoomUser = Response<AllRoomUser>;

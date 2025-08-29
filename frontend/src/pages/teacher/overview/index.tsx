@@ -11,9 +11,11 @@ import ExamHeader from '../examsupervision/components/ExamHeader';
 import LatestAlerts from './components/latest-alerts';
 import QuickAccess from './components/quick-access';
 import RecentActivities from './components/recent-activities';
+import { useTranslation } from 'react-i18next';
 
 const Overview = () => {
   //! State
+  const { t } = useTranslation('shared');
   const defaultData = useGet('dataUserLog');
   const cachesFilterUserLog = useGet('cachesFilterUserLog');
   const [isTrigger] = useState(Boolean(!defaultData));
@@ -58,19 +60,19 @@ const Overview = () => {
 
     return [
       {
-        title: 'Recent Activities',
+        title: t('Overview.RecentActivities'),
         value: totalRecentActivities,
         icon: <HelpCircle className="h-6 w-6 text-blue-500" />,
         bgColor: 'bg-blue-50',
       },
       {
-        title: 'Waiting Activities',
+        title: t('Overview.WaitingActivities'),
         value: totalWaitingActivities,
         icon: <FileText className="h-6 w-6 text-green-500" />,
         bgColor: 'bg-green-50',
       },
     ];
-  }, [dataMain, listExamLogActivity]);
+  }, [dataMain, listExamLogActivity, t]);
 
   //! Functions
 
@@ -79,8 +81,8 @@ const Overview = () => {
     <PageWrapper name="Tổng quan" className="bg-white dark:bg-gray-900" isLoading={loading}>
       <div className="space-y-6">
         <ExamHeader
-          title="Tổng quan"
-          subtitle="Theo dõi và quản lý các hoạt động giảng dạy của bạn"
+          title={t('Overview.Title')}
+          subtitle={t('Overview.Subtitle')}
           icon={<Home className="h-8 w-8 text-white" />}
           className="border-b border-white/20 bg-gradient-to-r from-blue-600 to-green-700 px-6 py-6 shadow-lg"
         />

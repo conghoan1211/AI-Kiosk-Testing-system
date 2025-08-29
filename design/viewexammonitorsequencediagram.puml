@@ -1,68 +1,104 @@
 @startuml
-
-title View Exam Monitor Sequence Diagram
+title View Exam Monitor — Sequence Diagram (repos wired, short SQL)
 
 actor "User" as Client
-boundary "c:MonitoringController" as Controller
-control "s:MonitoringService" as Service
+boundary ":MonitorUI" as UI <<boundary>>
+control ":MonitoringController" as Controller <<controller>>
+participant ":MonitoringService" as Service <<service>>
+
+' Repositories
+entity "ExamRepository" as ExamRepo <<repository>>
+entity "RoomRepository" as RoomRepo <<repository>>
+entity "ClassRepository" as ClassRepo <<repository>>
+entity "SubjectRepository" as SubjectRepo <<repository>>
+
 database "Database" as DB
 
 == View Exam Monitor ==
 
-Client -> Controller: GET /exam-overview (MonitorExamSearchVM)
+Client -> UI: Request exam monitor overview (MonitorExamSearchVM)
+activate UI
+UI -> Controller: GET /exam-overview
 activate Controller
 
 alt User not authenticated
-    Controller -> Controller: Log unauthorized access attempt
-    Controller --> Client: 401 Unauthorized { success: false, message: "User not authenticated." }
-    deactivate Controller
+  Controller --> UI: 401 Unauthorized
+  deactivate Controller
+  UI --> Client: Show unauthorized
+  deactivate UI
 else User authenticated
-    Controller -> Service: GetExamOverview(search, usertoken)
-    activate Service
+  Controller -> Service: GetExamOverview(search, usertoken)
+  activate Service
 
-    Service -> DB: Check user is admin (UserId, RoleId=Admin)
-    activate DB
-    DB --> Service: isAdmin result
-    deactivate DB
+  ' --- Check admin ---
+  Service -> DB: SELECT 1 FROM Users WHERE Id=@uid AND Role='Admin'
+  DB --> Service: isAdmin
 
-    Service -> DB: Get permitted ExamIds (ExamSupervisors)
-    activate DB
-    alt No permitted exams
-        DB --> Service: Not found
-        deactivate DB
-        Service -> Service: Log authorization failure
-        Service --> Controller: ("You do not have the right to supervise any exams.", null)
-        deactivate Service
-        Controller --> Client: 403 Forbidden { success: false, message }
-        deactivate Controller
-    else Has permitted exams
-        DB --> Service: List<ExamId>
-        deactivate DB
+  ' --- Get permitted exam ids ---
+  Service -> ExamRepo: GetPermittedExamIds(userId)
+  activate ExamRepo
+  ExamRepo -> DB: SELECT ExamId FROM ExamSupervisors WHERE UserId=@uid
+  DB --> ExamRepo: examIds
+  ExamRepo --> Service: examIds
+  deactivate ExamRepo
 
-        Service -> DB: Query Exams (ExamId in permitted, include Creator, Room, Class, Subject)
-        activate DB
-        DB --> Service: IQueryable<Exam>
-        deactivate DB
+  alt examIds is empty
+    Service --> Controller: 403 Forbidden
+    deactivate Service
+    Controller --> UI: 403 Forbidden
+    deactivate Controller
+    UI --> Client: Show forbidden
+    deactivate UI
+  else Has permitted exams
+    ' --- Search Exams ---
+    Service -> ExamRepo: SearchExams(search, examIds)
+    activate ExamRepo
+    ExamRepo -> DB: SELECT * FROM Exams WHERE Id IN (@ids) ...
+    DB --> ExamRepo: exams
+    ExamRepo --> Service: exams
+    deactivate ExamRepo
 
-        Service -> Service: Apply filters (SubjectId, ExamStatus, TextSearch)
-        Service -> Service: Count total, calculate totalPage
-        Service -> DB: Get paged Exams
-        activate DB
-        DB --> Service: List<Exam>
-        deactivate DB
+    ' --- Load Rooms ---
+    Service -> RoomRepo: GetByIds(exams.RoomIds)
+    activate RoomRepo
+    RoomRepo -> DB: SELECT * FROM Rooms WHERE Id IN (@ids)
+    DB --> RoomRepo: rooms
+    RoomRepo --> Service: rooms
+    deactivate RoomRepo
 
-        Service -> DB: Query StudentExams (ExamId in page)
-        activate DB
-        DB --> Service: List<StudentExam>
-        deactivate DB
+    ' --- Load Classes ---
+    Service -> ClassRepo: GetByIds(exams.ClassIds)
+    activate ClassRepo
+    ClassRepo -> DB: SELECT * FROM Classes WHERE Id IN (@ids)
+    DB --> ClassRepo: classes
+    ClassRepo --> Service: classes
+    deactivate ClassRepo
 
-        Service -> Service: Summary result (MonitorExamsVM)
-        Service -> Service: Wrap in SearchResult (Result, TotalPage, PageSize, CurrentPage, Total)
-        Service --> Controller: ("", SearchResult)
-        deactivate Service
-        Controller --> Client: 200 OK { success: true, message, data }
-        deactivate Controller
-    end alt
-end alt
+    ' --- Load Subjects ---
+    Service -> SubjectRepo: GetByIds(exams.SubjectIds)
+    activate SubjectRepo
+    SubjectRepo -> DB: SELECT * FROM Subjects WHERE Id IN (@ids)
+    DB --> SubjectRepo: subjects
+    SubjectRepo --> Service: subjects
+    deactivate SubjectRepo
 
-@enduml 
+    ' --- Count total ---
+    Service -> ExamRepo: CountExams(search, examIds)
+    activate ExamRepo
+    ExamRepo -> DB: SELECT COUNT(*) FROM Exams WHERE Id IN (@ids) ...
+    DB --> ExamRepo: total
+    ExamRepo --> Service: total
+    deactivate ExamRepo
+
+    ' --- Build result ---
+    Service -> Service: Merge data -> MonitorExamsVM
+    Service --> Controller: 200 OK { success:true, data: SearchResult(...) }
+    deactivate Service
+    Controller --> UI: 200 OK
+    deactivate Controller
+    UI --> Client: Show overview
+    deactivate UI
+  end
+end
+
+@enduml

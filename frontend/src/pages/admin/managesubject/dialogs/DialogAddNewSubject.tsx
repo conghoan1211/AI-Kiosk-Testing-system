@@ -1,7 +1,7 @@
-import FormikField from "@/components/customFieldsFormik/FormikField";
-import InputField from "@/components/customFieldsFormik/InputField";
-import SelectField from "@/components/customFieldsFormik/SelectField";
-import { Button } from "@/components/ui/button";
+import FormikField from '@/components/customFieldsFormik/FormikField';
+import InputField from '@/components/customFieldsFormik/InputField';
+import SelectField from '@/components/customFieldsFormik/SelectField';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogClose,
@@ -9,16 +9,17 @@ import {
   DialogOverlay,
   DialogPortal,
   DialogTitle,
-} from "@/components/ui/dialog";
-import Loading from "@/components/ui/loading";
-import { Textarea } from "@/components/ui/textarea";
-import { showError } from "@/helpers/toast";
-import { DialogI } from "@/interfaces/common";
-import useGetDetailSubject from "@/services/modules/subject/hooks/useGetDetailSubject";
-import { ISubjectForm } from "@/services/modules/subject/interfaces/subject.interface";
-import { Form, Formik } from "formik";
-import { Fragment } from "react/jsx-runtime";
-import * as Yup from "yup";
+} from '@/components/ui/dialog';
+import Loading from '@/components/ui/loading';
+import { Textarea } from '@/components/ui/textarea';
+import { showError } from '@/helpers/toast';
+import { DialogI } from '@/interfaces/common';
+import useGetDetailSubject from '@/services/modules/subject/hooks/useGetDetailSubject';
+import { ISubjectForm } from '@/services/modules/subject/interfaces/subject.interface';
+import { Form, Formik } from 'formik';
+import { useTranslation } from 'react-i18next';
+import { Fragment } from 'react/jsx-runtime';
+import * as Yup from 'yup';
 
 interface DialogAddNewSubjectProps extends DialogI<any> {
   isOpen: boolean;
@@ -27,41 +28,37 @@ interface DialogAddNewSubjectProps extends DialogI<any> {
   editSubject?: ISubjectForm | null;
 }
 
-const validationSchema = Yup.object({
-  subjectName: Yup.string()
-    .required("Tên môn học là bắt buộc")
-    .min(2, "Tên môn học phải có ít nhất 2 ký tự")
-    .max(100, "Tên môn học không được vượt quá 100 ký tự"),
-  subjectCode: Yup.string()
-    .required("Mã môn học là bắt buộc")
-    .matches(/^[A-Z]{2,5}\d{3}$/, "Mã môn học phải theo định dạng (VD: CS101)"),
-  subjectDescription: Yup.string().max(
-    500,
-    "Mô tả không được vượt quá 500 ký tự",
-  ),
-  subjectContent: Yup.string().max(
-    1000,
-    "Nội dung không được vượt quá 1000 ký tự",
-  ),
-  status: Yup.boolean().required("Trạng thái là bắt buộc"),
-});
-
 const DialogAddNewSubject = (props: DialogAddNewSubjectProps) => {
   //!State
+  const { t } = useTranslation('shared');
   const { isOpen, toggle, onSubmit, editSubject } = props;
-  const { isLoading: isLoadingDetail, data: detailSubject } =
-    useGetDetailSubject(editSubject?.subjectId, {
+  const { isLoading: isLoadingDetail, data: detailSubject } = useGetDetailSubject(
+    editSubject?.subjectId,
+    {
       isTrigger: !!editSubject,
-    });
+    },
+  );
 
   const initialValues: ISubjectForm = {
-    subjectName: editSubject ? editSubject.subjectName : "",
-    subjectCode: editSubject ? editSubject.subjectCode : "",
-    subjectDescription: editSubject ? editSubject.subjectDescription : "",
+    subjectName: editSubject ? editSubject.subjectName : '',
+    subjectCode: editSubject ? editSubject.subjectCode : '',
+    subjectDescription: editSubject ? editSubject.subjectDescription : '',
     status: editSubject ? editSubject.status : true,
-    subjectContent: editSubject ? editSubject.subjectContent : "",
+    subjectContent: editSubject ? editSubject.subjectContent : '',
   };
 
+  const validationSchema = Yup.object({
+    subjectName: Yup.string()
+      .required(t('SubjectManagement.SubjectNameRequired'))
+      .min(2, t('SubjectManagement.SubjectNameMinLength'))
+      .max(100, t('SubjectManagement.SubjectNameMaxLength')),
+    subjectCode: Yup.string()
+      .required(t('SubjectManagement.SubjectCodeRequired'))
+      .matches(/^[A-Z]{2,5}\d{3}$/, t('SubjectManagement.SubjectCodeFormat')),
+    subjectDescription: Yup.string().max(500, t('SubjectManagement.SubjectDescriptionMaxLength')),
+    subjectContent: Yup.string().max(1000, t('SubjectManagement.SubjectContentMaxLength')),
+    status: Yup.boolean().required(t('SubjectManagement.StatusRequired')),
+  });
   //!Functions
 
   if (isLoadingDetail) {
@@ -104,8 +101,8 @@ const DialogAddNewSubject = (props: DialogAddNewSubjectProps) => {
                     <div>
                       <DialogTitle className="text-xl font-medium">
                         {editSubject
-                          ? `Chỉnh sửa môn học: ${detailSubject?.subjectName}`
-                          : "Thêm môn học mới"}
+                          ? `${t('SubjectManagement.EditSubject')} ${detailSubject?.subjectName}`
+                          : t('SubjectManagement.AddNewSubject')}
                       </DialogTitle>
                     </div>
 
@@ -115,9 +112,9 @@ const DialogAddNewSubject = (props: DialogAddNewSubjectProps) => {
                           id="subjectName"
                           component={InputField}
                           name="subjectName"
-                          placeholder="Nhập tên môn học"
+                          label={t('SubjectManagement.SubjectName')}
+                          placeholder={t('SubjectManagement.SubjectNamePlaceholder')}
                           value={values.subjectName}
-                          label="Tên môn học"
                           required
                         />
                       </div>
@@ -127,9 +124,9 @@ const DialogAddNewSubject = (props: DialogAddNewSubjectProps) => {
                           component={InputField}
                           id="subjectCode"
                           name="subjectCode"
-                          placeholder="Nhập mã môn học(VD: CS101)"
+                          label={t('SubjectManagement.SubjectCode')}
+                          placeholder={t('SubjectManagement.SubjectCodePlaceholder')}
                           value={values.subjectCode}
-                          label="Mã môn học"
                           required
                         />
                       </div>
@@ -138,11 +135,11 @@ const DialogAddNewSubject = (props: DialogAddNewSubjectProps) => {
                         <FormikField
                           component={SelectField}
                           name="status"
-                          placeholder="Chọn trạng thái"
-                          label="Trạng thái"
+                          label={t('SubjectManagement.Status')}
+                          placeholder={t('SubjectManagement.StatusPlaceholder')}
                           options={[
-                            { label: "Kích hoạt", value: true },
-                            { label: "Không kích hoạt", value: false },
+                            { label: t('SubjectManagement.Active'), value: true },
+                            { label: t('SubjectManagement.Inactive'), value: false },
                           ]}
                           shouldHideSearch
                         />
@@ -152,8 +149,8 @@ const DialogAddNewSubject = (props: DialogAddNewSubjectProps) => {
                         <FormikField
                           component={Textarea}
                           name="subjectDescription"
-                          placeholder="Nhập mô tả môn học (tùy chọn)"
-                          label="Mô tả"
+                          label={t('SubjectManagement.SubjectDescription')}
+                          placeholder={t('SubjectManagement.SubjectDescriptionPlaceholder')}
                           required
                         />
                       </div>
@@ -162,8 +159,8 @@ const DialogAddNewSubject = (props: DialogAddNewSubjectProps) => {
                         <FormikField
                           component={Textarea}
                           name="subjectContent"
-                          placeholder="Nhập nội dung môn học (tùy chọn)"
-                          label="Nội dung môn học"
+                          placeholder={t('SubjectManagement.SubjectContentPlaceholder')}
+                          label={t('SubjectManagement.SubjectContent')}
                           required
                         />
                       </div>
@@ -176,7 +173,9 @@ const DialogAddNewSubject = (props: DialogAddNewSubjectProps) => {
                         </Button>
                       </DialogClose>
                       <Button type="submit" isLoading={isSubmitting}>
-                        {editSubject ? "Cập nhật môn học" : "Thêm môn học"}
+                        {editSubject
+                          ? t('SubjectManagement.EditSubject')
+                          : t('SubjectManagement.AddNewSubject')}
                       </Button>
                     </div>
                   </Form>

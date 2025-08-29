@@ -13,6 +13,7 @@ import { DialogI } from '@/interfaces/common';
 import useGetDetailCategoryPermission from '@/services/modules/permission/hooks/useGetDetailPermission';
 import { Form, Formik } from 'formik';
 import { Fragment } from 'react';
+import { useTranslation } from 'react-i18next';
 import * as Yup from 'yup';
 
 interface DialogProps extends DialogI<any> {
@@ -21,8 +22,9 @@ interface DialogProps extends DialogI<any> {
 }
 
 const DialogAddNewCategoryPermission = (props: DialogProps) => {
+  const { t } = useTranslation('shared');
   const { isOpen, toggle, onSubmit, permissionId } = props;
-  const { data: permissionDetail } = useGetDetailCategoryPermission(permissionId || '', {
+  const { data: permissionDetail } = useGetDetailCategoryPermission(permissionId ?? '', {
     isTrigger: !!permissionId,
   });
 
@@ -32,7 +34,7 @@ const DialogAddNewCategoryPermission = (props: DialogProps) => {
   };
 
   const validationSchema = Yup.object().shape({
-    description: Yup.string().required('Description is required'),
+    description: Yup.string().required(t('PermissionManagement.DescriptionRequired')),
   });
 
   return (
@@ -42,7 +44,7 @@ const DialogAddNewCategoryPermission = (props: DialogProps) => {
         <DialogContent>
           <Formik
             initialValues={initialValues}
-            onSubmit={onSubmit || (() => {})}
+            onSubmit={onSubmit ?? (() => {})}
             validationSchema={validationSchema}
             enableReinitialize
           >
@@ -50,12 +52,14 @@ const DialogAddNewCategoryPermission = (props: DialogProps) => {
               return (
                 <Fragment>
                   <DialogTitle>
-                    {permissionId ? 'Chỉnh sửa quyền hạn' : 'Thêm quyền hạn mới'}
+                    {permissionId
+                      ? t('PermissionManagement.EditTitle')
+                      : t('PermissionManagement.AddNewPermission')}
                   </DialogTitle>
                   <DialogDescription>
                     {permissionId
-                      ? 'Chỉnh sửa thông tin quyền hạn hiện tại'
-                      : 'Thêm quyền hạn mới cho danh mục'}
+                      ? t('PermissionManagement.EditDescription')
+                      : t('PermissionManagement.AddNewPermissionDescription')}
                   </DialogDescription>
 
                   <hr className="border-t border-gray-200" />
@@ -64,18 +68,20 @@ const DialogAddNewCategoryPermission = (props: DialogProps) => {
                     <FormikField
                       component={InputField}
                       name="description"
-                      placeholder="Nhập tên quyền hạn"
-                      label="Tên quyền hạn"
+                      placeholder={t('PermissionManagement.PermissionName')}
+                      label={t('PermissionManagement.PermissionName')}
                       required
                     />
                   </div>
 
                   <Form className="mt-[25px] flex justify-end gap-2">
                     <Button type="submit" isLoading={isSubmitting}>
-                      {permissionId ? 'Cập nhật quyền hạn' : 'Thêm quyền hạn mới'}
+                      {permissionId
+                        ? t('PermissionManagement.EditPermission')
+                        : t('PermissionManagement.CreatePermission')}
                     </Button>
                     <Button variant="ghost" type="button" onClick={toggle}>
-                      Đóng
+                      {t('Close')}
                     </Button>
                   </Form>
                 </Fragment>

@@ -30,25 +30,27 @@ import { UserStats } from '../manageuser/components/user-stats';
 import DialogAddNewProhibitedApp, {
   ProhibitedFormValues,
 } from './dialogs/DialogAddNewProhibitedApp';
+import { useTranslation } from 'react-i18next';
 
 const ProhibitedPage = () => {
   //!State
+  const { t } = useTranslation('shared');
   const defaultProhibited = useGet('dataProhibited');
   const totalProhibitedCount = useGet('totalProhibitedCount');
   const totalPageProhibitedCount = useGet('totalPageProhibitedCount');
   const cachesFilterProhibited = useGet('cachesFilterProhibited');
-  const [isTrigger, setTrigger] = useState(Boolean(!defaultProhibited));
+  const [isTrigger, setIsTrigger] = useState(Boolean(!defaultProhibited));
   const save = useSave();
   const [editProhibited, setEditProhibited] = useState<ProhbitedList | null>(null);
   const [openAskAddNewProhibited, toggleAskAddNewProhibited, shouldRenderAskAddNewProhibited] =
     useToggleDialog();
 
   const { filters, setFilters } = useFiltersHandler({
-    PageSize: cachesFilterProhibited?.PageSize || 50,
-    CurrentPage: cachesFilterProhibited?.CurrentPage || 1,
-    TextSearch: cachesFilterProhibited?.TextSearch || '',
+    PageSize: cachesFilterProhibited?.PageSize ?? 50,
+    CurrentPage: cachesFilterProhibited?.CurrentPage ?? 1,
+    TextSearch: cachesFilterProhibited?.TextSearch ?? '',
     IsActive:
-      cachesFilterProhibited?.IsActive !== undefined ? cachesFilterProhibited.IsActive : true,
+      cachesFilterProhibited?.IsActive !== undefined ? cachesFilterProhibited.IsActive : undefined,
     RiskLevel:
       cachesFilterProhibited?.RiskLevel !== undefined
         ? cachesFilterProhibited.RiskLevel
@@ -83,49 +85,49 @@ const ProhibitedPage = () => {
   );
 
   const statItems = useMemo(() => {
-    const totalApp = dataMain.length || 0;
-    const activeCount = dataMain.filter((item: any) => item.isActive).length || 0;
-    const highRiskCount = dataMain.filter((item: any) => item.riskLevel === 2).length || 0;
+    const totalApp = dataMain.length ?? 0;
+    const activeCount = dataMain.filter((item: any) => item.isActive).length ?? 0;
+    const highRiskCount = dataMain.filter((item: any) => item.riskLevel === 2).length ?? 0;
 
     return [
       {
-        title: 'Tổng số ứng dụng',
+        title: t('ProhibitedManagement.TotalItems'),
         value: totalApp,
         icon: <ShieldAlert className="h-6 w-6 text-blue-500" />,
         bgColor: 'bg-blue-50',
       },
       {
-        title: 'Đang hoạt động',
+        title: t('ProhibitedManagement.ActiveItems'),
         value: activeCount,
         icon: <ShieldAlert className="h-6 w-6 text-green-500" />,
         bgColor: 'bg-green-50',
       },
       {
-        title: 'Rủi ro cao',
+        title: t('ProhibitedManagement.HighRiskItems'),
         value: highRiskCount,
         icon: <ShieldAlert className="h-6 w-6 text-yellow-500" />,
         bgColor: 'bg-yellow-50',
       },
     ];
-  }, [dataMain]);
+  }, [dataMain, t]);
 
   const columns = [
     {
-      label: 'Ứng dụng',
+      label: t('ProhibitedManagement.AppName'),
       accessor: 'appName',
       sortable: false,
-      Cell: (row: ProhbitedList) => <span className="font-medium">{row.appName || 'N/A'}</span>,
+      Cell: (row: ProhbitedList) => <span className="font-medium">{row.appName ?? 'N/A'}</span>,
     },
     {
-      label: 'Tên tiến trình',
+      label: t('ProhibitedManagement.ProcessName'),
       accessor: 'processName',
       sortable: false,
       Cell: (row: ProhbitedList) => (
-        <span className="text-sm text-gray-600">{row.processName || 'N/A'}</span>
+        <span className="text-sm text-gray-600">{row.processName ?? 'N/A'}</span>
       ),
     },
     {
-      label: 'Danh mục',
+      label: t('ProhibitedManagement.Category'),
       accessor: 'category',
       sortable: false,
       Cell: (row: ProhbitedList) => (
@@ -133,7 +135,7 @@ const ProhibitedPage = () => {
       ),
     },
     {
-      label: 'Mức độ rủi ro',
+      label: t('ProhibitedManagement.RiskLevel'),
       accessor: 'riskLevel',
       sortable: false,
       Cell: (row: ProhbitedList) => (
@@ -147,15 +149,15 @@ const ProhibitedPage = () => {
           }`}
         >
           {row.riskLevel === 0
-            ? 'Rủi ro thấp'
+            ? t('ProhibitedManagement.LowRisk')
             : row.riskLevel === 1
-              ? 'Rủi ro trung bình'
-              : 'Rủi ro cao'}
+              ? t('ProhibitedManagement.MediumRisk')
+              : t('ProhibitedManagement.HighRisk')}
         </span>
       ),
     },
     {
-      label: 'Trạng thái',
+      label: t('ProhibitedManagement.Status'),
       accessor: 'isActive',
       sortable: false,
       Cell: (row: ProhbitedList) => (
@@ -164,22 +166,38 @@ const ProhibitedPage = () => {
             row.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
           }`}
         >
-          {row.isActive ? 'Đang hoạt động' : 'Không hoạt động'}
+          {row.isActive ? t('ProhibitedManagement.Active') : t('ProhibitedManagement.Inactive')}
         </span>
       ),
     },
     {
-      label: 'Cập nhật lần cuối',
+      label: t('ProhibitedManagement.LastUpdated'),
       accessor: 'updatedAt',
       sortable: false,
       Cell: (row: ProhbitedList) => (
         <span className="text-sm text-gray-600">
-          {moment(row.updatedAt).format(DateTimeFormat.DayMonthYear) || 'Không có mô tả'}
+          {moment(row.updatedAt).format(DateTimeFormat.DayMonthYear) ?? 'Không có mô tả'}
         </span>
       ),
     },
     {
-      label: 'Thay đổi trạng thái',
+      label: t('ProhibitedManagement.TypeApp'),
+      accessor: 'typeApp',
+      sortable: false,
+      Cell: (row: ProhbitedList) => (
+        <span
+          className={`rounded-full px-2 py-1 text-xs font-medium ${
+            row.typeApp === 0 ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+          }`}
+        >
+          {row.typeApp === 0
+            ? t('ProhibitedManagement.BlackList')
+            : t('ProhibitedManagement.WhiteList')}
+        </span>
+      ),
+    },
+    {
+      label: t('ProhibitedManagement.ChangeStatus'),
       accessor: 'changeStatus',
       sortable: false,
       Cell: (row: ProhbitedList) => (
@@ -188,9 +206,9 @@ const ProhibitedPage = () => {
           onCheckedChange={async () => {
             try {
               await prohibitedService.changeStatusProhibited([row.appId]);
-              showSuccess(`Trạng thái ứng dụng ${row.appName} đã được cập nhật!`);
+              showSuccess(t('ProhibitedManagement.ChangeStatusSuccess'));
               save(cachedKeys.dataProhibited, null);
-              setTrigger(true);
+              setIsTrigger(true);
               refetch();
             } catch (error) {
               showError(error);
@@ -200,7 +218,7 @@ const ProhibitedPage = () => {
       ),
     },
     {
-      label: 'Hành động',
+      label: t('ProhibitedManagement.Actions'),
       accessor: 'actions',
       width: 120,
       sortable: false,
@@ -220,13 +238,13 @@ const ProhibitedPage = () => {
                 }}
                 className="cursor-pointer"
               >
-                <Edit className="mr-2 h-4 w-4" /> Chỉnh sửa
+                <Edit className="mr-2 h-4 w-4" /> {t('Edit')}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={async () => {
                   try {
                     await prohibitedService.deleteProhibited([row.appId]);
-                    showSuccess('Xoá ứng dụng thành công!');
+                    showSuccess(t('ProhibitedManagement.DeleteSuccess'));
                     refetch();
                   } catch (error) {
                     showError(error);
@@ -234,7 +252,7 @@ const ProhibitedPage = () => {
                 }}
                 className="cursor-pointer text-red-600"
               >
-                <Trash2 className="mr-2 h-4 w-4" /> Xoá
+                <Trash2 className="mr-2 h-4 w-4" /> {t('Delete')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -246,7 +264,7 @@ const ProhibitedPage = () => {
   //!Functions
   const handleChangePage = useCallback(
     (page: number) => {
-      setTrigger(true);
+      setIsTrigger(true);
       setFilters((prev: any) => {
         const newParams = {
           ...prev,
@@ -261,7 +279,7 @@ const ProhibitedPage = () => {
 
   const handleChangePageSize = useCallback(
     (size: number) => {
-      setTrigger(true);
+      setIsTrigger(true);
       setFilters((prev: any) => {
         const newParams = {
           ...prev,
@@ -277,7 +295,7 @@ const ProhibitedPage = () => {
 
   const handleSearch = useCallback(
     (value: IValueFormPageHeader) => {
-      setTrigger(true);
+      setIsTrigger(true);
       setFilters((prev: any) => {
         const newParams = {
           ...prev,
@@ -301,11 +319,11 @@ const ProhibitedPage = () => {
   const handAddEditProhibited = async (values: ProhibitedFormValues) => {
     try {
       const bodyUpload = new FormData();
-      bodyUpload.append('AppId', values.AppId || '');
+      bodyUpload.append('AppId', values.AppId ?? '');
       bodyUpload.append('AppName', values.AppName);
       bodyUpload.append('ProcessName', values.ProcessName);
-      bodyUpload.append('Description', values.Description || '');
-      bodyUpload.append('AppIconUrl', values.AppIconUrl || '');
+      bodyUpload.append('Description', values.Description ?? '');
+      bodyUpload.append('AppIconUrl', values.AppIconUrl ?? '');
       bodyUpload.append('IsActive', values.IsActive ? 'true' : 'false');
       bodyUpload.append(
         'RiskLevel',
@@ -315,7 +333,7 @@ const ProhibitedPage = () => {
         'Category',
         values.Category !== undefined ? values.Category.toString() : '',
       );
-      bodyUpload.append('TypeApp', values.TypeApp || '');
+      bodyUpload.append('TypeApp', values.TypeApp ?? '');
       if (editProhibited) {
         await prohibitedService.createUpdateProhibited(bodyUpload);
         setEditProhibited(null);
@@ -323,7 +341,11 @@ const ProhibitedPage = () => {
         await prohibitedService.createUpdateProhibited(bodyUpload);
       }
       toggleAskAddNewProhibited();
-      showSuccess(editProhibited ? 'Cập nhật ứng dụng thành công!' : 'Thêm ứng dụng thành công!');
+      showSuccess(
+        editProhibited
+          ? t('ProhibitedManagement.UpdateSuccess')
+          : t('ProhibitedManagement.CreateSuccess'),
+      );
       refetch();
     } catch (error) {
       showError(error);
@@ -335,10 +357,10 @@ const ProhibitedPage = () => {
   }
   //!Render
   return (
-    <PageWrapper name="Quản lý ứng dụng cấm" className="bg-white dark:bg-gray-900">
+    <PageWrapper name={t('ProhibitedManagement.Title')} className="bg-white dark:bg-gray-900">
       <ExamHeader
-        title="Quản lý ứng dụng cấm"
-        subtitle="Quản lý các ứng dụng bị cấm trong hệ thống"
+        title={t('ProhibitedManagement.Title')}
+        subtitle={t('ProhibitedManagement.Subtitle')}
         icon={<ShieldAlert className="h-8 w-8 text-white" />}
         className="border-b border-white/20 bg-gradient-to-r from-red-600 to-blue-700 px-6 py-6 shadow-lg"
       />
@@ -354,53 +376,53 @@ const ProhibitedPage = () => {
         )}
         <GenericFilters
           className="md:grid-cols-3 lg:grid-cols-7"
-          searchPlaceholder="Tìm kiếm ứng dụng..."
+          searchPlaceholder={t('ProhibitedManagement.SearchPlaceholder')}
           onSearch={handleSearch}
-          initialSearchQuery={filters?.TextSearch || ''}
-          initialFilterValues={cachesFilterProhibited || {}}
+          initialSearchQuery={filters?.TextSearch ?? ''}
+          initialFilterValues={cachesFilterProhibited ?? {}}
           filters={[
             {
               key: 'IsActive',
-              placeholder: 'Tất cả trạng thái',
+              placeholder: t('ProhibitedManagement.StatusPlaceholder'),
               options: [
-                { value: undefined, label: 'Tất cả trạng thái' },
-                { value: true, label: 'Đang hoạt động' },
-                { value: false, label: 'Không hoạt động' },
+                { value: undefined, label: t('ProhibitedManagement.AllStatus') },
+                { value: true, label: t('ProhibitedManagement.Active') },
+                { value: false, label: t('ProhibitedManagement.Inactive') },
               ],
             },
             {
               key: 'RiskLevel',
-              placeholder: 'Mức độ rủi ro',
+              placeholder: t('ProhibitedManagement.RiskLevel'),
               options: [
-                { value: undefined, label: 'Tất cả mức độ' },
-                { value: 0, label: 'Rủi ro thấp' },
-                { value: 1, label: 'Rủi ro trung bình' },
-                { value: 2, label: 'Rủi ro cao' },
+                { value: undefined, label: t('ProhibitedManagement.AllRiskLevels') },
+                { value: 0, label: t('ProhibitedManagement.LowRisk') },
+                { value: 1, label: t('ProhibitedManagement.MediumRisk') },
+                { value: 2, label: t('ProhibitedManagement.HighRisk') },
               ],
             },
             {
               key: 'Category',
-              placeholder: 'Danh mục ứng dụng',
+              placeholder: t('ProhibitedManagement.Category'),
               options: [
-                { value: undefined, label: 'Tất cả danh mục' },
-                { value: 1, label: 'Website' },
-                { value: 2, label: 'Tool' },
+                { value: undefined, label: t('ProhibitedManagement.Category') },
+                { value: 1, label: t('ProhibitedManagement.Website') },
+                { value: 2, label: t('ProhibitedManagement.Tool') },
               ],
             },
             {
               key: 'TypeApp',
-              placeholder: 'Loại ứng dụng',
+              placeholder: t('ProhibitedManagement.TypeApp'),
               options: [
-                { value: undefined, label: 'Tất cả loại ứng dụng' },
-                { value: 0, label: 'Black List' },
-                { value: 1, label: 'White List' },
+                { value: undefined, label: t('ProhibitedManagement.AllTypeApps') },
+                { value: 0, label: t('ProhibitedManagement.BlackList') },
+                { value: 1, label: t('ProhibitedManagement.WhiteList') },
               ],
             },
           ]}
           onFilterChange={(
             newFilters: Record<string, string | number | boolean | null | undefined>,
           ) => {
-            setTrigger(true);
+            setIsTrigger(true);
             setFilters((prev: any) => {
               const newParams = {
                 ...prev,
@@ -411,19 +433,19 @@ const ProhibitedPage = () => {
             });
           }}
           onAddNew={handleToggleAskAddNewProhibited}
-          addNewButtonText="Thêm ứng dụng mới"
+          addNewButtonText={t('ProhibitedManagement.AddNewProhibitedApp')}
         />
         <MemoizedTablePaging
-          id="manage-subject-table"
           columns={columns}
-          data={dataMain || []}
-          currentPage={filters?.CurrentPage || 1}
-          currentSize={filters?.PageSize || 50}
-          totalPage={totalPageProhibitedCount || 1}
-          total={totalProhibitedCount || 0}
+          data={dataMain ?? []}
+          currentPage={filters?.CurrentPage ?? 1}
+          currentSize={filters?.PageSize ?? 50}
+          totalPage={totalPageProhibitedCount ?? 1}
+          total={totalProhibitedCount ?? 0}
           loading={loading}
           handleChangePage={handleChangePage}
           handleChangeSize={handleChangePageSize}
+          noResultText={t('NoDataFound')}
         />
       </div>
     </PageWrapper>

@@ -5,7 +5,6 @@ import cachedKeys from '@/consts/cachedKeys';
 import { showError, showSuccess } from '@/helpers/toast';
 import useFiltersHandler from '@/hooks/useFiltersHandler';
 import useToggleDialog from '@/hooks/useToggleDialog';
-import httpService from '@/services/httpService';
 import useGetListPermission from '@/services/modules/authorize/hooks/useGetAllPermission';
 import {
   IPermissionsRequest,
@@ -15,6 +14,7 @@ import authorizeService from '@/services/modules/authorize/role.Service';
 import { useGet, useSave } from '@/stores/useStores';
 import { CloudLightning, Key, Lock, Shield } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import DialogAddNewPermision, { PermissionFormValues } from '../dialogs/DialogAddNewPermision';
 import { GenericFilters, IValueFormPageHeader } from './generic-filters';
 import { PermissionCellContent } from './permission-cell-content';
@@ -22,6 +22,7 @@ import { UserStats } from './user-stats';
 
 const PermissionTab = () => {
   //! State
+  const { t } = useTranslation('shared');
   const [openAskNewPermmision, toggleAskNewPermmision, shouldRenderAskNewPermmision] =
     useToggleDialog();
   const [openAskDeletePermmision, toggleAskDeletePermmision, shouldRenderAskDeletePermmision] =
@@ -33,13 +34,12 @@ const PermissionTab = () => {
   const cachesFilterPermissions = useGet('cachesFilterPermissions');
   const [isTrigger, setIsTrigger] = useState(Boolean(!defaultData));
   const [editingPermissionId, setEditingPermissionId] = useState<string | null>(null);
-  const token = httpService.getTokenStorage();
 
   const { filters, setFilters } = useFiltersHandler({
-    PageSize: cachesFilterPermissions?.PageSize || 50,
-    CurrentPage: cachesFilterPermissions?.CurrentPage || 1,
-    TextSearch: cachesFilterPermissions?.TextSearch || '',
-    SortType: cachesFilterPermissions?.SortType || null,
+    PageSize: cachesFilterPermissions?.PageSize ?? 50,
+    CurrentPage: cachesFilterPermissions?.CurrentPage ?? 1,
+    TextSearch: cachesFilterPermissions?.TextSearch ?? '',
+    SortType: cachesFilterPermissions?.SortType ?? null,
   });
 
   const stableFilters = useMemo(() => filters as IPermissionsRequest, [filters]);
@@ -57,7 +57,7 @@ const PermissionTab = () => {
 
   useEffect(() => {
     if (isTrigger) {
-      save(cachedKeys.dataPermissions, error ? [] : permissionsData || []);
+      save(cachedKeys.dataPermissions, error ? [] : (permissionsData ?? []));
     }
   }, [permissionsData, isTrigger, save, error]);
 
@@ -90,41 +90,41 @@ const PermissionTab = () => {
 
     return [
       {
-        title: 'Tổng quyền hạn',
+        title: t('UserManagement.TotalPermissions'),
         value: totalPermission,
         icon: <Key className="h-6 w-6 text-gray-500" />,
         bgColor: 'bg-gray-50',
       },
       {
-        title: 'Đang hoạt động',
+        title: t('UserManagement.ActivePermissions'),
         value: activePermissions,
         icon: <Shield className="h-6 w-6 text-red-500" />,
         bgColor: 'bg-red-50',
       },
       {
-        title: 'Quyền hệ thống',
+        title: t('UserManagement.SystemPermissions'),
         value: systemPermissions,
         icon: <Lock className="h-6 w-6 text-blue-500" />,
         bgColor: 'bg-blue-50',
       },
       {
-        title: 'Quyền tuỳ chỉnh',
+        title: t('UserManagement.CustomPermissions'),
         value: customPermissions,
         icon: <CloudLightning className="h-6 w-6 text-green-500" />,
         bgColor: 'bg-green-50',
       },
     ];
-  }, [flattenedPermissions]);
+  }, [flattenedPermissions, t]);
 
   const columns = [
     {
-      label: 'Tên quyền hạn',
+      label: t('UserManagement.PermissionDescription'),
       accessor: 'description',
       sortable: false,
       Cell: (row: PermissionsList) => <div>{row?.description}</div>,
     },
     {
-      label: 'Quyền hạn',
+      label: t('UserManagement.PermissionName'),
       accessor: 'permissions',
       sortable: false,
       Cell: (row: PermissionsList) => (
@@ -198,17 +198,16 @@ const PermissionTab = () => {
 
   const handleSubmit = async (values: PermissionFormValues) => {
     try {
-      httpService.attachTokenToHeader(token);
       if (editingPermissionId) {
         const payload = {
           ...values,
           id: editingPermissionId,
         };
         await authorizeService.createUpdateNewPermission(payload);
-        showSuccess('Permission successfully updated');
+        showSuccess(t('UserManagement.PermissionSuccessfullyUpdated'));
       } else {
         await authorizeService.createUpdateNewPermission(values);
-        showSuccess('Permission successfully created');
+        showSuccess(t('UserManagement.PermissionSuccessfullyCreated'));
       }
       toggleAskNewPermmision();
       setEditingPermissionId(null);
@@ -226,7 +225,7 @@ const PermissionTab = () => {
       setFilters((prev: any) => {
         const newParams = {
           ...prev,
-          TextSearch: value.textSearch || '',
+          TextSearch: value.textSearch ?? '',
         };
         save(cachedKeys.cachesFilterPermissions, newParams);
         save(cachedKeys.dataPermissions, []);
@@ -244,17 +243,17 @@ const PermissionTab = () => {
 
         <GenericFilters
           className="mt-3 md:grid-cols-2 lg:grid-cols-4"
-          searchPlaceholder="Tìm kiếm quyền hạn..."
+          searchPlaceholder={t('UserManagement.SearchPermissions')}
           onSearch={handleSearch}
-          initialSearchQuery={filters?.TextSearch || ''}
+          initialSearchQuery={filters?.TextSearch ?? ''}
           filters={[
             {
               key: 'SortType',
-              placeholder: 'Sắp xếp theo',
+              placeholder: t('UserManagement.SelectSortType'),
               options: [
-                { value: null, label: 'Mặc định' },
-                { value: '0', label: 'Tên A-Z' },
-                { value: '1', label: 'Tên Z-A' },
+                { value: null, label: t('UserManagement.AllSortType') },
+                { value: '0', label: t('UserManagement.Ascending') },
+                { value: '1', label: t('UserManagement.Descending') },
               ],
             },
           ]}
@@ -273,21 +272,20 @@ const PermissionTab = () => {
             });
           }}
           onAddNew={toggleAskNewPermmision}
-          addNewButtonText="Create Permission"
+          addNewButtonText={t('UserManagement.CreatePermission')}
         />
 
         <MemoizedTablePaging
-          id="permissions-table"
           columns={columns}
-          data={dataMain || []}
-          currentPage={filters?.CurrentPage || 1}
-          currentSize={filters?.PageSize || 50}
-          totalPage={totalPagePermissionsCount || 1}
-          total={totalPermissionsCount || 0}
+          data={dataMain ?? []}
+          currentPage={filters?.CurrentPage ?? 1}
+          currentSize={filters?.PageSize ?? 50}
+          totalPage={totalPagePermissionsCount ?? 1}
+          total={totalPermissionsCount ?? 0}
           loading={loadingPermissions}
           handleChangePage={handleChangePage}
           handleChangeSize={handleChangePageSize}
-          noResultText="No permissions found."
+          noResultText={t('UserManagement.NoDataFound')}
         />
 
         {shouldRenderAskNewPermmision && (
@@ -296,7 +294,7 @@ const PermissionTab = () => {
             isOpen={openAskNewPermmision}
             toggle={handleToggleAskNewPermmision}
             onSubmit={handleSubmit}
-            editId={editingPermissionId || ''}
+            editId={editingPermissionId ?? ''}
           />
         )}
 
@@ -304,13 +302,13 @@ const PermissionTab = () => {
           <DialogConfirm
             isOpen={openAskDeletePermmision}
             toggle={handleToggleAskDeletePermmision}
-            title="Xoá quyền hạn"
-            content="Bạn có chắc chắn muốn xoá quyền hạn này? Hành động này không thể hoàn tác."
+            title={t('UserManagement.DeletePermission')}
+            content={t('UserManagement.ConfirmDeletePermission')}
             onSubmit={async () => {
               try {
                 if (editingPermissionId) {
                   await authorizeService.deletePermission(editingPermissionId);
-                  showSuccess('Xoá quyền hạn thành công!');
+                  showSuccess(t('UserManagement.DeletePermissionSuccess'));
                   setEditingPermissionId(null);
                   handleToggleAskDeletePermmision();
                   refetch();

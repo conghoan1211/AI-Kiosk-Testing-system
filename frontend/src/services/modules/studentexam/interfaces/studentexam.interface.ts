@@ -12,6 +12,7 @@ export interface StudentExamList {
   endTime: Date;
   status: string;
   examType: number;
+  verifyCamera: boolean;
 }
 
 export interface Response<T> {

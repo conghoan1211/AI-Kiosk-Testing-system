@@ -4,7 +4,7 @@ import httpService from '@/services/httpService';
 import { KEYBOARD_SHORTCUT_URL } from '@/consts/apiUrl';
 import { KeyboardShortcutFormValues } from '@/pages/admin/keyboardshortcut/dialogs/DialogAddEditShortCut';
 
-class keyboardShortcutService {
+class KeyboardShortcutService {
   getAllKeyboardShortcuts(filter: IKeyboardShorcutRequest, config: AxiosRequestConfig) {
     const params = new URLSearchParams({
       PageSize: (filter?.PageSize ?? 50).toString(),
@@ -42,4 +42,4 @@ class keyboardShortcutService {
   }
 }
 
-export default new keyboardShortcutService();
+export default new KeyboardShortcutService();

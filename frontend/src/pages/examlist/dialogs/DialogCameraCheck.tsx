@@ -11,6 +11,7 @@ import faceService from '@/services/modules/faceAI/face.service';
 import { AlertTriangle, CameraIcon, CheckCircle, XCircle } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Camera } from 'react-camera-pro';
+import { useTranslation } from 'react-i18next';
 
 interface DialogCameraCheckProps {
   isOpen: boolean;
@@ -26,17 +27,18 @@ const DialogCameraCheck = ({
   examTitle,
 }: DialogCameraCheckProps) => {
   const cameraRef = useRef<any>(null);
-
+  const { t } = useTranslation('shared');
   const [status, setStatus] = useState<'checking' | 'verifying' | 'success' | 'error'>('checking');
   const [isVerified, setIsVerified] = useState<boolean | null>(null);
   const [hasVerified, setHasVerified] = useState(false);
 
   const handleClose = () => {
     if (status === 'checking' || status === 'verifying') {
-      return; // Prevent closing during checking or verifying
+      return;
     }
     toggle();
   };
+
   const handleProceed = () => {
     onCameraSuccess();
     toggle();
@@ -64,7 +66,7 @@ const DialogCameraCheck = ({
       const formData = new FormData();
       formData.append('image_file', blob, 'frame.jpg');
 
-      const avatarUrl = httpService.getUserStorage()?.avatarUrl || '';
+      const avatarUrl = httpService.getUserStorage()?.avatarUrl ?? '';
       formData.append('image_url', avatarUrl);
 
       const { data } = await faceService.verifyFace(formData);
@@ -143,12 +145,14 @@ const DialogCameraCheck = ({
             </div>
             <div className="text-center">
               <p className="text-lg font-medium text-gray-800">
-                {status === 'checking' ? 'Đang kiểm tra camera...' : 'Đang xác minh danh tính...'}
+                {status === 'checking'
+                  ? t('ExamList.CheckingCamera')
+                  : t('ExamList.VerifyingIdentity')}
               </p>
               <p className="text-sm text-gray-500">
                 {status === 'checking'
-                  ? 'Vui lòng cho phép truy cập camera khi được yêu cầu'
-                  : 'Vui lòng chờ trong giây lát'}
+                  ? t('ExamList.CheckingCamera')
+                  : t('ExamList.VerifyingIdentity')}
               </p>
             </div>
           </div>
@@ -161,8 +165,7 @@ const DialogCameraCheck = ({
                 <CheckCircle className="h-6 w-6" />
               </div>
               <div>
-                <p className="text-lg font-semibold">Camera hoạt động tốt!</p>
-                <p className="text-sm text-green-600">Danh tính của bạn đã được xác minh</p>
+                <p className="text-lg font-semibold">{t('ExamList.VerificationSuccess')}</p>
               </div>
             </div>
           </div>
@@ -177,13 +180,13 @@ const DialogCameraCheck = ({
               <div>
                 <p className="text-lg font-semibold">
                   {isVerified === false
-                    ? 'Xác minh danh tính thất bại'
-                    : 'Không thể truy cập camera'}
+                    ? t('ExamList.VerificationFailed')
+                    : t('ExamList.CameraAccessDenied')}
                 </p>
                 <p className="text-sm text-red-600">
                   {isVerified === false
-                    ? 'Hệ thống không thể xác minh danh tính của bạn. Vui lòng thử lại hoặc liên hệ hỗ trợ.'
-                    : 'Vui lòng kiểm tra thiết bị, cấp quyền truy cập camera trong trình duyệt, hoặc làm mới trang'}
+                    ? t('ExamList.VerificationFailedDescription')
+                    : t('ExamList.CameraAccessDeniedDescription')}
                 </p>
               </div>
             </div>
@@ -204,7 +207,9 @@ const DialogCameraCheck = ({
                   <CameraIcon className="h-6 w-6" />
                 </div>
                 <div>
-                  <DialogTitle className="text-2xl font-bold">Kiểm tra Camera</DialogTitle>
+                  <DialogTitle className="text-2xl font-bold">
+                    {t('ExamList.CameraCheck')}
+                  </DialogTitle>
                   {examTitle && (
                     <p className="mt-1 text-blue-100">
                       Bài thi: <span className="font-semibold text-white">{examTitle}</span>
@@ -224,11 +229,10 @@ const DialogCameraCheck = ({
                     facingMode="user"
                     aspectRatio={16 / 9}
                     errorMessages={{
-                      noCameraAccessible:
-                        'Không thể truy cập camera. Vui lòng kiểm tra thiết bị hoặc cấp quyền.',
-                      permissionDenied: 'Quyền truy cập camera bị từ chối.',
-                      switchCamera: 'Không thể chuyển đổi camera.',
-                      canvas: 'Không thể truy cập canvas.',
+                      noCameraAccessible: t('ExamList.NoCameraAccessible'),
+                      permissionDenied: t('ExamList.PermissionDenied'),
+                      switchCamera: t('ExamList.SwitchCamera'),
+                      canvas: t('ExamList.Canvas'),
                     }}
                   />
                 </div>
@@ -258,7 +262,7 @@ const DialogCameraCheck = ({
                         ) : (
                           <>
                             <AlertTriangle className="h-5 w-5 text-red-600" />
-                            <span className="text-red-600">Camera không khả dụng</span>
+                            <span className="text-red-600">{t('ExamList.CameraNotAvailable')}</span>
                           </>
                         )}
                       </div>
@@ -282,7 +286,7 @@ const DialogCameraCheck = ({
                     onClick={handleProceed}
                     className="bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-2.5 font-semibold text-white shadow-lg transition-all hover:from-blue-700 hover:to-purple-700 hover:shadow-xl"
                   >
-                    Bắt đầu thi
+                    {t('ExamList.StartYourExamination')}
                   </Button>
                 )}
 
@@ -295,7 +299,7 @@ const DialogCameraCheck = ({
                     variant="outline"
                     className="border-blue-200 px-6 py-2.5 font-medium text-blue-600 transition-all hover:bg-blue-50"
                   >
-                    Thử lại
+                    {t('ExamList.TryAgain')}
                   </Button>
                 )}
               </div>

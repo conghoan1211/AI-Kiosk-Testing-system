@@ -23,15 +23,17 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from 'react-i18next';
 
 const PermissionPage = () => {
   //!State
+  const { t } = useTranslation('shared');
   const save = useSave();
   const defaultData = useGet('dataPermissionsList');
   const totalPermissionsListCount = useGet('totalPermissionsListCount');
   const totalPagePermissionsListCount = useGet('totalPagePermissionsListCount');
   const cachesFilterPermissionsList = useGet('cachesFilterPermissionsList');
-  const [isTrigger, setTrigger] = useState(Boolean(!defaultData));
+  const [isTrigger, setIsTrigger] = useState(Boolean(!defaultData));
   const [
     openAddNewCategoryPermission,
     toggleAddNewCategoryPermission,
@@ -46,9 +48,9 @@ const PermissionPage = () => {
   }, [openAddNewCategoryPermission, toggleAddNewCategoryPermission]);
 
   const { filters, setFilters } = useFiltersHandler({
-    PageSize: cachesFilterPermissionsList?.PageSize || 50,
-    CurrentPage: cachesFilterPermissionsList?.CurrentPage || 1,
-    TextSearch: cachesFilterPermissionsList?.TextSearch || '',
+    PageSize: cachesFilterPermissionsList?.PageSize ?? 50,
+    CurrentPage: cachesFilterPermissionsList?.CurrentPage ?? 1,
+    TextSearch: cachesFilterPermissionsList?.TextSearch ?? '',
   });
 
   const {
@@ -74,7 +76,7 @@ const PermissionPage = () => {
 
   const columns = [
     {
-      label: 'Tên quyền hạn',
+      label: t('PermissionManagement.PermissionName'),
       accessor: 'description',
       sortable: false,
       Cell: (row: PermissionList) => (
@@ -84,7 +86,7 @@ const PermissionPage = () => {
       ),
     },
     {
-      label: 'Hành động',
+      label: t('PermissionManagement.Action'),
       accessor: 'actions',
       width: 120,
       sortable: false,
@@ -104,13 +106,13 @@ const PermissionPage = () => {
                 }}
                 className="cursor-pointer"
               >
-                <Edit className="mr-2 h-4 w-4" /> Chỉnh sửa
+                <Edit className="mr-2 h-4 w-4" /> {t('Edit')}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={async () => {
                   try {
                     await permissionService.deletePermission(row.categoryId);
-                    showSuccess('Xoá quyền hạn thành công!');
+                    showSuccess(t('PermissionManagement.DeleteSuccess'));
                     refetch();
                   } catch (error) {
                     showError(error);
@@ -118,7 +120,7 @@ const PermissionPage = () => {
                 }}
                 className="cursor-pointer text-red-600"
               >
-                <Trash2 className="mr-2 h-4 w-4" /> Xoá
+                <Trash2 className="mr-2 h-4 w-4" /> {t('Delete')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -130,18 +132,18 @@ const PermissionPage = () => {
   const statItems = useMemo(() => {
     return [
       {
-        title: 'Tổng số quyền hạn',
-        value: totalPermissionsListCount || 0,
+        title: t('PermissionManagement.TotalPermissions'),
+        value: totalPermissionsListCount ?? 0,
         icon: <LockIcon className="h-6 w-6 text-blue-500" />,
         bgColor: 'bg-blue-50',
       },
     ];
-  }, [totalPermissionsListCount]);
+  }, [totalPermissionsListCount, t]);
 
   //!Functions
   const handleChangePage = useCallback(
     (page: number) => {
-      setTrigger(true);
+      setIsTrigger(true);
       setFilters((prev: any) => {
         const newParams = {
           ...prev,
@@ -156,7 +158,7 @@ const PermissionPage = () => {
 
   const handleChangePageSize = useCallback(
     (size: number) => {
-      setTrigger(true);
+      setIsTrigger(true);
       setFilters((prev: any) => {
         const newParams = {
           ...prev,
@@ -172,7 +174,7 @@ const PermissionPage = () => {
 
   const handleSearch = useCallback(
     (value: IValueFormPageHeader) => {
-      setTrigger(true);
+      setIsTrigger(true);
       setFilters((prev: any) => {
         const newParams = {
           ...prev,
@@ -190,7 +192,9 @@ const PermissionPage = () => {
     try {
       await permissionService.createUpdatePermission(values);
       showSuccess(
-        permissionId ? 'Cập nhật quyền hạn thành công!' : 'Thêm quyền hạn mới thành công!',
+        permissionId
+          ? t('PermissionManagement.EditSuccess')
+          : t('PermissionManagement.CreateSuccess'),
       );
       toggleAddNewCategoryPermission();
       setPermissionId(null);
@@ -202,10 +206,10 @@ const PermissionPage = () => {
 
   //!Render
   return (
-    <PageWrapper name="Quản lý quyền hạn" className="bg-white dark:bg-gray-900">
+    <PageWrapper name={t('PermissionManagement.Title')} className="bg-white dark:bg-gray-900">
       <ExamHeader
-        title="Quản lý quyền hạn"
-        subtitle="Quản lý các quyền hạn trong hệ thống"
+        title={t('PermissionManagement.Title')}
+        subtitle={t('PermissionManagement.Subtitle')}
         icon={<LockIcon className="h-8 w-8 text-white" />}
         className="border-b border-white/20 bg-gradient-to-r from-red-600 to-blue-700 px-6 py-6 shadow-lg"
       />
@@ -213,21 +217,20 @@ const PermissionPage = () => {
         <UserStats statItems={statItems} className="lg:grid-cols-1" />
         <GenericFilters
           className="md:grid-cols-3 lg:grid-cols-3"
-          searchPlaceholder="Tìm kiếm quyền hạn..."
+          searchPlaceholder={t('PermissionManagement.SearchPlaceholder')}
           onSearch={handleSearch}
-          initialSearchQuery={cachesFilterPermissionsList?.TextSearch || ''}
+          initialSearchQuery={cachesFilterPermissionsList?.TextSearch ?? ''}
           initialFilterValues={{}}
           onAddNew={toggleAddNewCategoryPermission}
-          addNewButtonText="Thêm quyền hạn mới"
+          addNewButtonText={t('PermissionManagement.AddNewPermission')}
         />
         <MemoizedTablePaging
-          id="permission-table"
           columns={columns}
-          data={dataMain || []}
-          currentPage={filters?.CurrentPage || 1}
-          currentSize={filters?.PageSize || 50}
-          totalPage={totalPagePermissionsListCount || 1}
-          total={totalPermissionsListCount || 0}
+          data={dataMain ?? []}
+          currentPage={filters?.CurrentPage ?? 1}
+          currentSize={filters?.PageSize ?? 50}
+          totalPage={totalPagePermissionsListCount ?? 1}
+          total={totalPermissionsListCount ?? 0}
           loading={loading}
           handleChangePage={handleChangePage}
           handleChangeSize={handleChangePageSize}

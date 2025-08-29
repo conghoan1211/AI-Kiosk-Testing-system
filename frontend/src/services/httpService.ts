@@ -1,3 +1,6 @@
+import BaseUrl from '@/consts/baseUrl';
+import { getFromStorage } from '@/helpers/common';
+import { KEY_LANG } from '@/i18n/config';
 import { UserInfo } from '@/interfaces/user';
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 
@@ -21,6 +24,13 @@ class Services {
     //! Interceptor request
     this.axios.interceptors.request.use(
       function (config) {
+        config.headers['x-timezone'] = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const { data: token } = getFromStorage(TOKEN_KEY) || '';
+        const { data: lang } = getFromStorage(KEY_LANG) || '';
+        config.headers['Accept-Language'] = lang === 'en' ? 'en' : 'vi';
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
         return config;
       },
       function (error) {
@@ -30,10 +40,27 @@ class Services {
 
     //! Interceptor response
     this.axios.interceptors.response.use(
-      function (config) {
+      (config) => {
+        const token = getFromStorage(TOKEN_KEY) || '';
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
         return config;
       },
-      function (error) {
+      (error) => {
+        if (
+          error.response?.data?.Message === 'Token is invalid or expired' &&
+          error.response?.data?.isOk === false
+        ) {
+          const channel = new BroadcastChannel('auth');
+          channel.postMessage({ type: 'logout' });
+          channel.close();
+
+          this.clearStorage();
+          window.sessionStorage.clear();
+
+          window.location.href = BaseUrl.Login;
+        }
         return Promise.reject(error);
       },
     );
@@ -101,6 +128,8 @@ class Services {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
     localStorage.removeItem(STUDENT_ID_KEY);
+    localStorage.removeItem('activeTab');
+    localStorage.removeItem(SELECTED_CAMPUS_KEY);
 
     // Xóa tất cả các key bắt đầu bằng TIME_REMAINING_KEY
     Object.keys(localStorage).forEach((key) => {
@@ -109,29 +138,28 @@ class Services {
       }
     });
 
-    // Xóa key SELECTED_CAMPUS_KEY
-    localStorage.removeItem(SELECTED_CAMPUS_KEY);
-    // Xóa key EXTRA_START_TIME_KEY
+    // Xóa tất cả các key bắt đầu bằng EXTRA_START_TIME_KEY
     Object.keys(localStorage).forEach((key) => {
       if (key.startsWith(EXTRA_START_TIME_KEY)) {
         localStorage.removeItem(key);
       }
     });
 
+    // Xóa tất cả các key bắt đầu bằng EXAM_START_TIME_KEY
     Object.keys(localStorage).forEach((key) => {
       if (key.startsWith(EXAM_START_TIME_KEY)) {
         localStorage.removeItem(key);
       }
     });
 
-    // Xóa key OTP_EXPIRED_KEY
+    // Xóa tất cả các key bắt đầu bằng OTP_EXPIRED_KEY
     Object.keys(localStorage).forEach((key) => {
       if (key.startsWith(OTP_EXPIRED_KEY)) {
         localStorage.removeItem(key);
       }
     });
 
-    // Xóa key OTP_DATA_KEY
+    // Xóa tất cả các key bắt đầu bằng OTP_DATA_KEY
     Object.keys(localStorage).forEach((key) => {
       if (key.startsWith(OTP_DATA_KEY)) {
         localStorage.removeItem(key);

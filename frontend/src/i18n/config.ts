@@ -1,16 +1,16 @@
-import { LANG_ENUM } from "@/consts/common";
-import i18next from "i18next";
-import { initReactI18next } from "react-i18next";
+import { LANG_ENUM } from '@/consts/common';
+import i18next from 'i18next';
+import { initReactI18next } from 'react-i18next';
 // import Backend from "i18next-http-backend";
 // import LanguageDetector from "i18next-browser-languagedetector";
 
-import sharedEn from "./en/shared.json";
-import sharedVi from "./vi/shared.json";
+import sharedEn from './en/shared.json';
+import sharedVi from './vi/shared.json';
 
-export const KEY_LANG = "lang";
-const currentLng = localStorage.getItem(KEY_LANG) || LANG_ENUM.en;
+export const KEY_LANG = 'lang';
+const currentLng = localStorage.getItem(KEY_LANG) ?? LANG_ENUM.en;
 
-export const defaultNS = "shared";
+export const defaultNS = 'shared';
 
 i18next
   // load translation using http -> see /public/locales

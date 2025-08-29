@@ -1,10 +1,11 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { showError } from '@/helpers/toast';
 import httpService from '@/services/httpService';
 import faceCaptureService from '@/services/modules/facecapture/facecapture.srvice';
-import { showError } from '@/helpers/toast';
-import { AnalyzeFaceResponse } from '../hooks/useFaceDetection';
 import { useCallback } from 'react';
+import { AnalyzeFaceResponse } from '../hooks/useFaceDetection';
+import { useTranslation } from 'react-i18next';
 
 interface QuestionNavigationProps {
   currentQuestion: string;
@@ -30,21 +31,10 @@ const QuestionNavigation: React.FC<QuestionNavigationProps> = ({
   emotionData,
   inferredState,
 }) => {
-  const handleSendMessageToWebview = () => {
-    if (window.chrome && window.chrome.webview) {
-      const message = {
-        event: 'captureScreenshot',
-      };
-      window.chrome.webview.postMessage(message);
-    } else {
-      console.log('Webview API not available. Cannot send message.');
-    }
-  };
-
+  const { t } = useTranslation('shared');
   const handleQuestionNavigation = useCallback(
     async (questionId: string) => {
       setCurrentQuestion(questionId);
-      handleSendMessageToWebview();
 
       if (!cameraRef.current) {
         showError('Camera is not available');
@@ -71,24 +61,24 @@ const QuestionNavigation: React.FC<QuestionNavigationProps> = ({
         );
 
         const formData = new FormData();
-        formData.append('StudentExamId', httpService.getStudentIdStorage() || '');
+        formData.append('StudentExamId', httpService.getStudentIdStorage() ?? '');
         formData.append('ImageCapture', file);
         formData.append('Description', 'Auto-captured during question navigation');
         formData.append(
           'CaptureId',
           `capture-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
         );
-        formData.append('AvgArousal', emotionData?.avg_arousal?.toString() || '0');
-        formData.append('AvgValence', emotionData?.avg_valence?.toString() || '0');
-        formData.append('DominantEmotion', emotionData?.dominant_emotion || '');
+        formData.append('AvgArousal', emotionData?.avg_arousal?.toString() ?? '0');
+        formData.append('AvgValence', emotionData?.avg_valence?.toString() ?? '0');
+        formData.append('DominantEmotion', emotionData?.dominant_emotion ?? '');
         formData.append(
           'Emotions',
           emotionData?.emotions ? JSON.stringify(emotionData.emotions) : '{}',
         );
-        formData.append('InferredState', emotionData?.inferred_state || inferredState || '');
+        formData.append('InferredState', emotionData?.inferred_state ?? inferredState ?? '');
         formData.append('Region', emotionData?.region ? JSON.stringify(emotionData.region) : '{}');
-        formData.append('Result', emotionData?.result || '');
-        formData.append('Status', emotionData?.status || '');
+        formData.append('Result', emotionData?.result ?? '');
+        formData.append('Status', emotionData?.status ?? '');
         formData.append('IsDetected', emotionData?.region ? 'true' : 'false');
 
         await faceCaptureService.addFaceCapture(formData);
@@ -102,7 +92,7 @@ const QuestionNavigation: React.FC<QuestionNavigationProps> = ({
   return (
     <Card>
       <CardHeader>
-        <div className="text-sm font-medium">Điều hướng câu hỏi</div>
+        <div className="text-sm font-medium">{t('ExamList.QuestionNavigation')}</div>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-5 gap-2">

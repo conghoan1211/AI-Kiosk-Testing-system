@@ -320,7 +320,7 @@ namespace TestQuestionBankServicePackage
 
             // Assert
             Assert.True(result.Success);
-            Assert.Equal("Question bank status updated successfully.", result.Message);
+            Assert.Equal($"Question bank change to {(ActiveStatus)expectedStatus} successfully.", result.Message);
             Assert.Equal(expectedStatus, updatedQb.Status);
         }
 

@@ -25,9 +25,9 @@ namespace API.Models
         public float AvgValence { get; set; } = 0;
         public string? InferredState { get; set; }
         public string? Region { get; set; } = null;
-        public string? Result { get; set; } = null!; // Result of the face detection, e.g., "Detected", "Not Detected"
-        public string? Status { get; set; } = null!; // Status of the capture, e.g., "Pending", "Processed"
-        public bool IsDetected { get; set; } = false;
+        public string? Result { get; set; } = null;
+        public string? Status { get; set; } = null;
+        public bool IsDetected { get; set; } = false; 
         public string? ErrorMessage { get; set; }
 
         public virtual StudentExam? StudentExam { get; set; }

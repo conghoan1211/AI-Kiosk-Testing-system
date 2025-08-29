@@ -95,7 +95,6 @@ const SupervisorLayout = (props: SupervisorLayoutProps) => {
         onToggle={toggleSidebar}
         teacherMenuItems={enhancedTeacherMenuItems}
         user={user}
-        currentPath={pathname}
       />
 
       {/* Main Content */}

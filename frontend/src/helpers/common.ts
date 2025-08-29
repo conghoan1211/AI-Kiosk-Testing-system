@@ -1,6 +1,7 @@
 import { LANG_ENUM, PERMISSION_ENUM } from '@/consts/common';
 import { DateTimeFormat } from '@/consts/dates';
 import { KEY_LANG } from '@/i18n/config';
+import { Variants } from 'framer-motion';
 import { toString } from 'lodash';
 import moment, { Moment } from 'moment';
 
@@ -20,15 +21,15 @@ export const showFormatDateFollowCurrentLang = (
   targetFormatEn?: string,
   targetFormatVi?: string,
 ) => {
-  const currentLng = localStorage.getItem(KEY_LANG) || LANG_ENUM.en;
+  const currentLng = localStorage.getItem(KEY_LANG) ?? LANG_ENUM.en;
   if (currentLng === LANG_ENUM.en) {
-    return moment(date, currentFormat || undefined).format(
-      targetFormatEn || DateTimeFormat.MDYFormat,
+    return moment(date, currentFormat ?? undefined).format(
+      targetFormatEn ?? DateTimeFormat.MDYFormat,
     );
   }
   if (currentLng === LANG_ENUM.vi) {
-    return moment(date, currentFormat || undefined).format(
-      targetFormatVi || DateTimeFormat.VNFormat,
+    return moment(date, currentFormat ?? undefined).format(
+      targetFormatVi ?? DateTimeFormat.VNFormat,
     );
   }
 };
@@ -99,7 +100,7 @@ export const isPromise = (value: any) => {
   return Boolean(value && typeof value.then === 'function');
 };
 
-export const containerVariants = {
+export const containerVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
@@ -109,14 +110,15 @@ export const containerVariants = {
   },
 };
 
-export const itemVariants = {
-  hidden: { y: 20, opacity: 0 },
+export const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 20 },
   visible: {
-    y: 0,
     opacity: 1,
+    y: 0,
     transition: {
-      duration: 0.4,
-      ease: 'easeOut',
+      type: 'spring',
+      stiffness: 100,
+      damping: 10,
     },
   },
 };
@@ -139,6 +141,30 @@ export const convertUTCToVietnamTime = (
   } catch (error) {
     console.error(`Failed to convert UTC to Vietnam time: ${utcDate}`, error);
     return '';
+  }
+};
+
+export const formatTimeAgo = (date: string | Date) => {
+  // Convert input date to Vietnam time
+  const vietnamTime = convertUTCToVietnamTime(date);
+  if (typeof vietnamTime === 'string' || !vietnamTime) {
+    return 'Invalid date';
+  }
+
+  const now = moment().utcOffset('+07:00');
+  const diffInSeconds = Math.floor(now.diff(vietnamTime) / 1000);
+
+  if (diffInSeconds < 60) {
+    return `${diffInSeconds} giây trước`;
+  } else if (diffInSeconds < 3600) {
+    const minutes = Math.floor(diffInSeconds / 60);
+    return `${minutes} phút trước`;
+  } else if (diffInSeconds < 86400) {
+    const hours = Math.floor(diffInSeconds / 3600);
+    return `${hours} giờ trước`;
+  } else {
+    const days = Math.floor(diffInSeconds / 86400);
+    return `${days} ngày trước`;
   }
 };
 
@@ -176,4 +202,30 @@ export const getQuestionButtonClass = (
     return `${baseClasses} bg-blue-500 text-white`;
   }
   return `${baseClasses} border-gray-300`;
+};
+
+export const getFromStorage = (key: string) => {
+  const dataLocal = localStorage.getItem(key);
+  const dataSession = sessionStorage.getItem(key);
+
+  const data = dataLocal ?? dataSession;
+  const from = data ? (dataLocal ? 'localStorage' : 'sessionStorage') : 'notfound';
+  return {
+    data,
+    from,
+  };
+};
+
+export const setToStorage = (key: string, data: any, to: string) => {
+  if (to === 'localStorage') {
+    localStorage.setItem(key, data);
+  }
+  if (to === 'sessionStorage') {
+    sessionStorage.setItem(key, data);
+  }
+};
+
+export const formatScore = (score: number) => {
+  if (score > 10) return 10;
+  return Math.round(score * 10) / 10;
 };

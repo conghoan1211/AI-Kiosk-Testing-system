@@ -14,21 +14,24 @@ import CurrentExamDetails from './components/CurrentExamDetails';
 import ExamHeader from './components/ExamHeader';
 import ExamList from './components/ExamList';
 import ExamStatistics from './components/ExamStatistics';
+import { useTranslation } from 'react-i18next';
 
 const ExamSupervision = () => {
+  //!State
+  const { t } = useTranslation('shared');
   const defaultData = useGet('dataMonitor');
   const cachedFilterMonitor = useGet('cachesFilterMonitor');
   const [isTrigger] = useState(Boolean(!defaultData));
   const save = useSave();
   const [selectedExam, setSelectedExam] = useState<MonitorList | null>(null);
-  const [currentPage, setCurrentPage] = useState(cachedFilterMonitor?.CurrentPage || 1);
+  const [currentPage, setCurrentPage] = useState(cachedFilterMonitor?.CurrentPage ?? 1);
 
   const { filters, setFilters } = useFiltersHandler({
-    PageSize: cachedFilterMonitor?.PageSize || 10,
+    PageSize: cachedFilterMonitor?.PageSize ?? 10,
     CurrentPage: currentPage,
-    TextSearch: cachedFilterMonitor?.TextSearch || '',
-    SubjectId: cachedFilterMonitor?.SubjectId || 0,
-    ExamStatus: cachedFilterMonitor?.ExamStatus || undefined,
+    TextSearch: cachedFilterMonitor?.TextSearch ?? '',
+    SubjectId: cachedFilterMonitor?.SubjectId ?? 0,
+    ExamStatus: cachedFilterMonitor?.ExamStatus ?? undefined,
   });
 
   const stableFilters = useMemo(
@@ -59,12 +62,12 @@ const ExamSupervision = () => {
   useEffect(() => {
     if (dataMonitor && dataMonitor.length > 0 && !selectedExam) {
       const ongoingExam = dataMonitor.find((exam) => exam.status === 1);
-      setSelectedExam(ongoingExam || dataMonitor[0]);
+      setSelectedExam(ongoingExam ?? dataMonitor[0]);
     }
   }, [dataMonitor, selectedExam]);
 
   const dataMain: MonitorList[] = useMemo(() => {
-    const data = isTrigger ? dataMonitor : defaultData || [];
+    const data = isTrigger ? dataMonitor : (defaultData ?? []);
     const uniqueData = Array.from(
       new Map((data as MonitorList[]).map((exam) => [exam.examId, exam])).values(),
     );
@@ -76,29 +79,32 @@ const ExamSupervision = () => {
       case 0:
         return (
           <Badge variant="secondary" className="bg-gray-100 text-gray-700">
-            Chưa bắt đầu
+            {t('ExamSupervision.Title')}
           </Badge>
         );
       case 1:
         return (
-          <Badge className="border-emerald-200 bg-emerald-100 text-emerald-700">Đang diễn ra</Badge>
+          <Badge className="border-emerald-200 bg-emerald-100 text-emerald-700">
+            {t('ExamSupervision.OnGoing')}
+          </Badge>
         );
       case 2:
         return (
           <Badge variant="outline" className="border-blue-200 bg-blue-50 text-blue-700">
-            Đã kết thúc
+            {t('ExamSupervision.Ended')}
           </Badge>
         );
       default:
-        return <Badge variant="secondary">Không xác định</Badge>;
+        return <Badge variant="secondary">{t('ExamSupervision.Unknown')}</Badge>;
     }
   };
 
+  //!Functions
   const getRemainingTime = (endTime: Date) => {
     const now = new Date();
     const end = new Date(endTime);
     const diff = end.getTime() - now.getTime();
-    if (diff <= 0) return 'Đã hết giờ';
+    if (diff <= 0) return t('ExamSupervision.TimeUp');
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
     return `${hours}h ${minutes}m`;
@@ -120,16 +126,17 @@ const ExamSupervision = () => {
     }
   };
 
+  //!Render
   return (
     <PageWrapper
-      name="Giám sát thi"
+      name={t('ExamSupervision.Title')}
       className="bg-gradient-to-br from-slate-50 to-blue-50/30"
       isLoading={loading}
     >
       <div className="space-y-6">
         <ExamHeader
-          title="Giám sát thi"
-          subtitle="Theo dõi và quản lý các kỳ thi đang diễn ra"
+          title={t('ExamSupervision.Title')}
+          subtitle={t('ExamSupervision.Subtitle')}
           icon={<Monitor className="h-8 w-8 text-white" />}
           className="border-b border-white/20 bg-gradient-to-r from-blue-600 to-green-700 px-6 py-6 shadow-lg"
         />
@@ -153,7 +160,7 @@ const ExamSupervision = () => {
             {dataMain.filter((exam) => exam.status)[0] && (
               <div className="sticky top-18 self-start lg:col-span-1">
                 <CurrentExamDetails
-                  currentExam={selectedExam || dataMain[0]}
+                  currentExam={selectedExam ?? dataMain[0]}
                   getStatusBadge={getStatusBadge}
                   getRemainingTime={getRemainingTime}
                 />

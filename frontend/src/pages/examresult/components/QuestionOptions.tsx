@@ -1,12 +1,13 @@
 import { Answer } from '@/services/modules/examresultdetail/interfaces/examresultdetail.interface';
 import { findOptionIndex, getOptionLabel, parseOptions } from '@/utils/exam.utils';
 import AnswerBadge from './AnswerBadge';
+import { useTranslation } from 'react-i18next';
 
 interface QuestionOptionsProps {
   answer: Answer;
 }
 
-export default function QuestionOptions({ answer }: QuestionOptionsProps) {
+export default function QuestionOptions({ answer }: Readonly<QuestionOptionsProps>) {
   if (!answer.options) {
     return <SimpleAnswerDisplay answer={answer} />;
   }
@@ -65,11 +66,11 @@ export default function QuestionOptions({ answer }: QuestionOptionsProps) {
   );
 }
 
-function SimpleAnswerDisplay({ answer }: { answer: Answer }) {
+function SimpleAnswerDisplay({ answer }: Readonly<{ answer: Answer }>) {
+  const { t } = useTranslation('shared');
   const isCorrect = answer.isCorrect;
-  const userAnswer = answer.userAnswer || 'Không trả lời';
+  const userAnswer = answer.userAnswer || t('StudentExamResultDetail.not-answer');
   const correctAnswer = answer.correctAnswer;
-
   return (
     <div className="mt-4 space-y-3">
       {/* User's Answer */}
@@ -78,7 +79,9 @@ function SimpleAnswerDisplay({ answer }: { answer: Answer }) {
       >
         <div className="flex items-center justify-between">
           <div>
-            <span className="text-sm font-medium text-gray-600">Câu trả lời của bạn:</span>
+            <span className="text-sm font-medium text-gray-600">
+              {t('StudentExamResultDetail.your-answer')}
+            </span>
             <p className="mt-1 font-semibold">{userAnswer}</p>
           </div>
           <div className="flex items-center gap-2">
@@ -90,7 +93,9 @@ function SimpleAnswerDisplay({ answer }: { answer: Answer }) {
       {/* Correct Answer (only show if user was wrong) */}
       {!isCorrect && (
         <div className="rounded-lg border border-green-200 bg-green-50 p-3">
-          <span className="text-sm font-medium text-gray-600">Đáp án đúng:</span>
+          <span className="text-sm font-medium text-gray-600">
+            {t('StudentExamResultDetail.correct-answer')}
+          </span>
           <p className="mt-1 font-semibold text-green-800">{correctAnswer}</p>
         </div>
       )}
@@ -100,11 +105,12 @@ function SimpleAnswerDisplay({ answer }: { answer: Answer }) {
   );
 }
 
-function QuestionMetadata({ answer }: { answer: Answer }) {
+function QuestionMetadata({ answer }: Readonly<{ answer: Answer }>) {
+  const { t } = useTranslation('shared');
   return (
     <div className="flex items-center justify-between text-sm text-gray-500">
       <span>
-        Điểm đạt được:{' '}
+        {t('StudentExamResultDetail.Result')}{' '}
         <strong className={answer.isCorrect ? 'text-green-600' : 'text-red-600'}>
           {answer.pointsEarned}
         </strong>

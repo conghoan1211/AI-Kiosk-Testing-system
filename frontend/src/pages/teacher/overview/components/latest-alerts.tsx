@@ -43,12 +43,12 @@ const LatestAlerts = ({ dataListExamLogActivity }: Alert) => {
               <AlertItem
                 key={index}
                 title={`${alert.fullName} - ${alert.actionType}`}
-                location={`Tổng tiến trình: ${totalProcesses}`}
+                location={`${t('Overview.TotalProcess')}: ${totalProcesses}`}
                 time={new Date(alert.createdAt).toLocaleTimeString([], {
                   hour: '2-digit',
                   minute: '2-digit',
                 })}
-                severity={alert.logType === 0 ? 'low' : 'medium'} // Giả định logType 0 là low
+                severity={alert.logType === 0 ? 'low' : 'medium'}
                 type="info"
               />
             );

@@ -1,10 +1,10 @@
-import { POSITION_URL } from "@/consts/apiUrl";
-import httpService from "@/services/httpService";
+import { POSITION_URL } from '@/consts/apiUrl';
+import httpService from '@/services/httpService';
 
-class positionService {
+class PositionService {
   getListPosition(departmentId: string) {
     return httpService.get(`${POSITION_URL}?departmentId=${departmentId}`);
   }
 }
 
-export default new positionService();
+export default new PositionService();

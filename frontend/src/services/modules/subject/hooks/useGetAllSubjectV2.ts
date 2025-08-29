@@ -1,8 +1,11 @@
 import { showError } from '@/helpers/toast';
-import httpService from '@/services/httpService';
 import { cloneDeep, isArray } from 'lodash';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ISubjectRequest, ResponseGetListSubject, SubjectList } from '../interfaces/subject.interface';
+import {
+  ISubjectRequest,
+  ResponseGetListSubject,
+  SubjectList,
+} from '../interfaces/subject.interface';
 import subjectService from '../subject.service';
 
 const parseRequest = (filters: ISubjectRequest) => {
@@ -20,9 +23,9 @@ const useGetAllSubjectV2 = (
     isTrigger?: boolean;
     isLoadmore?: boolean;
   } = {
-      isTrigger: true,
-      isLoadmore: false,
-    },
+    isTrigger: true,
+    isLoadmore: false,
+  },
 ) => {
   const { isTrigger = true, isLoadmore = false } = options;
   const signal = useRef(new AbortController());
@@ -33,9 +36,6 @@ const useGetAllSubjectV2 = (
   const [total, setTotal] = useState<number>(0);
   const [hasMore, setHasMore] = useState(false);
   const [error, setError] = useState<unknown>(null);
-  const token = httpService.getTokenStorage();
-
-
 
   const fetch = useCallback(() => {
     if (!isTrigger) {
@@ -46,7 +46,6 @@ const useGetAllSubjectV2 = (
       (async () => {
         try {
           const nextFilters = parseRequest(filters);
-          httpService.attachTokenToHeader(token);
 
           const response = await requestAPI(nextFilters, {
             signal: signal.current.signal,
@@ -58,7 +57,7 @@ const useGetAllSubjectV2 = (
         }
       })();
     });
-  }, [filters, isTrigger, token]);
+  }, [filters, isTrigger]);
 
   const checkConditionPass = useCallback(
     (response: ResponseGetListSubject) => {
@@ -138,7 +137,7 @@ const useGetAllSubjectV2 = (
     hasMore,
     setData,
     totalPage,
-    total
+    total,
   };
 };
 

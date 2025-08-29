@@ -24,7 +24,11 @@ interface StudentResultsProps {
   resultDetail?: ResultDetail;
 }
 
-export function StudentResults({ data, questionType, resultDetail }: StudentResultsProps) {
+export function StudentResults({
+  data,
+  questionType,
+  resultDetail,
+}: Readonly<StudentResultsProps>) {
   //!State
   const [searchTerm, setSearchTerm] = useState('');
   const [classFilter, setClassFilter] = useState('all');

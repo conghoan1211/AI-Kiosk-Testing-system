@@ -1,18 +1,8 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import httpService from "@/services/httpService";
-import {
-  AlertTriangle,
-  ArrowLeft,
-  Eye,
-  EyeOff,
-  Home,
-  Key,
-  Lock,
-  Mail,
-  Shield,
-} from "lucide-react";
-import React, { useEffect, useState } from "react";
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import httpService from '@/services/httpService';
+import { AlertTriangle, ArrowLeft, Eye, EyeOff, Home, Key, Lock, Mail, Shield } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 
 interface AccessDeniedProps {
   title?: string;
@@ -23,10 +13,10 @@ interface AccessDeniedProps {
 }
 
 const AccessDenied = ({
-  title = "Access Denied",
+  title = 'Access Denied',
   message = "You don't have permission to access this resource. Please contact your administrator or sign in with appropriate credentials.",
   showContactButton = true,
-  adminEmail = "admin@example.com",
+  adminEmail = 'admin@example.com',
   onBack,
 }: AccessDeniedProps) => {
   //! State
@@ -60,7 +50,7 @@ const AccessDenied = ({
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 p-4 dark:from-gray-900 dark:via-red-900 dark:to-orange-900">
       <div
         className={`mx-auto max-w-2xl text-center transition-all duration-1000 ${
-          isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
+          isVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
         }`}
       >
         {/* Animated Security Icon */}
@@ -70,9 +60,12 @@ const AccessDenied = ({
           </div>
 
           <div className="relative mb-4 flex items-center justify-center">
-            <div
-              className="relative cursor-pointer transition-transform duration-300 hover:scale-110"
+            <button
+              type="button"
               onClick={toggleLock}
+              aria-pressed={isLocked}
+              aria-label={isLocked ? 'Unlock' : 'Lock'}
+              className="relative cursor-pointer transition-transform duration-300 hover:scale-110"
             >
               <Shield className="h-32 w-32 animate-pulse text-red-500" />
               <div className="absolute inset-0 flex items-center justify-center">
@@ -82,7 +75,7 @@ const AccessDenied = ({
                   <Key className="h-16 w-16 animate-spin text-orange-600" />
                 )}
               </div>
-            </div>
+            </button>
           </div>
 
           {/* Floating Warning Icons */}

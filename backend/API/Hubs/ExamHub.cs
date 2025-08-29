@@ -8,6 +8,7 @@ namespace API.Hubs
         public static readonly string FINISH_EXAM = "FinishExam";
         public static readonly string FINISH_STUDENT_EXAM = "FinishStudentExam";
         public static readonly string RE_ASSIGN_EXAM = "ReAssignExam";
+        public static readonly string ADD_NEW_FACECAPTURE = "AddNewFaceCapture";
 
 
         public async Task JoinExamGroup(string examId, string studentExamId)
@@ -23,7 +24,5 @@ namespace API.Hubs
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, examId);
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, studentExamId);
         }
-
     }
-
 }

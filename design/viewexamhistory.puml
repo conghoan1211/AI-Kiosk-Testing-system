@@ -1,7 +1,5 @@
 @startuml
-' Class Diagram for View Exam History Feature
-
-title View Exam History Class Diagram
+' Simplified View Exam History Class Diagram (giống dạng View List Role)
 
 hide empty members
 skinparam packageStyle rectangle
@@ -13,7 +11,6 @@ skinparam classFontName Arial
 skinparam noteFontSize 11
 skinparam noteFontName Arial
 
-' Increase spacing and sizing
 skinparam class {
     BackgroundColor LightBlue
     BorderColor DarkBlue
@@ -27,22 +24,17 @@ skinparam package {
     FontSize 14
     FontStyle bold
 }
-
 skinparam interface {
     BackgroundColor LightGreen
     BorderColor DarkGreen
     FontSize 12
 }
 
-skinparam enum {
-    BackgroundColor LightCyan
-    BorderColor DarkCyan
-    FontSize 12
-}
+title View Exam History Class Diagram
 
 package "Controllers" {
     class StudentExamController <<Controller>> {
-        - _iService: IExamService
+        - _iService: IStudentExamService
         + GetHistoryExams(search: SearchStudentExamVM): Task<IActionResult>
     }
 }
@@ -52,12 +44,21 @@ package "Services" {
         + GetHistoryExams(search: SearchStudentExamVM, usertoken: string): Task<(string, SearchResult?)>
     }
     class StudentExamService <<Service>> {
-        - _context: DbContext
+        - _unitOfWork: IUnitOfWork
         + GetHistoryExams(search: SearchStudentExamVM, usertoken: string): Task<(string, SearchResult?)>
     }
 }
 
-package "Models" {
+package "Repositories" {
+    interface IStudentExamRepository {
+        + GetHistoryExams(search: SearchStudentExamVM, userId: string)
+    }
+    interface IExamRepository {
+        + GetById(examId: string)
+    }
+}
+
+package "Models & DTOs" {
     class SearchStudentExamVM <<DTO>> {
         + StartDate: DateTime?
         + EndDate: DateTime?
@@ -83,40 +84,14 @@ package "Models" {
     }
 }
 
-package "Entities" {
-    class StudentExam {
-        + StudentExamId: string
-        + StudentId: string
-        + ExamId: string
-        + Score: decimal?
-        + Status: int
-        + CreatedAt: DateTime
-        + SubmitTime: DateTime?
-        + StartTime: DateTime?
-        + Exam: Exam
-    }
-    class Exam {
-        + ExamId: string
-        + Title: string
-    }
-}
-
-package "Enums" {
-    enum StudentExamStatus {
-        Submitted
-    }
-}
-
 ' Relationships
 StudentExamController ..> IStudentExamService : <<uses>>
-IStudentExamService <|.. StudentExamService
 StudentExamController ..> SearchStudentExamVM : <<uses>>
-StudentExamService ..> StudentExam : <<uses>>
-StudentExamService ..> Exam : <<uses>>
-StudentExamService ..> StudentExamResultVM : <<maps to>>
-StudentExam o-- Exam : <<has>>
-StudentExamResultVM --> StudentExam : <<maps from>>
-SearchResult o-- StudentExamResultVM : <<has>>
-StudentExam ..> StudentExamStatus : <<uses>>
+IStudentExamService <|.. StudentExamService : <<implements>>
+StudentExamService ..> SearchStudentExamVM : <<uses>>
+StudentExamService ..> IStudentExamRepository : <<uses>>
+StudentExamService ..> IExamRepository : <<uses>>
+StudentExamService ..> SearchResult : <<returns>>
+SearchResult o-- StudentExamResultVM : <<contains>>
 
-@enduml 
+@enduml

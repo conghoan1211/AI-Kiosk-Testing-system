@@ -1,11 +1,11 @@
 export interface IUserActivityLogRequest {
     logStatus?: number | null;
     ActionType?: string | null;
-    FromDate?: Date | null;
-    ToDate?: Date | null;
-    RoleEnum?: number | null;
-    pageSize?: number | null;
-    currentPage?: number | null;
+    FromDate: Date | undefined;
+    ToDate: Date | undefined;
+    RoleEnum: number | null;
+    pageSize: number;
+    currentPage: number;
     textSearch?: string;
 }
 

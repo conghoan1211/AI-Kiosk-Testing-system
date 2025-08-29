@@ -16,13 +16,12 @@ import cachedKeys from '@/consts/cachedKeys';
 import { StudentExamStatus } from '@/consts/common';
 import { DateTimeFormat } from '@/consts/dates';
 import { convertUTCToVietnamTime } from '@/helpers/common';
-import { showError, showSuccess } from '@/helpers/toast';
+import { showSuccess } from '@/helpers/toast';
 import useToggleDialog from '@/hooks/useToggleDialog';
 import httpService from '@/services/httpService';
 import useGetListExamStudent from '@/services/modules/studentexam/hooks/useGetListExamStudent';
 import type { StudentExamList } from '@/services/modules/studentexam/interfaces/studentexam.interface';
 import studentexamService from '@/services/modules/studentexam/studentexam.service';
-import { useGet, useSave } from '@/stores/useStores';
 import {
   AlertCircle,
   BookOpen,
@@ -40,7 +39,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import moment from 'moment';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import DialogExamDetail from '../teacher/manageexam/dialogs/DialogExamDetail';
@@ -62,50 +61,23 @@ const ExamList = () => {
   const [selectedExam, setSelectedExam] = useState<StudentExamList | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
-  const defaultData = useGet('dataExamStudent');
-  const forceRefetch = useGet('forceRefetchExamStudent');
-  const [isTrigger, setTrigger] = useState(Boolean(!defaultData) || forceRefetch);
-  const save = useSave();
   const [examId, setExamId] = useState<string | null>(null);
 
-  const {
-    data: examList,
-    loading: isLoading,
-    refetch,
-  } = useGetListExamStudent({
-    isTrigger: isTrigger,
+  const { data: examList, loading: isLoading } = useGetListExamStudent({
+    isTrigger: true,
     refetchKey: cachedKeys.refetchExamStudent,
-    saveData: true,
+    saveData: false,
   });
-
-  useEffect(() => {
-    if (forceRefetch) {
-      setTrigger(true);
-      refetch();
-      save(cachedKeys.forceRefetchUser, false);
-    }
-  }, [forceRefetch, refetch, save]);
-
-  useEffect(() => {
-    if (examList && isTrigger) {
-      save(cachedKeys.dataExamStudent, examList);
-    }
-  }, [examList, isTrigger, save]);
-
-  const dataMain = useMemo(
-    () => (isTrigger ? examList : defaultData),
-    [examList, isTrigger, defaultData],
-  );
 
   // Filter exams based on search term
   const filteredExams = useMemo(() => {
-    if (!dataMain) return [];
-    if (!searchTerm) return dataMain;
+    if (!examList) return [];
+    if (!searchTerm) return examList;
 
-    return dataMain.filter((exam: any) =>
+    return examList.filter((exam: any) =>
       exam.title.toLowerCase().includes(searchTerm.toLowerCase()),
     );
-  }, [dataMain, searchTerm]);
+  }, [examList, searchTerm]);
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
@@ -165,7 +137,7 @@ const ExamList = () => {
 
   const columns = [
     {
-      label: 'Exam Title',
+      label: t('ExamList.ExamTitle'),
       accessor: 'title',
       sortable: false,
       Cell: (row: StudentExamList) =>
@@ -187,7 +159,7 @@ const ExamList = () => {
         ),
     },
     {
-      label: 'Start Time',
+      label: t('ExamList.StartTime'),
       accessor: 'startTime',
       sortable: false,
       Cell: (row: StudentExamList) => (
@@ -199,7 +171,7 @@ const ExamList = () => {
       ),
     },
     {
-      label: 'End Time',
+      label: t('ExamList.EndTime'),
       accessor: 'endTime',
       sortable: false,
       Cell: (row: StudentExamList) => (
@@ -210,7 +182,7 @@ const ExamList = () => {
       ),
     },
     {
-      label: 'Duration',
+      label: t('ExamList.Duration'),
       accessor: 'duration',
       sortable: false,
       Cell: (row: StudentExamList) => (
@@ -221,13 +193,13 @@ const ExamList = () => {
       ),
     },
     {
-      label: 'Status',
+      label: t('ExamList.Status'),
       accessor: 'status',
       sortable: false,
       Cell: (row: StudentExamList) => getStatusBadge(row?.status),
     },
     {
-      label: 'Thao tác',
+      label: t('ExamList.Actions'),
       accessor: 'actions',
       width: 80,
       sortable: false,
@@ -240,7 +212,7 @@ const ExamList = () => {
                 className="h-7 w-7 rounded p-0 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
               >
                 <MoreHorizontal className="h-3.5 w-3.5 text-gray-600 dark:text-gray-400" />
-                <span className="sr-only">Mở menu thao tác</span>
+                <span className="sr-only">{t('ExamList.Actions')}</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-40">
@@ -252,7 +224,7 @@ const ExamList = () => {
                 }}
               >
                 <Eye className="mr-2 h-3.5 w-3.5 text-blue-500" />
-                <span>Xem chi tiết</span>
+                <span>{t('ExamList.ViewDetail')}</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -262,21 +234,23 @@ const ExamList = () => {
   ];
 
   const handleConfirmOTP = async (values: ConfirmOTPFormValues) => {
-    try {
-      const response = await studentexamService.accessExam(
-        selectedExam?.examId || '',
-        Number(values.otpCode),
-      );
-      if (response) {
-        httpService.saveStudentIdStorage(response.data.data.studentExamId);
-      }
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      toggleAskConfirmOTP();
-      showSuccess('Exam access granted successfully!');
+    const response = await studentexamService.accessExam(
+      selectedExam?.examId || '',
+      Number(values.otpCode),
+    );
+    if (response) {
+      httpService.saveStudentIdStorage(response.data.data.studentExamId);
+    } else {
+      throw new Error('Invalid OTP');
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    toggleAskConfirmOTP();
+    showSuccess('Exam access granted successfully!');
+    if (selectedExam?.verifyCamera) {
       toggleCameraCheck();
-    } catch (error) {
-      showError(error);
+    } else {
+      navigate(`${BaseUrl.ExamList}/${selectedExam?.examId}`);
+      setSelectedExam(null);
     }
   };
 
@@ -299,7 +273,7 @@ const ExamList = () => {
                     <h1 className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-4xl font-bold text-transparent">
                       {t('ExamList.Title')}
                     </h1>
-                    <p className="text-lg text-gray-600">Manage and access your examinations</p>
+                    <p className="text-lg text-gray-600">{t('ExamList.Description')}</p>
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="text-right">
@@ -352,7 +326,7 @@ const ExamList = () => {
                     </div>
                     <div className="text-left">
                       <div className="font-semibold text-gray-900">{t('ExamList.Note')}</div>
-                      <div className="text-sm text-gray-500">View exam guidelines</div>
+                      <div className="text-sm text-gray-500">{t('ExamList.Guidelines')}</div>
                     </div>
                   </div>
                 </Button>
@@ -368,7 +342,9 @@ const ExamList = () => {
                     </div>
                     <div className="text-left">
                       <div className="font-semibold text-gray-900">{t('ExamList.AccessExam')}</div>
-                      <div className="text-sm text-gray-500">Start your examination</div>
+                      <div className="text-sm text-gray-500">
+                        {t('ExamList.StartYourExamination')}
+                      </div>
                     </div>
                   </div>
                 </Button>
@@ -451,12 +427,7 @@ const ExamList = () => {
               )}
 
               <div className="overflow-hidden rounded-lg border border-gray-200">
-                <MemoizedTablePaging
-                  id="exam-list-table"
-                  columns={columns}
-                  data={filteredExams}
-                  loading={isLoading}
-                />
+                <MemoizedTablePaging columns={columns} data={filteredExams} loading={isLoading} />
               </div>
             </CardContent>
           </Card>

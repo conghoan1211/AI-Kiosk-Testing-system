@@ -27,6 +27,11 @@ class AlertService {
   markAllAsRead() {
     return httpService.post(`${NOTIFICATION_URL}/MarkAllAsRead`, {});
   }
+
+  deleteAlert(ids: string[]) {
+    const queryString = ids.map((id) => `ids=${encodeURIComponent(id)}`).join('&');
+    return httpService.delete(`${NOTIFICATION_URL}/Delete?${queryString}`);
+  }
 }
 
 export default new AlertService();

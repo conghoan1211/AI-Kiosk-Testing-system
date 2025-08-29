@@ -1,5 +1,5 @@
 @startuml
-' Class Diagram for Send Violation Feature
+' Class Diagram for Send Violation Feature (EmailHandler là static utility, có SendEmailAsync)
 
 title Send Violation Class Diagram
 
@@ -26,44 +26,45 @@ skinparam package {
     FontSize 14
     FontStyle bold
 }
-
 skinparam interface {
     BackgroundColor LightGreen
     BorderColor DarkGreen
     FontSize 12
 }
 
-skinparam enum {
-    BackgroundColor LightCyan
-    BorderColor DarkCyan
-    FontSize 12
-}
+title Send Violation Class Diagram
 
 package "Controllers" {
     class StudentViolationController <<Controller>> {
         - _studentViolationService: IStudentViolationService
-        + Create(send: SendStudentViolationVM): Task<IActionResult>
+        + Create(send: SendStudentViolationVM)
     }
 }
 
 package "Services" {
     interface IStudentViolationService <<Interface>> {
-        + Create(send: SendStudentViolationVM, usertoken: string): Task<string>
+        + Create(send: SendStudentViolationVM, usertoken: string)
     }
     class StudentViolationService <<Service>> {
-        - _context: DbContext
-        - _s3Service: IAmazonS3Service
-        - _logger: ILog
-        + Create(send: SendStudentViolationVM, usertoken: string): Task<string>
+        - _unitofWork: IUnitOfWork
+        - _s3Service: IS3Service
+        - _log: ILog
+        + Create(send: SendStudentViolationVM, usertoken: string)
     }
-    interface IAmazonS3Service <<Interface>> {
-        + UploadFileAsync(key: string, file: IFormFile): Task<string>
+    interface IS3Service <<Interface>> {
+        + UploadFileAsync(file: IFormFile): Task<string>
+        + DeleteFileAsync(key: string): Task
     }
     interface ILog <<Interface>> {
         + WriteActivity(log: AddUserLogVM): Task<string>
     }
-    class EmailHandler <<static>> {
-        + SendEmailAsync(to: string, subject: string, body: string): Task<string>
+}
+
+package "Repositories" {
+    interface IStudentViolationRepository {
+        + AddViolation(send: SendStudentViolationVM)
+        + GetViolationById(violationId: string)
+        + GetAllViolationsByStudentExam(studentExamId: string)
     }
 }
 
@@ -75,67 +76,48 @@ package "Models & DTOs" {
         + ScreenshotPath: IFormFile
         + IsSendMail: bool
     }
+    class SearchResult <<DTO>> {
+        + Result
+        + TotalPage
+        + PageSize
+        + CurrentPage
+        + Total
+    }
+    class StudentViolationVM <<DTO>> {
+        + ViolationId: string
+        + StudentExamId: string
+        + Message: string
+        + ScreenshotPath: string
+        + CreatedAt: DateTime
+        + ViolationName: string
+    }
     class AddUserLogVM <<DTO>> {
-        + UserId: string
-        + ObjectId: string
         + ActionType: string
+        + UserId: string
         + Description: string
         + Metadata: string
+        + ObjectId: string
         + Status: int
     }
 }
 
-package "Entities" {
-    class StudentViolation {
-        + Id: string
-        + StudentExamId: string
-        + Message: string
-        + ViolationName: string
-        + ScreenshotPath: string
-        + CreatedAt: DateTime
-        + CreatedBy: string
-    }
-    class StudentExam {
-        + StudentExamId: string
-        + User: User
-        + Exam: Exam
-    }
-    class User {
-        + UserId: string
-        + FullName: string
-        + UserCode: string
-        + Email: string
-    }
-    class Exam {
-        + ExamId: string
-        + Title: string
-        + StartTime: DateTime
-    }
-}
-
-package "Enums" {
-    enum LogStatus {
-        Success
-        Failed
+package "Utilities" {
+    class EmailHandler <<static>> {
+        + SendEmailAsync(To: string, Subject: string, Body: string): Task<string>
     }
 }
 
 ' Relationships
 StudentViolationController ..> IStudentViolationService : <<uses>>
 StudentViolationController ..> SendStudentViolationVM : <<uses>>
-IStudentViolationService <|.. StudentViolationService
-StudentViolationService ..> StudentViolation : <<creates>>
-StudentViolationService ..> StudentExam : <<queries>>
-StudentViolationService ..> User : <<uses>>
-StudentViolationService ..> Exam : <<uses>>
-StudentViolationService ..> IAmazonS3Service : <<uploads file>>
+IStudentViolationService <|.. StudentViolationService : <<implements>>
+StudentViolationService ..> IStudentViolationRepository : <<uses>>
+StudentViolationService ..> EmailHandler : <<uses>>
+StudentViolationService ..> IS3Service : <<uses>>
 StudentViolationService ..> ILog : <<logs>>
+StudentViolationService ..> SearchResult : <<returns>>
 StudentViolationService ..> AddUserLogVM : <<logs>>
-StudentViolationService ..> EmailHandler : <<sends email>>
-SendStudentViolationVM o-- StudentViolation : <<creates>>
-StudentViolation o-- StudentExam : <<for>>
-StudentExam o-- User : <<for>>
-StudentExam o-- Exam : <<for>>
-AddUserLogVM ..> LogStatus : <<uses>>
+IStudentViolationRepository ..> StudentViolationVM : <<returns>>
+SendStudentViolationVM o-- StudentViolationVM : <<creates>>
 
-@enduml 
+@enduml

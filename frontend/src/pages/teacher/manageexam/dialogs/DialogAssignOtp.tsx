@@ -18,6 +18,7 @@ import React, { useEffect, useState } from 'react';
 import { Fragment } from 'react/jsx-runtime';
 import * as Yup from 'yup';
 import moment from 'moment';
+import { useTranslation } from 'react-i18next';
 
 interface DialogAssignOtpExamTeacherProps extends DialogI<any> {
   isOpen: boolean;
@@ -26,22 +27,23 @@ interface DialogAssignOtpExamTeacherProps extends DialogI<any> {
   viewingOtp?: IAssignOtpToExam | null;
 }
 
-const validationSchema = Yup.object({
-  timeValid: Yup.number()
-    .required('Thời gian hiệu lực là bắt buộc')
-    .min(1, 'Thời gian hiệu lực phải lớn hơn 0')
-    .max(86400, 'Thời gian hiệu lực không được vượt quá 86400 giây (24 giờ)'),
-});
-
 const DialogAssignOtpExamTeacher = (props: DialogAssignOtpExamTeacherProps) => {
   //!State
   const { isOpen, toggle, onSubmit, viewingOtp } = props;
   const [remainingTime, setRemainingTime] = useState<string>('');
+  const { t } = useTranslation('shared');
 
   const initialValues: IAssignOtpToExam = {
-    timeValid: viewingOtp?.timeValid || 0,
-    examId: viewingOtp?.examId || '',
+    timeValid: viewingOtp?.timeValid ?? 0,
+    examId: viewingOtp?.examId ?? '',
   };
+
+  const validationSchema = Yup.object({
+    timeValid: Yup.number()
+      .required(t('ExamManagement.TimeValidRequired'))
+      .min(1, t('ExamManagement.TimeValidMin'))
+      .max(86400, t('ExamManagement.TimeValidMax')),
+  });
 
   //!Functions
   useEffect(() => {
@@ -88,7 +90,7 @@ const DialogAssignOtpExamTeacher = (props: DialogAssignOtpExamTeacherProps) => {
                 setSubmitting(true);
                 await onSubmit(values);
               } catch (error) {
-                showError('Đã có lỗi xảy ra khi xử lý yêu cầu.');
+                showError(t('ExamManagement.ErrorOccurred'));
               } finally {
                 setSubmitting(false);
               }
@@ -101,12 +103,12 @@ const DialogAssignOtpExamTeacher = (props: DialogAssignOtpExamTeacherProps) => {
                   <Form className="space-y-4">
                     <div>
                       <DialogTitle className="text-xl font-medium">
-                        {viewingOtp ? 'Xem mã OTP' : 'Gán mã OTP cho bài thi'}
+                        {viewingOtp ? t('ExamManagement.ViewOtp') : t('ExamManagement.AssignOtp')}
                       </DialogTitle>
                       <DialogDescription className="mt-1 text-sm text-gray-500">
                         {viewingOtp
-                          ? 'Thông tin mã OTP và thời gian hiệu lực còn lại.'
-                          : 'Nhập thời gian hiệu lực của mã OTP (tính bằng phút). Mã OTP sẽ được gửi đến sinh viên và có hiệu lực trong khoảng thời gian này.'}
+                          ? t('ExamManagement.ViewOtpDescription')
+                          : t('ExamManagement.AssignOtpDescription')}
                       </DialogDescription>
                     </div>
 
@@ -121,7 +123,7 @@ const DialogAssignOtpExamTeacher = (props: DialogAssignOtpExamTeacherProps) => {
                           </div>
                           <div className="space-y-2">
                             <label className="text-sm font-medium text-gray-900">
-                              Thời gian hiệu lực còn lại
+                              Time Remaining
                             </label>
                             <div className="rounded-md border border-blue-200 bg-blue-50 p-2 font-mono text-lg text-blue-700">
                               {remainingTime}
@@ -135,9 +137,9 @@ const DialogAssignOtpExamTeacher = (props: DialogAssignOtpExamTeacherProps) => {
                           <FormikField
                             component={InputField}
                             name="timeValid"
-                            placeholder="Nhập thời gian hiệu lực (phút)"
+                            placeholder="Enter validity period (minutes)"
                             value={values.timeValid}
-                            label="Thời gian hiệu lực"
+                            label="Validity Period"
                             required
                             isNumberic
                           />
@@ -148,12 +150,12 @@ const DialogAssignOtpExamTeacher = (props: DialogAssignOtpExamTeacherProps) => {
                     <div className="flex justify-end gap-2 pt-4">
                       <DialogClose asChild>
                         <Button variant="outline" type="button">
-                          {viewingOtp ? 'Đóng' : 'Hủy'}
+                          {viewingOtp ? 'Close' : 'Cancel'}
                         </Button>
                       </DialogClose>
                       {!viewingOtp && (
                         <Button type="submit" isLoading={isSubmitting}>
-                          Lưu
+                          Save
                         </Button>
                       )}
                     </div>

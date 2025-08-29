@@ -1,5 +1,5 @@
-import { get } from "lodash";
-import * as React from "react";
+import { get } from 'lodash';
+import * as React from 'react';
 import {
   Table,
   TableCaption,
@@ -8,8 +8,8 @@ import {
   TableRow,
   TableBody,
   TableCell,
-} from "../ui/table";
-import ScrollWrapper from "../ui/ScrollWrapper";
+} from '../ui/table';
+import ScrollWrapper from '../ui/ScrollWrapper';
 
 interface TableProps<T> {
   data: T[];
@@ -24,11 +24,8 @@ interface TableProps<T> {
   keyRow?: string;
   className?: string;
   currentPage?: number;
-  currentSize?: number;
-  totalPage?: number;
   handleChangePage?: (value: number) => void;
   noResultText?: string;
-  //
   loadingMore?: boolean;
   hasMore?: boolean;
 }
@@ -37,13 +34,11 @@ const TableCommon = <T,>(props: TableProps<T>) => {
     columns,
     data,
     className,
-    keyRow = "id",
+    keyRow = 'id',
     tableCaption,
     onClickRow,
-    // currentSize,
     currentPage,
-    // totalPage,
-    noResultText = "No Result",
+    noResultText = 'No Result',
     handleChangePage,
     loadingMore,
     hasMore,
@@ -60,7 +55,7 @@ const TableCommon = <T,>(props: TableProps<T>) => {
                 <TableHead
                   key={col.accessor}
                   align="center"
-                  className={"typo-7 font-medium text-black"}
+                  className={'typo-7 font-medium text-black'}
                 >
                   {col.label}
                 </TableHead>
@@ -73,7 +68,7 @@ const TableCommon = <T,>(props: TableProps<T>) => {
             key={`${loadingMore}`}
             onScrollEnd={() => {
               if (hasMore && !loadingMore) {
-                handleChangePage?.((currentPage || 1) + 1);
+                handleChangePage?.((currentPage ?? 1) + 1);
               }
             }}
           >
@@ -90,7 +85,7 @@ const TableCommon = <T,>(props: TableProps<T>) => {
                         <TableCell
                           key={`${get(row, keyRow)}-${index}`}
                           className={`typo-7 rounded-bl-xl rounded-tl-xl`}
-                          style={{ width: col?.width ? col?.width : "unset" }}
+                          style={{ width: col?.width ?? 'unset' }}
                         >
                           {col.Cell ? col.Cell(row) : get(row, col.accessor)}
                         </TableCell>
@@ -100,7 +95,7 @@ const TableCommon = <T,>(props: TableProps<T>) => {
                       return (
                         <TableCell
                           key={`${get(row, keyRow)}-${index}`}
-                          style={{ width: col?.width ? col?.width : "unset" }}
+                          style={{ width: col?.width ?? 'unset' }}
                           className={`typo-7 rounded-br-xl rounded-tr-xl`}
                         >
                           {col.Cell ? col.Cell(row) : get(row, col.accessor)}
@@ -110,8 +105,8 @@ const TableCommon = <T,>(props: TableProps<T>) => {
                     return (
                       <TableCell
                         key={`${get(row, keyRow)}-${index}`}
-                        className={"typo-7"}
-                        style={{ width: col?.width ? col?.width : "unset" }}
+                        className={'typo-7'}
+                        style={{ width: col?.width ?? 'unset' }}
                       >
                         {col.Cell ? col.Cell(row) : get(row, col.accessor)}
                       </TableCell>
@@ -123,22 +118,7 @@ const TableCommon = <T,>(props: TableProps<T>) => {
           </ScrollWrapper>
         </TableBody>
       </Table>
-      {data?.length === 0 && (
-        <div className={`typo-7 w-full p-10 text-center`}>{noResultText}</div>
-      )}
-
-      {/* {currentPage && (
-        <Pagination
-          currentPage={currentPage}
-          currentSize={currentSize || 10}
-          totalPage={
-            totalPage
-              ? totalPage
-              : Math.ceil(data?.length / (currentSize || 10))
-          }
-          handleChangePage={handleChangePage}
-        />
-      )} */}
+      {data?.length === 0 && <div className={`typo-7 w-full p-10 text-center`}>{noResultText}</div>}
     </>
   );
 };

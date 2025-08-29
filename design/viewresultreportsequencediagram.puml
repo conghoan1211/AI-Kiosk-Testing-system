@@ -1,57 +1,66 @@
 @startuml
+title View Result Report Sequence Diagram 
+actor "User" as Client
+boundary ":ResultReportUI" as UI <<boundary>>
+control "ExamController" as Controller <<controller>>
+participant ":ExamService" as Service <<service>>
 
-title View Result Report Sequence Diagram
 
-actor "Lecturer" as Client
-boundary "c:ExamController" as Controller
-control "s:ExamService" as Service
+entity "StudentExamRepository" as StuExamRepo <<repository>>
+entity "StudentRepository" as StudentRepo <<repository>>
+
 database "Database" as DB
 
 == View Result Report ==
 
-Client -> Controller: GET /view-result-report/{examId}
+Client -> UI: Click "View result report"
+activate UI
+UI -> Controller: GET /view-result-report/{examId}
 activate Controller
 
 alt User not authenticated
-    Controller -> Controller: Log unauthorized access attempt
-    Controller --> Client: 401 Unauthorized { message: "User not authenticated" }
-    deactivate Controller
+  Controller --> UI: 401 Unauthorized { message: "User not authenticated" }
+  deactivate Controller
+  UI --> Client: Show unauthorized
+  deactivate UI
 else User authenticated
-    Controller -> Service: ViewResultReport(examId)
-    activate Service
+  Controller -> Service: ViewResultReport(examId, userId)
+  activate Service
 
-    Service -> DB: Check user role and permissions (UserId, RoleId)
-    activate DB
-    alt User is not teacher
-        DB --> Service: Not found or invalid role
-        deactivate DB
-        Service -> Service: Log authorization failure
-        Service --> Controller: ("You do not have permission to view result reports.", null)
-        deactivate Service
-        Controller --> Client: 403 Forbidden { success: false, message }
-        deactivate Controller
-    else User is teacher
-        DB --> Service: User role confirmed
-        deactivate DB
+  '--- Authorization (must be Teacher/Admin) ---
+  Service -> Service: Ensure role ∈ {Teacher, Admin}
+  alt Not allowed
+    Service --> Controller: 403 Forbidden { message: "You do not have permission to view result reports." }
+    deactivate Service
+    Controller --> UI: 403 Forbidden
+    deactivate Controller
+    UI --> Client: Show forbidden
+    deactivate UI
+  else Allowed
+    '--- Query StudentExams including Student info ---
+    Service -> StuExamRepo: GetByExamId(examId)
+    activate StuExamRepo
+    StuExamRepo -> DB: [SQL: SELECT se.*, u.UserId, u.FullName FROM StudentExams se JOIN Users u ON u.UserId=se.StudentId WHERE se.ExamId=@id]
+    DB --> StuExamRepo: rows (studentExams + student)
+    StuExamRepo --> Service: studentExams
+    deactivate StuExamRepo
 
-        Service -> DB: Get StudentExams by ExamId (include Student)
-        activate DB
-        DB --> Service: List<StudentExam> (with Student)
-        deactivate DB
-
-        Service -> Service: Map to List<ResultReportVM>
-        Service --> Controller: ("", List<ResultReportVM>)
-        deactivate Service
-        
-        alt message.Length > 0
-            Controller --> Client: 400 Bad Request { success: false, message }
-        else
-            Controller -> Controller: Log successful access
-            Controller --> Client: 200 OK { success: true, data }
-        end
-    end
-end
-
-deactivate Controller
-
-@enduml 
+    alt No rows
+      Service --> Controller: 200 OK { data: [] }
+      deactivate Service
+      Controller --> UI: 200 OK { success: true, data: [] }
+      deactivate Controller
+      UI --> Client: Show empty report
+      deactivate UI
+    else Have rows
+      Service -> Service: Map -> List<ResultReportVM> (StudentId, StudentName, Score, Status, SubmitTime)
+      Service --> Controller: 200 OK { data: ResultReportVM[] }
+      deactivate Service
+      Controller --> UI: 200 OK { success: true, data }
+      deactivate Controller
+      UI --> Client: Display result report
+      deactivate UI
+    end alt
+  end alt
+end alt
+@enduml

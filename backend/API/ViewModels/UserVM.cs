@@ -1,4 +1,5 @@
 ﻿
+using API.Attributes;
 using API.Helper;
 using ExpressiveAnnotations.Attributes;
 using Microsoft.AspNetCore.Mvc;
@@ -90,7 +91,7 @@ namespace API.ViewModels
         public string? FullName { get; set; }
 
         [Required(ErrorMessage = "Phone cannot be empty")]
-        [StringLength(20, ErrorMessage = "Phone number must not exceed 20 characters")]
+        [StringLength(10, ErrorMessage = "Phone number must not exceed 10 characters")]
         [RegularExpression(@"^\+?[0-9\s]+$", ErrorMessage = "Invalid phone number format")]
         public string? Phone { get; set; }
 
@@ -123,8 +124,14 @@ namespace API.ViewModels
         public string? MajorId { get; set; }
         public string? SpecializationId { get; set; }
         public int? Status { get; set; }
-        [DefaultValue(true)]
-        public bool TwoFactorEnabled { get; set; } = false;
+    }
+
+    public class AddListUserVM : UserBaseVM
+    {
+        [Required(ErrorMessage = "Email cannot be empty")]
+        [StringLength(100, ErrorMessage = "Email must be not exceed 100 characters")]
+        [EmailAddress(ErrorMessage = "Please enter a valid email address.")]
+        public string? Email { get; set; }
     }
 
     public class CreateUserVM : UserBaseVM
@@ -133,13 +140,18 @@ namespace API.ViewModels
         [StringLength(100, ErrorMessage = "Email must be not exceed 100 characters")]
         [EmailAddress(ErrorMessage = "Please enter a valid email address.")]
         public string? Email { get; set; }
+        [AllowedExtensions(new[] { ".png", ".jpg", ".jpeg", ".svg" })]
+        [MaxFileSize(Constant.IMAGE_FILE_SIZE)]
+        public IFormFile Avatar { get; set; } = null!;
     }
 
     public class UpdateUserVM : UserBaseVM
     {
         [Required(ErrorMessage = "UserId cannot be empty")]
         public string UserId { get; set; } = null!;
-        public IFormFile? Avatar { get; set; }
+        [AllowedExtensions(new[] { ".png", ".jpg", ".jpeg", ".svg" })]
+        [MaxFileSize(Constant.IMAGE_FILE_SIZE)]
+        public IFormFile Avatar { get; set; } = null!;
     }
 
     public class ErrorImport
@@ -152,6 +164,8 @@ namespace API.ViewModels
     public class ChangeAvatarVM
     {
         [Required(ErrorMessage = "Avatar cannot be empty")]
+        [AllowedExtensions(new[] { ".png", ".jpg", ".jpeg", ".svg" })]
+        [MaxFileSize(Constant.IMAGE_FILE_SIZE)]
         public IFormFile Avatar { get; set; } = null!;
         [Required(ErrorMessage = "UserId cannot be empty")]
         public string UserId { get; set; } = null!; 

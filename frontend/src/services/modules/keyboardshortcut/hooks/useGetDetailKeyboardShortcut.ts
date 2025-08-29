@@ -1,16 +1,15 @@
-import { useSave } from "@/stores/useStores";
-import { isEmpty } from "lodash";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useSave } from '@/stores/useStores';
+import { isEmpty } from 'lodash';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { errorHandler } from "@/helpers/errors";
-import { showError } from "@/helpers/toast";
-import httpService from "@/services/httpService";
+import cachedKeys from '@/consts/cachedKeys';
+import { errorHandler } from '@/helpers/errors';
+import { showError } from '@/helpers/toast';
 import {
   KeyboardShortcutDetail,
   KeyboardShortcutDetailResponse,
-} from "../interfaces/keyboardShortcut.interface";
-import keyboardShortcutService from "../keyboardShortcut.service";
-import cachedKeys from "@/consts/cachedKeys";
+} from '../interfaces/keyboardShortcut.interface';
+import keyboardShortcutService from '../keyboardShortcut.service';
 
 /**
  * Please check:
@@ -22,43 +21,37 @@ const useGetDetailKeyboardShortcut = (
   id: string | undefined,
   options: { isTrigger?: boolean; cachedKey?: string } = {
     isTrigger: true,
-    cachedKey: "",
+    cachedKey: '',
   },
 ) => {
   //! State
   const signal = useRef(new AbortController());
-  const { isTrigger = true, cachedKey = "" } = options;
+  const { isTrigger = true, cachedKey = '' } = options;
 
   const save = useSave();
   const [data, setData] = useState<KeyboardShortcutDetail>();
   const [isLoading, setLoading] = useState(false);
   const [isRefetching, setRefetching] = useState(false);
   const [error, setError] = useState<unknown>(null);
-  const token = httpService.getTokenStorage();
 
   //! Function
-  const fetch: () => Promise<KeyboardShortcutDetailResponse> | undefined =
-    useCallback(() => {
-      if (!isTrigger) {
-        return;
-      }
+  const fetch: () => Promise<KeyboardShortcutDetailResponse> | undefined = useCallback(() => {
+    if (!isTrigger) {
+      return;
+    }
 
-      return new Promise((resolve, reject) => {
-        (async () => {
-          try {
-            httpService.attachTokenToHeader(token);
-            const response =
-              await keyboardShortcutService.getDetailKeyboardShortcut(
-                id as string,
-              );
-            resolve(response);
-          } catch (error) {
-            setError(error);
-            reject(error);
-          }
-        })();
-      });
-    }, [id, isTrigger, token]);
+    return new Promise((resolve, reject) => {
+      (async () => {
+        try {
+          const response = await keyboardShortcutService.getDetailKeyboardShortcut(id as string);
+          resolve(response);
+        } catch (error) {
+          setError(error);
+          reject(error);
+        }
+      })();
+    });
+  }, [id, isTrigger]);
 
   const checkConditionPass = useCallback(
     (response: KeyboardShortcutDetailResponse) => {
@@ -76,9 +69,7 @@ const useGetDetailKeyboardShortcut = (
     try {
       setRefetching(true);
       signal.current = new AbortController();
-      const response = await keyboardShortcutService.getDetailKeyboardShortcut(
-        id as string,
-      );
+      const response = await keyboardShortcutService.getDetailKeyboardShortcut(id as string);
       checkConditionPass(response);
     } catch (error: any) {
       showError(errorHandler(error));

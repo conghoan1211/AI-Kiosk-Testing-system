@@ -1,5 +1,3 @@
-'use client';
-
 import {
   Accordion,
   AccordionContent,
@@ -10,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
-import { Switch } from '@/components/ui/switch'; // Added Switch import
+import { Switch } from '@/components/ui/switch';
 import BaseUrl from '@/consts/baseUrl';
 import cachedKeys from '@/consts/cachedKeys';
 import { containerVariants, itemVariants } from '@/helpers/common';
@@ -46,20 +44,22 @@ import { useNavigate } from 'react-router-dom';
 import DialogAddNewRole, { type RoleFormValues } from '../dialogs/DialogAddNewRole';
 import { UserStats } from './user-stats';
 import DialogConfirm from '@/components/dialogs/DialogConfirm';
+import { useTranslation } from 'react-i18next';
 
 const RoleTab = () => {
   //! State
+  const { t } = useTranslation('shared');
   const [openAskDeleteRole, toggleAskDeleteRole, shouldRenderAskDeleteRole] = useToggleDialog();
   const navigate = useNavigate();
   const defaultData = useGet('dataPermission');
   const cachesFilterPermission = useGet('cachesFilterPermission');
-  const [isTrigger, setTrigger] = useState(Boolean(!defaultData));
+  const [isTrigger, setIsTrigger] = useState(Boolean(!defaultData));
   const save = useSave();
   const [openAddNewRole, toggleAddNewRole, shouldRenderAddNewRole] = useToggleDialog();
   const [editRole, setEditRole] = useState<PermissionList | null>(null);
   const { filters } = useFiltersHandler({
-    pageSize: cachesFilterPermission?.pageSize || 50,
-    currentPage: cachesFilterPermission?.currentPage || 1,
+    pageSize: cachesFilterPermission?.pageSize ?? 50,
+    currentPage: cachesFilterPermission?.currentPage ?? 1,
     textSearch: '',
   });
   const stableFilters = useMemo(() => filters as IPermissionRequest, [filters]);
@@ -92,25 +92,25 @@ const RoleTab = () => {
     }, 0);
     return [
       {
-        title: 'Tổng vai trò',
+        title: t('UserManagement.TotalRoles'),
         value: totalRoles,
         icon: <UserCog className="h-6 w-6 text-gray-500" />,
         bgColor: 'bg-gray-50',
       },
       {
-        title: 'Quản trị viên',
+        title: t('UserManagement.Admin'),
         value: adminCount,
         icon: <Shield className="h-6 w-6 text-red-500" />,
         bgColor: 'bg-red-50',
       },
       {
-        title: 'Tổng quyền hạn',
+        title: t('UserManagement.TotalPermissions'),
         value: totalPermissions,
         icon: <Shield className="h-6 w-6 text-green-500" />,
         bgColor: 'bg-green-50',
       },
     ];
-  }, [dataMain]);
+  }, [dataMain, t]);
 
   //! Functions
   const getRoleIcon = (roleName: string) => {
@@ -130,47 +130,47 @@ const RoleTab = () => {
       try {
         if (editRole !== null) {
           await authorizeService.crateUpdateRole({ ...values });
-          showSuccess('Role successfully updated');
-          setTrigger(true);
+          showSuccess(t('UserManagement.RoleUpdated'));
+          setIsTrigger(true);
           refetch();
           toggleAddNewRole();
           setEditRole(null);
           return;
         }
         await authorizeService.crateUpdateRole({ ...values });
-        showSuccess('Role successfully created');
-        setTrigger(true);
+        showSuccess(t('UserManagement.RoleCreated'));
+        setIsTrigger(true);
         refetch();
         toggleAddNewRole();
       } catch (error) {
         showError(error);
       }
     },
-    [editRole, refetch, toggleAddNewRole],
+    [editRole, refetch, toggleAddNewRole, t],
   );
   const handleToggleActiveDeactivePermission = useCallback(
     async (permissionId: string) => {
       try {
         await authorizeService.toggleActiveDeactivePermission(permissionId);
-        showSuccess('Permission status updated successfully');
+        showSuccess(t('UserManagement.PermissionStatusUpdated'));
         refetch();
       } catch (error) {
         showError(error);
       }
     },
-    [refetch],
+    [refetch, t],
   );
   const handleToggleRoleStatus = useCallback(
     async (roleId: string) => {
       try {
         await authorizeService.toggleActiveDeactiveRole(roleId);
-        showSuccess(`Role ${roleId} status updated successfully`);
+        showSuccess(t('UserManagement.RoleStatusUpdated'));
         refetch();
       } catch (error) {
         showError(error);
       }
     },
-    [refetch],
+    [refetch, t],
   );
   const handleToggleDeleteRole = useCallback(() => {
     toggleAskDeleteRole();
@@ -186,13 +186,13 @@ const RoleTab = () => {
           roleId: roleId,
           permissions: [permissionId],
         });
-        showSuccess('Permission deleted successfully');
+        showSuccess(t('UserManagement.PermissionDeleted'));
         refetch();
       } catch (error) {
         showError(error);
       }
     },
-    [refetch],
+    [refetch, t],
   );
 
   // Render
@@ -208,18 +208,18 @@ const RoleTab = () => {
       )}
       {shouldRenderAskDeleteRole && (
         <DialogConfirm
-          title="Xác nhận xóa vai trò"
-          content="Bạn có chắc chắn muốn xóa vai trò này không? Việc này sẽ xóa tất cả quyền hạn liên quan."
+          title={t('UserManagement.ConfirmDeleteRole')}
+          content={t('UserManagement.ConfirmDeleteRoleContent')}
           isOpen={openAskDeleteRole}
           toggle={handleToggleDeleteRole}
           onSubmit={async () => {
             try {
               if (editRole && editRole.roleId) {
                 await authorizeService.deleteRole(Number(editRole.roleId));
-                showSuccess('Xóa vai trò thành công');
+                showSuccess(t('UserManagement.RoleDeleted'));
                 toggleAskDeleteRole();
                 setEditRole(null);
-                setTrigger(true);
+                setIsTrigger(true);
                 refetch();
               }
             } catch (error) {
@@ -242,10 +242,10 @@ const RoleTab = () => {
                   <Shield className="h-6 w-6" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900">Danh sách vai trò</h1>
-                  <p className="text-sm text-gray-600">
-                    Quản lý vai trò và quyền hạn trong hệ thống
-                  </p>
+                  <h1 className="text-3xl font-bold text-gray-900">
+                    {t('UserManagement.RoleList')}
+                  </h1>
+                  <p className="text-sm text-gray-600">{t('UserManagement.RoleListDescription')}</p>
                 </div>
               </div>
             </div>
@@ -254,7 +254,7 @@ const RoleTab = () => {
               className="bg-gradient-to-r from-blue-600 to-indigo-600 shadow-lg transition-all duration-200 hover:from-blue-700 hover:to-indigo-700 hover:shadow-xl"
               size="lg"
             >
-              <Plus className="mr-2 h-4 w-4" /> Thêm vai trò mới
+              <Plus className="mr-2 h-4 w-4" /> {t('UserManagement.AddNewRole')}
             </Button>
           </div>
           {/* Roles Grid */}
@@ -310,7 +310,8 @@ const RoleTab = () => {
                                   navigate(`${BaseUrl.AdminAddNewRole}/${role.roleId}`)
                                 }
                               >
-                                <Plus className="mr-2 h-4 w-4" /> Thêm Quyền Hạn
+                                <Plus className="mr-2 h-4 w-4" />{' '}
+                                {t('UserManagement.AddPermission')}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 className="flex cursor-pointer items-center rounded-md px-3 py-2 text-sm transition-colors duration-150 hover:bg-accent hover:text-accent-foreground"
@@ -319,7 +320,7 @@ const RoleTab = () => {
                                   toggleAddNewRole();
                                 }}
                               >
-                                <Edit className="mr-2 h-4 w-4" /> Chỉnh sửa
+                                <Edit className="mr-2 h-4 w-4" /> {t('Edit')}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 className="flex cursor-pointer items-center rounded-md px-3 py-2 text-sm text-red-600 transition-colors duration-150 hover:bg-red-50 hover:text-red-700"
@@ -328,7 +329,7 @@ const RoleTab = () => {
                                   toggleAskDeleteRole();
                                 }}
                               >
-                                <Trash2 className="mr-2 h-4 w-4" /> Xóa
+                                <Trash2 className="mr-2 h-4 w-4" /> {t('Delete')}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -337,7 +338,7 @@ const RoleTab = () => {
                       {/* Permissions */}
                       <div>
                         <h4 className="mb-3 text-sm font-semibold text-gray-700">
-                          Quyền hạn ({role.categories.length})
+                          {t('UserManagement.Permissions')} ({role.categories.length})
                         </h4>
                         <Accordion type="multiple" className="w-full">
                           {role.categories.map((category) => (
@@ -369,7 +370,9 @@ const RoleTab = () => {
                                             handleToggleActiveDeactivePermission(permission.id)
                                           }
                                         >
-                                          {permission.isActive ? 'Active' : 'Inactive'}
+                                          {permission.isActive
+                                            ? t('UserManagement.Active')
+                                            : t('UserManagement.Inactive')}
                                         </Button>
                                       </Badge>
                                       <Button

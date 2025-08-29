@@ -1,10 +1,8 @@
-import PageWrapper from '@/components/PageWrapper/PageWrapper';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SIGNALR_URL } from '@/consts/apiUrl';
 import BaseUrl from '@/consts/baseUrl';
-import cachedKeys from '@/consts/cachedKeys';
 import { formatTime, getQuestionButtonClass } from '@/helpers/common';
 import { showError, showSuccess } from '@/helpers/toast';
 import httpService, {
@@ -15,7 +13,6 @@ import httpService, {
 import useGetDetailExam from '@/services/modules/studentexam/hooks/useGetExamDetail';
 import studentexamService from '@/services/modules/studentexam/studentexam.service';
 import createSignalRService from '@/services/signalRService';
-import { useSave } from '@/stores/useStores';
 import { AlertTriangle, Eye } from 'lucide-react';
 import React, { startTransition, useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -25,6 +22,8 @@ import QuestionNavigation from '../components/QuestionNavigation';
 import TimerCard from '../components/TimerCard';
 import useCameraMonitor from '../hooks/useCameraMonitor';
 import useFaceDetection from '../hooks/useFaceDetection';
+import PageWrapper from '@/components/PageWrapper/PageWrapper';
+import { useTranslation } from 'react-i18next';
 
 const emotionColors = {
   angry: 'bg-red-500',
@@ -47,12 +46,12 @@ const inferredStateColors: { [key: string]: string } = {
 };
 
 const ExamDetail: React.FC = () => {
+  const { t } = useTranslation('shared');
   const { examId } = useParams();
-  const { data: examData } = useGetDetailExam(examId, {
+  const { data: examData, isLoading } = useGetDetailExam(examId, {
     isTrigger: !!examId,
   });
   const navigate = useNavigate();
-  const save = useSave();
 
   const [currentQuestion, setCurrentQuestion] = useState<string>('');
   const [selectedAnswers, setSelectedAnswers] = useState<{ [key: string]: string }>({});
@@ -63,7 +62,7 @@ const ExamDetail: React.FC = () => {
   const signalRServiceRef = useRef<ReturnType<typeof createSignalRService> | null>(null);
 
   const { cameraStatus, showCameraWarning, cameraRef, cameraKey } = useCameraMonitor();
-  const { emotionData, multipleFaceDetected, inferredState } = useFaceDetection(
+  const { emotionData, multipleFaceDetected, inferredState, errorMsg } = useFaceDetection(
     cameraStatus,
     cameraRef,
   );
@@ -76,17 +75,16 @@ const ExamDetail: React.FC = () => {
     const initSignalR = async () => {
       try {
         connectionRef.current = await signalRService.start();
-        // Register FinishStudentExam handler
         signalRService.on('FinishStudentExam', (data: { examId: string; success: boolean }) => {
           if (data.examId === examId) {
             if (data.success) {
-              showSuccess('Bài thi đã hoàn thành thành công!');
+              showSuccess(t('ExamList.FinishExamSuccess'));
               navigate(BaseUrl.ExamList);
               localStorage.removeItem(`${TIME_REMAINING_KEY}_${examId}`);
               localStorage.removeItem(`${EXTRA_START_TIME_KEY}_${examId}`);
               localStorage.removeItem(`${EXAM_START_TIME_KEY}_${examId}`);
             } else {
-              showError('Bài thi không hoàn thành thành công. Vui lòng thử lại.');
+              showError(t('ExamList.FinishExamError'));
             }
           } else {
             console.warn(
@@ -94,7 +92,6 @@ const ExamDetail: React.FC = () => {
             );
           }
         });
-        // Register ReceiveExtraTime handler
         signalRService.on(
           'ReceiveExtraTime',
           (data: { studentExamId: string; newSubmitTime: string; extraMinutes: number }) => {
@@ -102,8 +99,8 @@ const ExamDetail: React.FC = () => {
               const extraSeconds = data.extraMinutes * 60;
               setTimeRemaining((prev) => {
                 const newTime = prev + extraSeconds;
-                httpService.saveTimeRemainingStorage(examId || '', newTime);
-                showSuccess(`Thời gian làm bài được gia hạn thêm ${data.extraMinutes} phút.`);
+                httpService.saveTimeRemainingStorage(examId ?? '', newTime);
+                showSuccess(t('ExamList.ReceiveExtraTime', { minutes: data.extraMinutes }));
                 return newTime;
               });
             } else {
@@ -113,7 +110,6 @@ const ExamDetail: React.FC = () => {
             }
           },
         );
-        // Handle reconnection
         signalRService.connection.onreconnected(() => {
           const newStudentExamId = httpService.getStudentIdStorage();
           if (examId && newStudentExamId) {
@@ -123,7 +119,6 @@ const ExamDetail: React.FC = () => {
               .catch((error) => console.error('Failed to rejoin exam group:', error));
           }
         });
-        // Join exam group
         const newStudentExamId = httpService.getStudentIdStorage();
         if (examId && newStudentExamId) {
           await signalRService.invoke('JoinExamGroup', examId, newStudentExamId);
@@ -142,15 +137,15 @@ const ExamDetail: React.FC = () => {
         signalRServiceRef.current.stop();
       }
     };
-  }, [examId, navigate]);
+  }, [examId, navigate, t]);
 
   const handleSubmit = useCallback(async () => {
     if (!examId || !examData) {
-      showError('Không có dữ liệu bài thi để nộp.');
+      showError(t('ExamList.NoDataFound'));
       return;
     }
     if (!httpService.getStudentIdStorage()) {
-      showError('Không tìm thấy ID bài thi của học sinh.');
+      showError(t('ExamList.NoStudentIdFound'));
       return;
     }
     try {
@@ -159,17 +154,19 @@ const ExamDetail: React.FC = () => {
         userAnswer,
       }));
       await studentexamService.submitExam(examId, answers, httpService.getStudentIdStorage());
-      showSuccess('Nộp bài thi thành công!');
-      save(cachedKeys.dataExamStudent, null);
-      save(cachedKeys.forceRefetchExamStudent, true);
+      showSuccess(t('ExamList.SubmitExamSuccess'));
+
       localStorage.removeItem(`${TIME_REMAINING_KEY}_${examId}`);
       localStorage.removeItem(`${EXTRA_START_TIME_KEY}_${examId}`);
       localStorage.removeItem(`${EXAM_START_TIME_KEY}_${examId}`);
-      navigate(BaseUrl.ExamList);
+
+      setTimeout(() => {
+        navigate(-1);
+      }, 1000);
     } catch (error) {
       showError(error);
     }
-  }, [examId, examData, selectedAnswers, navigate, save]);
+  }, [examId, examData, selectedAnswers, navigate, t]);
 
   useEffect(() => {
     if (examData?.questions?.length && !currentQuestion) {
@@ -180,10 +177,10 @@ const ExamDetail: React.FC = () => {
         const message = {
           event: 'startExam',
           examId: examId,
-          studentExamId: httpService.getStudentIdStorage() || '',
+          studentExamId: httpService.getStudentIdStorage() ?? '',
           timestamp: new Date().toISOString(),
-          userId: httpService.getUserStorage()?.userID || '',
-          token: httpService.getTokenStorage() || '',
+          userId: httpService.getUserStorage()?.userID ?? '',
+          token: httpService.getTokenStorage() ?? '',
         };
         window.chrome.webview.postMessage(message);
       }
@@ -195,7 +192,7 @@ const ExamDetail: React.FC = () => {
       if (!examId) return;
       try {
         const response = await studentexamService.getSavedAnswers(examId);
-        const savedAnswers = response?.data?.data || [];
+        const savedAnswers = response?.data?.data ?? [];
         if (savedAnswers.length > 0) {
           startTransition(() => {
             const answersMap = savedAnswers.reduce(
@@ -280,7 +277,7 @@ const ExamDetail: React.FC = () => {
 
   const handleSaveExam = useCallback(async () => {
     if (!examId || !examData) {
-      showError('Không có dữ liệu bài thi để lưu.');
+      showError(t('ExamList.NoDataFound'));
       return;
     }
     try {
@@ -293,11 +290,11 @@ const ExamDetail: React.FC = () => {
         answers,
         httpService.getStudentIdStorage(),
       );
-      showSuccess('Đã lưu tạm thời câu trả lời của bạn.');
+      showSuccess(t('ExamList.SaveTemporarySuccess'));
     } catch (error) {
       showError(error);
     }
-  }, [examId, examData, selectedAnswers]);
+  }, [examId, examData, selectedAnswers, t]);
 
   const handleNextQuestion = useCallback(() => {
     if (!examData?.questions) return;
@@ -318,13 +315,19 @@ const ExamDetail: React.FC = () => {
   }, [examData, currentQuestion]);
 
   const currentQuestionData = examData?.questions?.find((q) => q.questionId === currentQuestion);
+  const currentQuestionIndex =
+    examData?.questions?.findIndex((q) => q.questionId === currentQuestion) ?? -1;
 
   if (!examData || !examData.questions?.length) {
     return <div className="p-4 text-center">Không tìm thấy dữ liệu bài thi.</div>;
   }
 
   return (
-    <PageWrapper name="Chi tiết bài thi" className="bg-white dark:bg-gray-900">
+    <PageWrapper
+      name="Chi tiết bài thi"
+      className="bg-white dark:bg-gray-900"
+      isLoading={isLoading}
+    >
       <div className="relative min-h-screen bg-gray-50 p-4">
         {showCameraWarning && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -333,17 +336,16 @@ const ExamDetail: React.FC = () => {
                 <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
                   <AlertTriangle className="h-8 w-8 text-red-600" />
                 </div>
-                <h3 className="mb-2 text-xl font-bold text-gray-900">Camera bị ngắt kết nối</h3>
-                <p className="mb-6 text-gray-600">
-                  Camera của bạn đã bị tắt hoặc ngắt kết nối. Vui lòng bật lại camera để tiếp tục
-                  làm bài thi. Hệ thống đang kiểm tra...
-                </p>
+                <h3 className="mb-2 text-xl font-bold text-gray-900">
+                  {t('ExamList.CameraDisconnected')}
+                </h3>
+                <p className="mb-6 text-gray-600">{t('ExamList.CameraDisconnectedDescription')}</p>
                 <div className="space-y-3">
                   <Button
                     onClick={() => window.location.reload()}
                     className="w-full bg-red-600 hover:bg-red-700"
                   >
-                    Tải lại trang
+                    {t('ExamList.ReloadPage')}
                   </Button>
                 </div>
               </div>
@@ -398,13 +400,28 @@ const ExamDetail: React.FC = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
+                  {errorMsg && (
+                    <div className="mb-6">
+                      <div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4 shadow-sm">
+                        <div className="flex-shrink-0">
+                          <AlertTriangle className="h-5 w-5 text-red-500" />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="mb-1 text-sm font-medium text-red-800">Có lỗi xảy ra</h4>
+                          <p className="text-sm text-red-700">
+                            {errorMsg.replace(/DeepFace/g, 'Camera')}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   {multipleFaceDetected ? (
                     <div className="space-y-4">
                       <div className="text-center">
                         <Badge
                           variant="destructive"
                           className="px-4 py-2 text-lg"
-                        >{`Phát hiện ${multipleFaceDetected.count} khuôn mặt`}</Badge>
+                        >{`Phát hiện nhiều hơn 1 khuôn mặt`}</Badge>
                       </div>
                       <div className="border-t pt-2">
                         <div className="flex items-center gap-2">
@@ -418,7 +435,6 @@ const ExamDetail: React.FC = () => {
                     </div>
                   ) : emotionData ? (
                     <>
-                      {/* Section 1: Emotion Data */}
                       <div className="mb-4 space-y-4 border-b pb-4">
                         <div className="text-center">
                           <Badge variant="secondary" className="px-4 py-2 text-lg">
@@ -439,7 +455,7 @@ const ExamDetail: React.FC = () => {
                                 <div className="h-2 w-full rounded-full bg-gray-200">
                                   <div
                                     className={`h-2 rounded-full transition-all duration-300 ${
-                                      emotionColors[emotionKey] || 'bg-gray-400'
+                                      emotionColors[emotionKey] ?? 'bg-gray-400'
                                     }`}
                                     style={{ width: `${Math.min(value, 100)}%` }}
                                   ></div>
@@ -457,8 +473,6 @@ const ExamDetail: React.FC = () => {
                           </div>
                         </div>
                       </div>
-
-                      {/* Section 2: Inferred State Analysis */}
                       {inferredState && (
                         <div className="space-y-4 pt-4">
                           <div className="text-center">
@@ -466,7 +480,7 @@ const ExamDetail: React.FC = () => {
                               Inferred State Analysis
                             </h4>
                             <Badge
-                              className={`px-4 py-2 text-lg ${inferredStateColors[inferredState] || 'bg-gray-500'}`}
+                              className={`px-4 py-2 text-lg ${inferredStateColors[inferredState] ?? 'bg-gray-500'}`}
                             >
                               {inferredState}
                             </Badge>
@@ -492,10 +506,11 @@ const ExamDetail: React.FC = () => {
                 currentQuestionData={currentQuestionData}
                 markedQuestions={markedQuestions}
                 toggleMarkQuestion={toggleMarkQuestion}
-                selectedAnswer={selectedAnswers[currentQuestion] || ''}
+                selectedAnswer={selectedAnswers[currentQuestion] ?? ''}
                 setSelectedAnswer={(answer: string) =>
                   setSelectedAnswers((prev) => ({ ...prev, [currentQuestion]: answer }))
                 }
+                questionNumber={currentQuestionIndex + 1}
               />
             </div>
           </div>

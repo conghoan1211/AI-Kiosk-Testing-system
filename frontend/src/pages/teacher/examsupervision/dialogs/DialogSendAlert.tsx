@@ -9,6 +9,7 @@ import { DialogI } from '@/interfaces/common';
 import { Form, Formik } from 'formik';
 import { Send, ShieldAlert } from 'lucide-react';
 import { Fragment } from 'react';
+import { useTranslation } from 'react-i18next';
 import * as Yup from 'yup';
 
 interface DialogProps extends DialogI<any> {
@@ -22,14 +23,13 @@ export interface SendAlertValues {
   type: string;
 }
 
-const validationSchema = Yup.object({
-  message: Yup.string().required('Nội dung cảnh báo là bắt buộc'),
-  type: Yup.string().required('Loại cảnh báo là bắt buộc'),
-});
-
 const DialogSendAlert = (props: DialogProps) => {
+  const { t } = useTranslation('shared');
   const { isOpen, toggle, onSubmit, createUserId } = props;
-
+  const validationSchema = Yup.object({
+    message: Yup.string().required(t('ExamSupervision.AlertMessageRequired')),
+    type: Yup.string().required(t('ExamSupervision.AlertTypeRequired')),
+  });
   return (
     <Dialog open={isOpen} onOpenChange={toggle}>
       <DialogPortal>
@@ -38,9 +38,11 @@ const DialogSendAlert = (props: DialogProps) => {
           <Alert className="flex items-start gap-4 rounded-none border-none p-6">
             <ShieldAlert className="mt-1 h-6 w-6 text-orange-500" />
             <div>
-              <AlertTitle className="text-xl font-bold text-gray-900">Gửi thông báo</AlertTitle>
+              <AlertTitle className="text-xl font-bold text-gray-900">
+                {t('ExamSupervision.SendAlertTitle')}
+              </AlertTitle>
               <AlertDescription className="text-gray-600">
-                Gửi thông báo cảnh báo đến học sinh trong hệ thống
+                {t('ExamSupervision.SendAlertDescription')}
               </AlertDescription>
             </div>
           </Alert>
@@ -64,7 +66,7 @@ const DialogSendAlert = (props: DialogProps) => {
                       <CardHeader className="pb-4">
                         <h3 className="flex items-center gap-2 text-lg font-semibold">
                           <Send className="h-5 w-5" />
-                          Soạn cảnh báo
+                          {t('ExamSupervision.SendAlertFormTitle')}
                         </h3>
                       </CardHeader>
                       <CardContent className="grid gap-4">
@@ -72,8 +74,8 @@ const DialogSendAlert = (props: DialogProps) => {
                           <FormikField
                             component={InputField}
                             name="type"
-                            label="Loại cảnh báo"
-                            placeholder="Nhập loại cảnh báo"
+                            label={t('ExamSupervision.AlertType')}
+                            placeholder={t('ExamSupervision.AlertTypePlaceholder')}
                             required
                           />
                         </div>
@@ -81,8 +83,8 @@ const DialogSendAlert = (props: DialogProps) => {
                           <FormikField
                             component={Textarea}
                             name="message"
-                            label="Nội dung cảnh báo"
-                            placeholder="Nhập nội dung cảnh báo"
+                            label={t('ExamSupervision.AlertMessage')}
+                            placeholder={t('ExamSupervision.AlertMessagePlaceholder')}
                             required
                           />
                         </div>
@@ -95,7 +97,7 @@ const DialogSendAlert = (props: DialogProps) => {
                         className="w-full bg-black text-white hover:bg-gray-800"
                       >
                         <Send className="mr-2 h-4 w-4" />
-                        Gửi cảnh báo
+                        {t('ExamSupervision.SendAlertButton')}
                       </Button>
                     </div>
                   </Form>

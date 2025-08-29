@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import BaseUrl from '@/consts/baseUrl';
 import cachedKeys from '@/consts/cachedKeys';
 import { DateTimeFormat } from '@/consts/dates';
-import { convertUTCToVietnamTime } from '@/helpers/common';
+import { convertUTCToVietnamTime, formatScore } from '@/helpers/common';
 import useFiltersHandler from '@/hooks/useFiltersHandler';
 import useGetAllHistoryExam from '@/services/modules/studentexam/hooks/useGetAllHistoryExam';
 import {
@@ -13,7 +13,7 @@ import {
   IHistoryExamRequest,
 } from '@/services/modules/studentexam/interfaces/studentexam.interface';
 import { useGet, useSave } from '@/stores/useStores';
-import { formatDuration } from '@/utils/exam.utils';
+import { formatDurationSecond } from '@/utils/exam.utils';
 import {
   AlertCircle,
   Award,
@@ -21,13 +21,13 @@ import {
   BookOpenCheck,
   Calendar,
   CheckCircle,
-  Clock,
   FolderSearch,
   Timer,
   Trophy,
   XCircle,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import {
   GenericFilters,
@@ -36,53 +36,54 @@ import {
 import ExamHeader from '../teacher/examsupervision/components/ExamHeader';
 
 const getScoreColor = (score: number) => {
-  if (score >= 90) return 'text-green-600';
-  if (score >= 80) return 'text-blue-600';
-  if (score >= 70) return 'text-yellow-600';
-  if (score >= 50) return 'text-orange-600';
+  if (score >= 9) return 'text-green-600';
+  if (score >= 8) return 'text-blue-600';
+  if (score >= 7) return 'text-yellow-600';
+  if (score >= 5) return 'text-orange-600';
   return 'text-red-600';
 };
 
 const getScoreBadge = (score: number) => {
-  if (score >= 90) {
+  if (score >= 9) {
     return (
       <Badge className="border-green-200 bg-green-100 text-green-800">
         <Award className="mr-1 h-3 w-3" />
-        Xuất sắc
+        {'Excellent'}
       </Badge>
     );
-  } else if (score >= 80) {
+  } else if (score >= 8) {
     return (
       <Badge className="border-blue-200 bg-blue-100 text-blue-800">
         <CheckCircle className="mr-1 h-3 w-3" />
-        Giỏi
+        {'Good'}
       </Badge>
     );
-  } else if (score >= 70) {
+  } else if (score >= 7) {
     return (
       <Badge className="border-yellow-200 bg-yellow-100 text-yellow-800">
         <AlertCircle className="mr-1 h-3 w-3" />
-        Khá
+        {'Fair'}
       </Badge>
     );
-  } else if (score >= 50) {
+  } else if (score >= 5) {
     return (
       <Badge className="border-orange-200 bg-orange-100 text-orange-800">
         <AlertCircle className="mr-1 h-3 w-3" />
-        Trung bình
+        {'Average'}
       </Badge>
     );
   } else {
     return (
       <Badge className="border-red-200 bg-red-100 text-red-800">
         <XCircle className="mr-1 h-3 w-3" />
-        Yếu
+        {'Weak'}
       </Badge>
     );
   }
 };
 
 const ExamResult = () => {
+  const { t } = useTranslation('shared');
   //!State
   const save = useSave();
   const dataStudentExamHistory = useGet('dataStudentExamHistory');
@@ -90,12 +91,12 @@ const ExamResult = () => {
   const totalPageStudentExamHistoryCount = useGet('totalPageStudentExamHistoryCount');
   const cachesFilterStudentExamHistory = useGet('cachesFilterStudentExamHistory');
   const navigate = useNavigate();
-  const [isTrigger, setTrigger] = useState(Boolean(!dataStudentExamHistory));
+  const [isTrigger, setIsTrigger] = useState(Boolean(!dataStudentExamHistory));
 
   const { filters, setFilters } = useFiltersHandler<IHistoryExamRequest>({
-    pageSize: cachesFilterStudentExamHistory?.pageSize || 50,
-    currentPage: cachesFilterStudentExamHistory?.currentPage || 1,
-    textSearch: cachesFilterStudentExamHistory?.textSearch || '',
+    pageSize: cachesFilterStudentExamHistory?.pageSize ?? 50,
+    currentPage: cachesFilterStudentExamHistory?.currentPage ?? 1,
+    textSearch: cachesFilterStudentExamHistory?.textSearch ?? '',
   });
 
   const { data: historyExamData, loading } = useGetAllHistoryExam(filters, {
@@ -117,7 +118,7 @@ const ExamResult = () => {
 
   const columns = [
     {
-      label: 'Tiêu đề bài thi',
+      label: t('StudentExamResult.columns.examTitle'),
       accessor: 'title',
       sortable: false,
       Cell: (row: HistoryExamList) => (
@@ -131,22 +132,23 @@ const ExamResult = () => {
       ),
     },
     {
-      label: 'Điểm số',
+      label: t('StudentExamResult.columns.score'),
       accessor: 'score',
       sortable: false,
       Cell: (row: HistoryExamList) => (
-        <div className="text-center">
+        <div className="max-w-[100px]">
           <div className="mb-2 flex items-center justify-center">
             <Trophy className="mr-2 h-5 w-5 text-yellow-500" />
-            <span className={`text-2xl font-bold ${getScoreColor(row.score)}`}>{row.score}</span>
-            <span className="ml-1 text-gray-500">/100</span>
+            <span className={`text-2xl font-bold ${getScoreColor(row.score)}`}>
+              {formatScore(row.score)}
+            </span>
           </div>
-          <div className="flex justify-center">{getScoreBadge(row.score)}</div>
+          <div className="flex justify-center">{getScoreBadge(formatScore(row.score))}</div>
         </div>
       ),
     },
     {
-      label: 'Ngày thi',
+      label: t('StudentExamResult.columns.examDate'),
       accessor: 'examDate',
       sortable: false,
       Cell: (row: HistoryExamList) => (
@@ -160,20 +162,11 @@ const ExamResult = () => {
               )?.toString()}
             </span>
           </div>
-          <div className="flex items-center justify-center">
-            <Clock className="mr-2 h-4 w-4 text-gray-500" />
-            <span className="text-sm text-gray-600">
-              {convertUTCToVietnamTime(
-                row.examDate,
-                DateTimeFormat.DateTimeWithTimezone,
-              )?.toString()}
-            </span>
-          </div>
         </div>
       ),
     },
     {
-      label: 'Thời gian nộp bài',
+      label: t('StudentExamResult.columns.submitTime'),
       accessor: 'submitTime',
       sortable: false,
       Cell: (row: HistoryExamList) => (
@@ -187,34 +180,27 @@ const ExamResult = () => {
               )?.toString()}
             </span>
           </div>
-          <div className="flex items-center justify-center">
-            <Clock className="mr-2 h-4 w-4 text-gray-500" />
-            <span className="text-sm text-gray-600">
-              {convertUTCToVietnamTime(
-                row.submitTime,
-                DateTimeFormat.DateTimeWithTimezone,
-              )?.toString()}
-            </span>
-          </div>
         </div>
       ),
     },
     {
-      label: 'Thời gian làm bài',
+      label: t('StudentExamResult.columns.durationSpent'),
       accessor: 'durationSpent',
       sortable: false,
       Cell: (row: HistoryExamList) => (
-        <div className="text-center">
+        <div className="max-w-[140px] text-center">
           <div className="flex items-center justify-center">
             <Timer className="mr-2 h-4 w-4 text-orange-500" />
-            <span className="text-lg font-medium">{formatDuration(row.durationSpent)}</span>
+            <span className="text-lg font-medium">{formatDurationSecond(row.durationSpent)}</span>
           </div>
-          <div className="mt-1 text-xs text-gray-500">Thời gian sử dụng</div>
+          <div className="mt-1 text-xs text-gray-500">
+            {t('StudentExamResult.columns.durationSpentLabel')}
+          </div>
         </div>
       ),
     },
     {
-      label: 'Công cụ',
+      label: t('StudentExamResult.columns.tools'),
       accessor: 'Tools',
       sortable: false,
       Cell: (row: HistoryExamList) => (
@@ -226,7 +212,7 @@ const ExamResult = () => {
             onClick={() => navigate(`${BaseUrl.ExamResult}/${row.studentExamId}`)}
           >
             <FolderSearch className="mr-2 h-4 w-4" />
-            Xem kết quả
+            {t('StudentExamResult.columns.viewResult')}
           </Button>
         </div>
       ),
@@ -236,7 +222,7 @@ const ExamResult = () => {
   //!Functions
   const handleChangePageSize = useCallback(
     (size: number) => {
-      setTrigger(true);
+      setIsTrigger(true);
       setFilters((prev) => {
         const newParams = { ...prev, currentPage: 1, pageSize: size };
         save(cachedKeys.cachesFilterStudentExamHistory, newParams);
@@ -261,9 +247,9 @@ const ExamResult = () => {
 
   const handleSearch = useCallback(
     (value: IValueFormPageHeader) => {
-      setTrigger(true);
+      setIsTrigger(true);
       setFilters((prev) => {
-        const newParams = { ...prev, textSearch: value.textSearch || '', currentPage: 1 };
+        const newParams = { ...prev, textSearch: value.textSearch ?? '', currentPage: 1 };
         save(cachedKeys.cachesFilterStudentExamHistory, newParams);
         return newParams;
       });
@@ -273,29 +259,32 @@ const ExamResult = () => {
 
   //!Render
   return (
-    <PageWrapper name="Kết quả thi" className="bg-white dark:bg-gray-900" isLoading={loading}>
+    <PageWrapper
+      name={t('StudentExamResult.pageWrapper.name')}
+      className="bg-white dark:bg-gray-900"
+      isLoading={loading}
+    >
       <div className="space-y-6 p-4">
         <ExamHeader
-          title="Kết quả thi của bạn"
-          subtitle="Xem và quản lý kết quả các bài thi đã làm"
+          title={t('StudentExamResult.examHeader.title')}
+          subtitle={t('StudentExamResult.examHeader.subtitle')}
           icon={<BookOpenCheck className="h-8 w-8 text-white" />}
           className="border-b border-white/20 bg-gradient-to-r from-blue-600 to-green-700 px-6 py-6 shadow-lg"
         />
         <GenericFilters
           className="md:grid-cols-3 lg:grid-cols-2"
-          searchPlaceholder="Tìm kiếm ứng dụng..."
+          searchPlaceholder={t('StudentExamResult.genericFilters.searchPlaceholder')}
           onSearch={handleSearch}
-          initialSearchQuery={filters?.textSearch || ''}
+          initialSearchQuery={filters?.textSearch ?? ''}
         />
         <div className="rounded-lg bg-white p-4 shadow-sm">
           <MemoizedTablePaging
-            id="manage-exam-lecture"
             columns={columns}
-            data={dataMain || []}
-            currentPage={filters?.currentPage || 1}
-            currentSize={filters?.pageSize || 50}
-            totalPage={totalPageStudentExamHistoryCount || 1}
-            total={totalStudentExamHistoryCount || 0}
+            data={dataMain ?? []}
+            currentPage={filters?.currentPage ?? 1}
+            currentSize={filters?.pageSize ?? 50}
+            totalPage={totalPageStudentExamHistoryCount ?? 1}
+            total={totalStudentExamHistoryCount ?? 0}
             loading={loading}
             handleChangePage={handleChangePage}
             handleChangeSize={handleChangePageSize}

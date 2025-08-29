@@ -26,7 +26,7 @@ export interface UserDetail {
   lastLoginIp: string;
   dob: Date;
   address: string;
-  roleId: number[];
+  roleId: number[] | number | string;
 }
 
 export interface Response<T> {

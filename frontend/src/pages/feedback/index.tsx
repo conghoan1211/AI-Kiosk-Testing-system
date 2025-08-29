@@ -1,10 +1,10 @@
+import { useTranslation } from 'react-i18next';
 import FormikField from '@/components/customFieldsFormik/FormikField';
 import InputField from '@/components/customFieldsFormik/InputField';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { showError, showSuccess } from '@/helpers/toast';
-import httpService from '@/services/httpService';
 import feedbackService from '@/services/modules/feedback/feedback.service';
 import type { IFeedbackForm } from '@/services/modules/feedback/interfaces/feedback.interface';
 import { Form, Formik } from 'formik';
@@ -13,20 +13,21 @@ import { Fragment } from 'react/jsx-runtime';
 import * as Yup from 'yup';
 
 export default function StudentFeedback() {
-  const token = httpService.getTokenStorage();
+  const { t } = useTranslation('shared');
 
   const validationSchema = Yup.object({
     title: Yup.string()
-      .required('Tiêu đề là bắt buộc')
-      .max(1000, 'Tiêu đề không được vượt quá 1000 ký tự'),
-    content: Yup.string().required('Nội dung là bắt buộc').min(10, 'Nội dung tối thiểu 10 ký tự'),
+      .required(t('SendFeedback.validation.titleRequired'))
+      .max(1000, t('SendFeedback.validation.titleMaxLength')),
+    content: Yup.string()
+      .required(t('SendFeedback.validation.contentRequired'))
+      .min(10, t('SendFeedback.validation.contentMinLength')),
   });
 
   const handleSubmit = async (values: IFeedbackForm) => {
     try {
-      httpService.attachTokenToHeader(token);
       await feedbackService.addFeedback(values);
-      showSuccess('Gửi góp ý thành công');
+      showSuccess(t('SendFeedback.successMessage'));
     } catch (error) {
       showError(error);
     }
@@ -51,10 +52,10 @@ export default function StudentFeedback() {
             </div>
           </div>
           <h1 className="mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-4xl font-bold text-transparent">
-            Gửi phản hồi
+            {t('SendFeedback.header.title')}
           </h1>
           <p className="mx-auto max-w-2xl text-lg text-slate-600">
-            Chia sẻ ý kiến và góp ý của bạn với chúng tôi để cùng nhau xây dựng trải nghiệm tốt hơn
+            {t('SendFeedback.header.description')}
           </p>
         </div>
 
@@ -66,11 +67,11 @@ export default function StudentFeedback() {
                 <Send className="h-5 w-5 text-blue-600" />
               </div>
               <CardTitle className="bg-gradient-to-r from-slate-700 to-slate-900 bg-clip-text text-xl font-semibold text-transparent">
-                Thông tin phản hồi
+                {t('SendFeedback.form.title')}
               </CardTitle>
             </div>
             <p className="ml-12 text-slate-600">
-              Vui lòng điền đầy đủ thông tin để chúng tôi có thể hỗ trợ bạn tốt nhất
+              {t('SendFeedback.form.description')}
             </p>
           </CardHeader>
           <CardContent className="px-8 pb-8">
@@ -96,9 +97,9 @@ export default function StudentFeedback() {
                             id="title"
                             component={InputField}
                             name="title"
-                            placeholder="Nhập tiêu đề phản hồi của bạn..."
+                            placeholder={t('SendFeedback.form.titlePlaceholder')}
                             value={values.title}
-                            label="Tiêu đề phản hồi"
+                            label={t('SendFeedback.form.titleLabel')}
                             required
                             className="transition-all duration-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                           />
@@ -107,8 +108,8 @@ export default function StudentFeedback() {
                           <FormikField
                             component={Textarea}
                             name="content"
-                            placeholder="Chia sẻ chi tiết về trải nghiệm, góp ý hoặc vấn đề bạn gặp phải..."
-                            label="Nội dung"
+                            placeholder={t('SendFeedback.form.contentPlaceholder')}
+                            label={t('SendFeedback.form.contentLabel')}
                             required
                             className="min-h-[120px] resize-none transition-all duration-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                           />
@@ -121,7 +122,7 @@ export default function StudentFeedback() {
                           className="transform rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-3 text-white shadow-lg transition-all duration-200 hover:scale-105 hover:from-blue-700 hover:to-purple-700 hover:shadow-xl"
                         >
                           <Send className="mr-2 h-4 w-4" />
-                          Gửi phản hồi
+                          {t('SendFeedback.form.submitButton')}
                         </Button>
                       </div>
                     </Form>
@@ -141,29 +142,31 @@ export default function StudentFeedback() {
               </div>
               <div className="flex-1">
                 <h3 className="mb-4 bg-gradient-to-r from-blue-700 to-purple-700 bg-clip-text text-lg font-semibold text-transparent">
-                  Mẹo để viết phản hồi hiệu quả
+                  {t('SendFeedback.tips.title')}
                 </h3>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="flex items-start gap-3 rounded-lg bg-white/50 p-3 backdrop-blur-sm">
                     <Star className="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-600" />
                     <span className="text-sm text-slate-700">
-                      Mô tả rõ ràng vấn đề hoặc góp ý của bạn
+                      {t('SendFeedback.tips.tip1')}
                     </span>
                   </div>
                   <div className="flex items-start gap-3 rounded-lg bg-white/50 p-3 backdrop-blur-sm">
                     <Star className="mt-0.5 h-4 w-4 flex-shrink-0 text-purple-600" />
                     <span className="text-sm text-slate-700">
-                      Cung cấp thông tin chi tiết để chúng tôi hiểu rõ hơn
+                      {t('SendFeedback.tips.tip2')}
                     </span>
                   </div>
                   <div className="flex items-start gap-3 rounded-lg bg-white/50 p-3 backdrop-blur-sm">
                     <Star className="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-600" />
-                    <span className="text-sm text-slate-700">Đề xuất giải pháp nếu có thể</span>
+                    <span className="text-sm text-slate-700">
+                      {t('SendFeedback.tips.tip3')}
+                    </span>
                   </div>
                   <div className="flex items-start gap-3 rounded-lg bg-white/50 p-3 backdrop-blur-sm">
                     <Heart className="mt-0.5 h-4 w-4 flex-shrink-0 text-purple-600" />
                     <span className="text-sm text-slate-700">
-                      Sử dụng ngôn ngữ lịch sự và tích cực
+                      {t('SendFeedback.tips.tip4')}
                     </span>
                   </div>
                 </div>
@@ -175,7 +178,7 @@ export default function StudentFeedback() {
         {/* Footer */}
         <div className="mt-12 text-center">
           <p className="text-sm text-slate-500">
-            Cảm ơn bạn đã dành thời gian để chia sẻ phản hồi với chúng tôi! 💙
+            {t('SendFeedback.footer.thankYou')}
           </p>
         </div>
       </div>

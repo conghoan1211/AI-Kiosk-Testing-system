@@ -3,7 +3,7 @@ import httpService from '@/services/httpService';
 import { AxiosRequestConfig } from 'axios';
 import { IProhibitedRequest } from './interfaces/prohibited.interface';
 
-class prohibitedService {
+class ProhibitedService {
   getAllProhibited(filter: IProhibitedRequest, config: AxiosRequestConfig) {
     const params = new URLSearchParams({
       PageSize: (filter?.PageSize ?? 50).toString(),
@@ -45,4 +45,4 @@ class prohibitedService {
   }
 }
 
-export default new prohibitedService();
+export default new ProhibitedService();

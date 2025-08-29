@@ -1,60 +1,97 @@
 @startuml
-
-title View List Exam Sequence Diagram
+title View List Exam Sequence Diagram 
 
 actor "User" as Client
-boundary "c:ExamController" as Controller
-control "s:ExamService" as Service
+boundary ":NavigationUI" as UI <<boundary>>
+control "ExamController" as Controller <<controller>>
+participant ":ExamService" as Service <<service>>
+entity "UnitOfWork" as UoW <<unitOfWork>>
+
+entity "examRepository" as ExamRepo <<repository>>
+entity "roomRepository" as RoomRepo <<repository>>
+entity "userRepository" as UserRepo <<repository>>
+
 database "Database" as DB
 
 == View List Exam ==
 
-Client -> Controller: GET /list (ExamListRequest)
+Client -> UI: Request view exam list
+activate UI
+UI -> Controller: GET /list (ExamListRequest)
 activate Controller
 
 alt Request is null
-    Controller --> Client: 400 BadRequest { message: "Invalid request body." }
-    deactivate Controller
+  Controller --> UI: 400 BadRequest { message: "Invalid request body." }
+  deactivate Controller
+  UI --> Client: Show invalid request
+  deactivate UI
 else User not authenticated
-    Controller -> Controller: Log unauthorized access attempt
-    Controller --> Client: 401 Unauthorized { message: "User not authenticated." }
+  Controller --> UI: 401 Unauthorized { message: "User not authenticated." }
+  deactivate Controller
+  UI --> Client: Show unauthorized
+  deactivate UI
+else Valid & authenticated
+  Controller -> Service: GetExamListAsync(request, userId)
+  activate Service
+
+  '--- Authorization ---
+  Service -> UserRepo: CanViewExams(userId)
+  activate UserRepo
+  UserRepo -> DB: [SQL: check lecturer/admin permission]
+  DB --> UserRepo: ok|null
+  UserRepo --> Service: allowed? (bool)
+  deactivate UserRepo
+
+  alt Not allowed
+    Service --> Controller: 403 Forbidden { message: "No permission to view exams." }
+    deactivate Service
+    Controller --> UI: 403 Forbidden
     deactivate Controller
-else Valid request & authenticated
-    Controller -> Service: GetExamListAsync(request, userId)
-    activate Service
+    UI --> Client: Show forbidden
+    deactivate UI
+  else Allowed
+    '--- Count total exams (filters applied) ---
+    Service -> ExamRepo: CountExams(request)
+    activate ExamRepo
+    ExamRepo -> DB: [SQL: COUNT(*) FROM Exams WHERE <filters>]
+    DB --> ExamRepo: total
+    ExamRepo --> Service: total
+    deactivate ExamRepo
 
-    Service -> DB: Check user is lecturer or admin (UserId, RoleId)
-    activate DB
-    alt User is not allowed
-        DB --> Service: Not found
-        deactivate DB
-        Service -> Service: Log authorization failure
-        Service --> Controller: (false, "User does not a lecture to have permission to view list exams.", null)
-        deactivate Service
-        Controller --> Client: 403 Forbidden { message }
-        deactivate Controller
-    else User is allowed
-        DB --> Service: Found
-        deactivate DB
+    '--- Get paged exam list (basic fields) ---
+    Service -> ExamRepo: GetExams(request)
+    activate ExamRepo
+    ExamRepo -> DB: [SQL: SELECT ExamId, Title, RoomId, StartTime, EndTime, Status, CreatedBy ... WHERE <filters> ORDER BY StartTime DESC LIMIT/OFFSET]
+    DB --> ExamRepo: rows (exams)
+    ExamRepo --> Service: exams
+    deactivate ExamRepo
 
-        Service -> DB: Query Exams (include Room, Creator)
-        activate DB
-        DB --> Service: IQueryable<Exam>
-        deactivate DB
+    alt No exams
+      Service --> Controller: 200 OK { data: empty, total=0 }
+      deactivate Service
+      Controller --> UI: 200 OK
+      deactivate Controller
+      UI --> Client: Show empty list
+      deactivate UI
+    else Some exams
+      '--- (Optional) enrich with room/creator names ---
+      opt Need room names
+        Service -> RoomRepo: GetByIds(roomIds)
+        activate RoomRepo
+        RoomRepo -> DB: [SQL: SELECT RoomId, Name WHERE RoomId IN (...)]
+        DB --> RoomRepo: rooms
+        RoomRepo --> Service: rooms
+        deactivate RoomRepo
+      end opt
 
-        Service -> Service: Apply filters (TextSearch, Status, IsMyQuestion)
-        Service -> Service: Count total, calculate totalPage
-        Service -> DB: Get paged ExamListVMs
-        activate DB
-        DB --> Service: List<ExamListVM>
-        deactivate DB
-
-        Service -> Service: Wrap in SearchResult
-        Service --> Controller: (true, "Success", SearchResult)
-        deactivate Service
-        Controller --> Client: 200 OK { message, data }
-        deactivate Controller
+      Service -> Service: Map to ExamListVM & paging
+      Service --> Controller: 200 OK { data: SearchResult }
+      deactivate Service
+      Controller --> UI: 200 OK { message: "Success", data }
+      deactivate Controller
+      UI --> Client: Display exam list
+      deactivate UI
     end alt
+  end alt
 end alt
-
-@enduml 
+@enduml

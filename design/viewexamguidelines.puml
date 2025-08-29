@@ -1,7 +1,5 @@
 @startuml
-' Class Diagram for ViewExamGuidelines Feature
-
-title ViewExamGuidelines Class Diagram
+' Simplified View Exam Guidelines Class Diagram (theo code mới GetExamGuideLinesAsync)
 
 hide empty members
 skinparam packageStyle rectangle
@@ -13,7 +11,6 @@ skinparam classFontName Arial
 skinparam noteFontSize 11
 skinparam noteFontName Arial
 
-' Increase spacing and sizing
 skinparam class {
     BackgroundColor LightBlue
     BorderColor DarkBlue
@@ -27,7 +24,6 @@ skinparam package {
     FontSize 14
     FontStyle bold
 }
-
 skinparam interface {
     BackgroundColor LightGreen
     BorderColor DarkGreen
@@ -40,96 +36,42 @@ skinparam enum {
     FontSize 12
 }
 
+title View Exam Guidelines Class Diagram
+
 package "Controllers" {
     class StudentExamController <<Controller>> {
-        - _iService: IStudentExamService
-        + StudentExamController(iService: IStudentExamService)
-        + ViewExamGuideline(ExamId: string): Task<IActionResult>
-        + SubmitExam(request: SubmitExamRequest): Task<IActionResult>
+        - _studentExamService: IStudentExamService
+        + ViewExamGuideline(examId: string): Task<IActionResult>
     }
 }
 
 package "Services" {
     interface IStudentExamService <<Interface>> {
-        + GetExamGuideline(ExamId: string, userToken: string, context: HttpContext): Task<(string, object?)>
-        + SubmitExam(request: SubmitExamRequest, usertoken: string, context: HttpContext): Task<string>
+        + GetExamGuideLinesAsync(examId: string, userId: string): Task<(bool, string, string?)>
     }
     class StudentExamService <<Service>> {
-        - _context: DbContext
-        + GetExamGuideline(ExamId: string, userToken: string, context: HttpContext): Task<(string, object?)>
-        + SubmitExam(request: SubmitExamRequest, usertoken: string, context: HttpContext): Task<string>
+        - _unitOfWork: IUnitOfWork
+        + GetExamGuideLinesAsync(examId: string, userId: string): Task<(bool, string, string?)>
     }
 }
 
-package "Entities" {
-    class Exam {
-        + ExamId: string
-        + Title: string
-        + Guidelines: string
-        + StartTime: DateTime
-        + EndTime: DateTime
+package "Repositories" {
+    interface IExamRepository {
+        + GetById(examId: string)
     }
 }
 
 package "Models & DTOs" {
-    class ExamGuideline <<DTO>> {
+    class Exam {
         + ExamId: string
-        + Guidelines: string
+        + GuildeLines: string
     }
-}
-
-' Submit Exam Classes
-class SubmitExamRequest <<DTO>> {
-    + StudentExamId: string
-    + ExamId: string
-    + Answers: List<StudentAnswerVM>
-}
-class StudentAnswerVM <<DTO>> {
-    + QuestionId: string
-    + UserAnswer: string
-}
-class StudentExam {
-    + StudentExamId: string
-    + ExamId: string
-    + StudentId: string
-    + Status: int
-    + Score: decimal
-    + SubmitTime: DateTime
-    + UpdatedAt: DateTime
-    + IpAddress: string
-    + BrowserInfo: string
-    + Exam: Exam
-}
-class StudentAnswer {
-    + StudentAnswerId: string
-    + StudentExamId: string
-    + QuestionId: string
-    + UserAnswer: string
-    + IsCorrect: bool
-    + PointsEarned: decimal
-    + CreatedAt: DateTime
-    + UpdatedAt: DateTime
-}
-class Question {
-    + QuestionId: string
-    + CorrectAnswer: string
-    + Point: decimal
 }
 
 ' Relationships
 StudentExamController ..> IStudentExamService : <<uses>>
-StudentExamController ..> ExamGuideline : <<uses>>
-IStudentExamService <|.. StudentExamService
-StudentExamService ..> Exam : <<uses>>
-StudentExamService ..> ExamGuideline : <<uses>>
-StudentExamService ..> SubmitExamRequest : <<uses>>
-StudentExamService ..> StudentExam : <<uses>>
-StudentExamService ..> StudentAnswer : <<uses>>
-StudentExamService ..> Question : <<uses>>
-StudentExam ..> Exam : <<has>>
-StudentAnswer ..> Question : <<for>>
-StudentExamController ..> SubmitExamRequest : <<uses>>
-
-ExamGuideline --> Exam : <<for>>
+IStudentExamService <|.. StudentExamService : <<implements>>
+StudentExamService ..> IExamRepository : <<uses>>
+StudentExamService ..> Exam : <<returns>>
 
 @enduml

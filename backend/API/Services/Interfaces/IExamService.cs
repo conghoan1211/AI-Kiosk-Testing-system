@@ -15,6 +15,7 @@ namespace API.Services.Interfaces
         Task<(string, MemoryStream?)> ExportStudentExamResultReport(string examId, string userId);
         Task<(bool Success, string Message, StudentExamDetailDto? Data)> GetStudentExamDetailAsync(string studentExamId, string userId);
         Task<(bool Success, string Message)> ChangeExamStatusAsync(string examId, int newStatus, string userId);
-        Task<string> Handle(AddExamRequest request, string userId);
+        //Task<string> Handle(AddExamRequest request, string userId);
+        //Task<(bool Success, string Message, List<SelectedQuestionDto>? Questions)> AddExamBuilderPatternAsync(AddExamRequest request, string userId);
     }
 }

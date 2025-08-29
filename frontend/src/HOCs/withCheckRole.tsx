@@ -16,7 +16,7 @@ const withCheckRole = <P extends object>(
   const WithPermission = (props: P & WithCheckRoleProps) => {
     const navigate = useNavigate();
     const { user } = useAuth();
-    const role = user?.roleId ? user.roleId : [ROLE_ENUM.Student];
+    const role = user?.roleId ?? [ROLE_ENUM.Student];
 
     const havePermission = permissions ? permissions.some((perm) => role.includes(perm)) : true;
 

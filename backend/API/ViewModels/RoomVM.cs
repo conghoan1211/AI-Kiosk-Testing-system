@@ -40,7 +40,7 @@ namespace API.ViewModels
         public string RoomId { get; set; } = null!;
         [Required] public string ClassId { get; set; } = null!;
         [Required] public string SubjectId { get; set; } = null!;
-        [Required, MaxLength(50, ErrorMessage = "RoomC ode cannot exceed 50 characters!")]
+        [Required, MaxLength(50, ErrorMessage = "RoomCode cannot exceed 50 characters!")]
         public string RoomCode { get; set; } = null!;
         public bool IsActive { get; set; } = true;
         [MaxLength(500, ErrorMessage = "RoomDescription cannot exceed 500 characters!")]

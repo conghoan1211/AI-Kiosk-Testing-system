@@ -1,78 +1,91 @@
 @startuml
-
-title View Webcam Recording Sequence Diagram
+title View Webcam Recording — Sequence Diagram 
 
 actor "User" as Client
-boundary "c:FaceCaptureController" as Controller
-control "s:FaceCaptureService" as Service
+boundary ":WebcamUI" as UI <<boundary>>
+control ":FaceCaptureController" as Controller <<controller>>
+participant ":FaceCaptureService" as Service <<service>>
+
+entity "UserRepository" as UserRepo <<repository>>
+entity "StudentExamRepository" as StuExamRepo <<repository>>
+entity "FaceCaptureRepository" as FaceRepo <<repository>>
+
 database "Database" as DB
 
 == View Webcam Recording ==
 
-Client -> Controller: GET /get-list (FaceCaptureSearchVM)
+Client -> UI: Click view webcam recordings (FaceCaptureSearchVM)
+activate UI
+UI -> Controller: GET /get-list
 activate Controller
 
 alt User not authenticated
-    Controller -> Controller: Log unauthorized access attempt
-    Controller --> Client: 401 Unauthorized { message: "User not authenticated." }
-    deactivate Controller
+  Controller --> UI: 401 Unauthorized
+  deactivate Controller
+  UI --> Client: Show unauthorized
+  deactivate UI
 else User authenticated
-    Controller -> Service: GetList(input)
-    activate Service
+  Controller -> Service: GetList(input)
+  activate Service
 
-    Service -> DB: Check user role and permissions (UserId, RoleId)
-    activate DB
-    alt User is not allowed
-        DB --> Service: Not found or invalid role
-        deactivate DB
-        Service -> Service: Log authorization failure
-        Service --> Controller: ("You do not have permission to view webcam recordings.", null)
+  ' --- Check user ---
+  Service -> UserRepo: GetById(userId)
+  activate UserRepo
+  UserRepo -> DB: SELECT * FROM Users WHERE Id=@uid
+  DB --> UserRepo: user | null
+  UserRepo --> Service: user | null
+  deactivate UserRepo
+
+  alt User not allowed
+    Service --> Controller: 403 Forbidden
+    deactivate Service
+    Controller --> UI: 403 Forbidden
+    deactivate Controller
+    UI --> Client: Show forbidden
+    deactivate UI
+  else Allowed
+    ' --- Get student exam ---
+    Service -> StuExamRepo: GetById(input.StudentExamId)
+    activate StuExamRepo
+    StuExamRepo -> DB: SELECT * FROM StudentExams WHERE Id=@seid
+    DB --> StuExamRepo: studentExam | null
+    StuExamRepo --> Service: studentExam | null
+    deactivate StuExamRepo
+
+    alt StudentExam not found
+      Service --> Controller: 400 BadRequest
+      deactivate Service
+      Controller --> UI: 400 BadRequest
+      deactivate Controller
+      UI --> Client: Show not found
+      deactivate UI
+    else Found
+      ' --- Get captures ---
+      Service -> FaceRepo: GetByStudentExamId(seId)
+      activate FaceRepo
+      FaceRepo -> DB: SELECT * FROM FaceCaptures WHERE StudentExamId=@seid
+      DB --> FaceRepo: captures
+      FaceRepo --> Service: captures
+      deactivate FaceRepo
+
+      alt No captures
+        Service --> Controller: 400 BadRequest
         deactivate Service
-        Controller --> Client: 403 Forbidden { success: false, message }
+        Controller --> UI: 400 BadRequest
         deactivate Controller
-    else User is allowed
-        DB --> Service: User role confirmed
-        deactivate DB
+        UI --> Client: Show not found
+        deactivate UI
+      else Captures found
+        Service -> Service: Wrap in FaceCaptureVM & SearchResult
+        Service --> Controller: 200 OK { success:true, data:SearchResult(...) }
+        deactivate Service
+        Controller --> UI: 200 OK
+        deactivate Controller
+        UI --> Client: Show webcam recordings
+        deactivate UI
+      end
+    end
+  end
+end
 
-        Service -> DB: Get StudentExam (StudentExamId, ExamId, include User)
-        activate DB
-        alt StudentExam not found
-            DB --> Service: Not found
-            deactivate DB
-            Service --> Controller: ("Student exam not found.", null)
-            deactivate Service
-            Controller --> Client: 400 BadRequest { success: false, message }
-            deactivate Controller
-        else StudentExam found
-            DB --> Service: StudentExam
-            deactivate DB
-
-            Service -> DB: Query FaceCaptures (StudentExamId)
-            activate DB
-            DB --> Service: IQueryable<FaceCapture>
-            deactivate DB
-
-            Service -> Service: Apply filters (LogType)
-            Service -> Service: Count total, calculate totalPage
-            Service -> DB: Get paged CaptureImages
-            activate DB
-            DB --> Service: List<CaptureImages>
-            deactivate DB
-
-            alt No captures found
-                Service --> Controller: ("No captures found for this student exam.", null)
-                deactivate Service
-                Controller --> Client: 400 BadRequest { success: false, message }
-                deactivate Controller
-            else Captures found
-                Service -> Service: Wrap in FaceCaptureVM & SearchResult
-                Service --> Controller: ("", SearchResult)
-                deactivate Service
-                Controller --> Client: 200 OK { success: true, message, data }
-                deactivate Controller
-            end alt
-        end alt
-    end alt
-end alt
-
-@enduml 
+@enduml

@@ -29,7 +29,7 @@ function useFiltersHandler<T>(initialFilters: T & CommonFilters) {
   const handleSelectAllClick = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>, rows: any[], key?: string) => {
       if (event.target.checked) {
-        const newSelected = rows.map((n) => get(n, key || 'id'));
+        const newSelected = rows.map((n) => get(n, key ?? 'id'));
         setSelected(newSelected);
         return;
       }

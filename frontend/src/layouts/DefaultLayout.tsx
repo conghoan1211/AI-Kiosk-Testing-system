@@ -5,13 +5,13 @@ import useToggleDialog from '@/hooks/useToggleDialog';
 import { UserInfo } from '@/interfaces/user';
 import { cn } from '@/lib/utils';
 import httpService from '@/services/httpService';
-import { BarChart3, FileText, LogOut, Menu, MessagesSquare, Settings, User } from 'lucide-react';
+import { BarChart3, FileText, LogOut, Menu, MessagesSquare, User } from 'lucide-react';
 import type React from 'react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import NavigationBar from './components/NavigationBar';
 import SideBar from './components/SideBar';
-import { useNavigate } from 'react-router-dom';
 
 interface DefaultLayoutProps {
   children: React.ReactNode;
@@ -22,7 +22,7 @@ const DefaultLayout = (props: DefaultLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { t } = useTranslation('shared');
   const [openAskLogout, toggleAskLogout, shouldRenderAskLogout] = useToggleDialog();
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -51,12 +51,9 @@ const DefaultLayout = (props: DefaultLayoutProps) => {
     {
       label: t('Navigation.Profile'),
       icon: <User className="mr-2 h-4 w-4" />,
-      action: () => { navigate(`${BaseUrl.StudentProfile}`) },
-    },
-    {
-      label: t('Navigation.Settings'),
-      icon: <Settings className="mr-2 h-4 w-4" />,
-      action: () => { },
+      action: () => {
+        navigate(`${BaseUrl.StudentProfile}`);
+      },
     },
     {
       label: t('Logout'),

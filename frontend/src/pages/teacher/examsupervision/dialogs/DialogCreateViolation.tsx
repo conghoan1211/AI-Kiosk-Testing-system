@@ -1,26 +1,26 @@
+import FormikField from '@/components/customFieldsFormik/FormikField';
+import InputField from '@/components/customFieldsFormik/InputField';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
-  DialogPortal,
-  DialogOverlay,
   DialogContent,
+  DialogOverlay,
+  DialogPortal,
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { showError, showSuccess } from '@/helpers/toast';
 import { DialogI } from '@/interfaces/common';
+import { Student } from '@/services/modules/monitor/interfaces/monitorDetail.interface';
+import { IViolationForm } from '@/services/modules/violation/interfaces/violation.interface';
+import violationService from '@/services/modules/violation/violation.service';
 import { Label } from '@radix-ui/react-label';
 import { Form, Formik } from 'formik';
-import { Fragment, useState } from 'react';
-import ImageUpload from '../components/image-upload';
-import FormikField from '@/components/customFieldsFormik/FormikField';
-import InputField from '@/components/customFieldsFormik/InputField';
 import { Mail } from 'lucide-react';
-import { IViolationForm } from '@/services/modules/violation/interfaces/violation.interface';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Student } from '@/services/modules/monitor/interfaces/monitorDetail.interface';
-import httpService from '@/services/httpService';
-import { showError, showSuccess } from '@/helpers/toast';
-import violationService from '@/services/modules/violation/violation.service';
+import { Fragment, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import ImageUpload from '../components/image-upload';
 
 interface DialogProps extends DialogI<any> {
   row?: Student | null;
@@ -28,12 +28,12 @@ interface DialogProps extends DialogI<any> {
   refetch?: () => void;
 }
 const DialogCreateViolation = (props: DialogProps) => {
+  const { t } = useTranslation('shared');
   const { isOpen, toggle } = props;
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const token = httpService.getTokenStorage();
 
   const initialValues: IViolationForm = {
-    studentExamId: props.row?.studentExamId || props.studentExamId || '',
+    studentExamId: props.row?.studentExamId ?? props.studentExamId ?? '',
     violateName: '',
     message: '',
     screenshotPath: undefined,
@@ -43,20 +43,19 @@ const DialogCreateViolation = (props: DialogProps) => {
   const handleSubmit = async (values: IViolationForm) => {
     try {
       const formData = new FormData();
-      httpService.attachTokenToHeader(token);
 
       if (uploadedFile) {
         formData.append('screenshotPath', uploadedFile);
       }
       formData.append('studentExamId', values.studentExamId);
       formData.append('violateName', values.violateName);
-      formData.append('message', values.message || '');
+      formData.append('message', values.message ?? '');
       formData.append('isSendMail', values.isSendMail.toString());
       await violationService.createViolation(formData);
       if (props.refetch) {
         props.refetch();
       }
-      showSuccess('Tố cáo vi phạm thành công');
+      showSuccess(t('ExamSupervision.CreateViolationSuccess'));
       toggle();
     } catch (error) {
       showError(error);
@@ -76,15 +75,15 @@ const DialogCreateViolation = (props: DialogProps) => {
             {({ isSubmitting, setFieldValue, values }) => {
               return (
                 <Fragment>
-                  <DialogTitle>Thông tin vi phạm</DialogTitle>
+                  <DialogTitle>{t('ExamSupervision.CreateViolationTitle')}</DialogTitle>
                   <Form className="mt-[25px] justify-end gap-2">
                     <div className="space-y-2">
                       <FormikField
                         id="violateName"
                         component={InputField}
                         name="violateName"
-                        placeholder="Nhập tiêu đề phản hồi của bạn..."
-                        label="Tiêu đề"
+                        label={t('ExamSupervision.CreateViolationTitle')}
+                        placeholder={t('ExamSupervision.CreateViolationPlaceholder')}
                         required
                         className="transition-all duration-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                       />
@@ -92,8 +91,8 @@ const DialogCreateViolation = (props: DialogProps) => {
                       <FormikField
                         component={Textarea}
                         name="message"
-                        placeholder="Mô tả chi tiết về vi phạm..."
-                        label="Mô tả chi tiết"
+                        placeholder={t('ExamSupervision.CreateViolationPlaceholder')}
+                        label={t('ExamSupervision.CreateViolationDescription')}
                       />
                     </div>
 
@@ -116,15 +115,17 @@ const DialogCreateViolation = (props: DialogProps) => {
                         className="flex cursor-pointer items-center gap-2 text-sm font-medium"
                       >
                         <Mail className="h-4 w-4 text-gray-500" />
-                        Gửi email thông báo cho học sinh
+                        {t('ExamSupervision.CreateViolationSendEmail')}
                       </Label>
                     </div>
                     <div className="flex justify-end gap-2">
                       <Button type="submit" disabled={isSubmitting}>
-                        {isSubmitting ? 'Đang gửi...' : 'Gửi'}
+                        {isSubmitting
+                          ? t('ExamSupervision.CreateViolationSubmitting')
+                          : t('ExamSupervision.CreateViolationSubmit')}
                       </Button>
                       <Button variant="ghost" type="button" onClick={toggle}>
-                        Đóng
+                        {t('Close')}
                       </Button>
                     </div>
                   </Form>

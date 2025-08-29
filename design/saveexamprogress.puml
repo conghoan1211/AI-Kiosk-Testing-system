@@ -1,7 +1,5 @@
 @startuml
-' Class Diagram for Save Exam Progress Feature
-
-title Save Exam Progress Class Diagram
+' Simplified Save Exam Progress Class Diagram (bỏ Builder, sát code thực tế SaveAnswerTemporary)
 
 hide empty members
 skinparam packageStyle rectangle
@@ -13,7 +11,6 @@ skinparam classFontName Arial
 skinparam noteFontSize 11
 skinparam noteFontName Arial
 
-' Increase spacing and sizing
 skinparam class {
     BackgroundColor LightBlue
     BorderColor DarkBlue
@@ -27,18 +24,13 @@ skinparam package {
     FontSize 14
     FontStyle bold
 }
-
 skinparam interface {
     BackgroundColor LightGreen
     BorderColor DarkGreen
     FontSize 12
 }
 
-skinparam enum {
-    BackgroundColor LightCyan
-    BorderColor DarkCyan
-    FontSize 12
-}
+title Save Exam Progress Class Diagram
 
 package "Controllers" {
     class StudentExamController <<Controller>> {
@@ -52,12 +44,23 @@ package "Services" {
         + SaveAnswerTemporary(input: SubmitExamRequest, usertoken: string): Task<string>
     }
     class StudentExamService <<Service>> {
-        - _context: DbContext
+        - _unitOfWork: IUnitOfWork
         + SaveAnswerTemporary(input: SubmitExamRequest, usertoken: string): Task<string>
     }
 }
 
-package "Models" {
+package "Repositories" {
+    interface IStudentExamRepository {
+        + GetByStudentExamId(studentExamId: string, examId: string, userId: string)
+    }
+    interface IStudentAnswerRepository {
+        + GetByStudentExamAndQuestionIds(studentExamId: string, questionIds: List<string>)
+        + UpdateRange(answers: List<StudentAnswer>)
+        + AddRangeAsync(answers: List<StudentAnswer>)
+    }
+}
+
+package "Models & DTOs" {
     class SubmitExamRequest <<DTO>> {
         + StudentExamId: string
         + ExamId: string
@@ -69,34 +72,20 @@ package "Models" {
     }
 }
 
-package "Entities" {
-    class StudentExam {
-        + StudentExamId: string
-        + StudentId: string
-        + ExamId: string
-    }
-    class StudentAnswer {
-        + StudentAnswerId: string
-        + StudentExamId: string
-        + QuestionId: string
-        + UserAnswer: string
-        + IsCorrect: bool?
-        + PointsEarned: decimal
-        + TimeSpent: int
-        + CreatedAt: DateTime
-        + UpdatedAt: DateTime
+package "Utilities" {
+    class AnswerValidator <<static>> {
+        + Validate(studentExam, now: DateTime): string
     }
 }
 
 ' Relationships
 StudentExamController ..> IStudentExamService : <<uses>>
 StudentExamController ..> SubmitExamRequest : <<uses>>
-IStudentExamService <|.. StudentExamService
-StudentExamService ..> StudentExam : <<uses>>
-StudentExamService ..> StudentAnswer : <<uses>>
+IStudentExamService <|.. StudentExamService : <<implements>>
 StudentExamService ..> SubmitExamRequest : <<uses>>
-SubmitExamRequest o-- StudentAnswerVM : <<has>>
-StudentAnswerVM --> StudentAnswer : <<for>>
-StudentExam o-- StudentAnswer : <<has>>
+StudentExamService ..> IStudentExamRepository : <<uses>>
+StudentExamService ..> IStudentAnswerRepository : <<uses>>
+StudentExamService ..> AnswerValidator : <<uses>>
+SubmitExamRequest o-- StudentAnswerVM : <<contains>>
 
-@enduml 
+@enduml

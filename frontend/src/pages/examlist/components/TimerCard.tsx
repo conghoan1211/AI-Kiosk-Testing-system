@@ -5,6 +5,7 @@ import { Progress } from '@/components/ui/progress'; // Import Progress componen
 import useToggleDialog from '@/hooks/useToggleDialog';
 import { ChevronLeft, ChevronRight, RotateCcw, Save, Send } from 'lucide-react';
 import type React from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface TimerCardProps {
   timeRemaining: number;
@@ -29,6 +30,7 @@ const TimerCard: React.FC<TimerCardProps> = ({
   currentQuestionIndex,
   totalDuration, // Destructure totalDuration
 }) => {
+  const { t } = useTranslation('shared');
   const [openAskConfirmSubmitExam, toggleAskConfirmSubmitExam, shouldRenderAskConfirmSubmitExam] =
     useToggleDialog();
 
@@ -52,15 +54,15 @@ const TimerCard: React.FC<TimerCardProps> = ({
         <DialogConfirm
           isOpen={openAskConfirmSubmitExam}
           toggle={toggleAskConfirmSubmitExam}
-          title="Bạn có chắc muốn nộp bài thi không?"
-          content="Sau khi nộp, bạn sẽ không thể chỉnh sửa câu trả lời."
+          title={t('ExamList.ConfirmSubmitExam')}
+          content={t('ExamList.ConfirmSubmitExamDescription')}
           onSubmit={onSubmit}
           variantYes="destructive"
         />
       )}
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">Thời gian còn lại</div>
+          <div className="text-sm text-muted-foreground">{t('ExamList.TimeRemaining')}</div>
         </div>
         <div className="text-2xl font-bold text-blue-600">{formatTime(timeRemaining)}</div>
         <Progress value={progressPercentage} className={`h-2 ${progressBarColorClass}`} />{' '}
@@ -77,7 +79,7 @@ const TimerCard: React.FC<TimerCardProps> = ({
               disabled={currentQuestionIndex === 1}
             >
               <ChevronLeft className="mr-1 h-3 w-3" />
-              Trang trước
+              {t('ExamList.PreviousPage')}
             </Button>
             <Button
               variant="outline"
@@ -86,7 +88,7 @@ const TimerCard: React.FC<TimerCardProps> = ({
               className="text-xs"
             >
               <RotateCcw className="mr-1 h-3 w-3" />
-              Tải lại
+              {t('ExamList.ReloadPage')}
             </Button>
             <Button
               variant="outline"
@@ -95,7 +97,7 @@ const TimerCard: React.FC<TimerCardProps> = ({
               onClick={onNext}
               disabled={currentQuestionIndex === totalQuestions}
             >
-              Trang tiếp theo
+              {t('ExamList.NextPage')}
               <ChevronRight className="ml-1 h-3 w-3" />
             </Button>
           </div>
@@ -107,11 +109,11 @@ const TimerCard: React.FC<TimerCardProps> = ({
               onClick={toggleAskConfirmSubmitExam}
             >
               <Save className="mr-1 h-3 w-3" />
-              Nộp bài
+              {t('ExamList.SubmitExam')}
             </Button>
             <Button variant="outline" size="sm" className="bg-transparent text-xs" onClick={onSave}>
               <Send className="mr-1 h-3 w-3" />
-              Lưu bài làm
+              {t('ExamList.SaveExam')}
             </Button>
           </div>
         </div>

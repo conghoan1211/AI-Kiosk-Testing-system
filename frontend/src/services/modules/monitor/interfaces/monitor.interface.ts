@@ -51,3 +51,22 @@ export interface data<T> {
 }
 
 export type MonitorListResponse = data<IMonitor>;
+
+export interface IStatistic {
+  success: boolean;
+  message: string;
+  data: ListStatistic[];
+}
+
+export interface ListStatistic {
+  angry: number;
+  disgust: number;
+  fear: number;
+  happy: number;
+  neutral: number;
+  sad: number;
+  surprise: number;
+  message: string;
+}
+
+export type ListStatisticResponse = data<IStatistic>;

@@ -48,13 +48,14 @@ rectangle "AKTs System" {
     usecase "Extend Exam Duration" as UC17
     usecase "Send Violation" as UC18
     usecase "View All Connections" as UC19
+    usecase "View Violation Record" as UC20
     
 }
 User <|-d- Supervisor 
 Supervisor -- UC1
 Supervisor -- UC5
 Supervisor -- UC12
-Supervisor -- UC18
+Supervisor -- UC20
 UC2 .u.> UC19 : <<extend>>
 UC4 .u.> UC19 : <<extend>>
 UC15 .u.> UC19 : <<extend>>
@@ -63,6 +64,7 @@ UC17 .u.> UC19 : <<extend>>
 UC7 .u.> UC5 : <<extend>>
 UC6 .u.> UC5 : <<extend>>
 UC19 .u.> UC1 : <<extend>>
+UC18 .u.> UC20 : <<extend>>
 
 
 

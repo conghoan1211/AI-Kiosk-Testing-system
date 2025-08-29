@@ -66,7 +66,7 @@ export default function ExamResultsDetail() {
     }
   }, [examId, resultReport, resultDetail]);
 
-  const studentResultsArr: { score: number }[] = resultReport?.studentResults || [];
+  const studentResultsArr: { score: number }[] = resultReport?.studentResults ?? [];
   const total = studentResultsArr.length;
   const scoreDistribution = [
     {
@@ -105,17 +105,17 @@ export default function ExamResultsDetail() {
   }));
 
   const studentResults: StudentResultDetail[] = useMemo(() => {
-    const results = resultReport?.studentResults || [];
+    const results = resultReport?.studentResults ?? [];
     return results.map((result: StudentResult) => ({
-      fullname: result.fullName || 'Unknown',
-      className: result.className || 'N/A',
-      gradingStatus: result.gradingStatus || 'Graded',
-      score: result.score || 0,
-      submitTime: result.submitTime || 'N/A',
-      status: result.status || 'Submitted',
-      workingTime: result.workingTime || '0 minutes',
-      questionType: result.questionType || '',
-      studentExamId: result.studentExamId || '',
+      fullname: result.fullName ?? 'Unknown',
+      className: result.className ?? 'N/A',
+      gradingStatus: result.gradingStatus ?? 'Graded',
+      score: result.score ?? 0,
+      submitTime: result.submitTime ?? 'N/A',
+      status: result.status ?? 'Submitted',
+      workingTime: result.workingTime ?? '0 minutes',
+      questionType: result.questionType ?? '',
+      studentExamId: result.studentExamId ?? '',
     }));
   }, [resultReport?.studentResults]);
   return (

@@ -1,6 +1,6 @@
-import useCallbackRef from "@/hooks/useCallbackRef";
-import React, { Fragment, useEffect } from "react";
-import { useInView } from "react-intersection-observer";
+import useCallbackRef from '@/hooks/useCallbackRef';
+import React, { Fragment, useEffect } from 'react';
+import { useInView } from 'react-intersection-observer';
 
 interface ScrollWrapperProps {
   children: React.ReactNode;
@@ -8,15 +8,13 @@ interface ScrollWrapperProps {
   marginTop?: number;
   classNameDetector?: string;
   styleDetector?: React.CSSProperties;
-  disable?: boolean;
-  readyForLoadmore?: boolean;
 }
 
 const ScrollWrapper = ({
   children,
   onScrollEnd,
   marginTop = 0,
-  classNameDetector = "",
+  classNameDetector = '',
   styleDetector = {},
 }: ScrollWrapperProps) => {
   //! State
@@ -38,12 +36,12 @@ const ScrollWrapper = ({
         ref={ref}
         className={classNameDetector}
         style={{
-          display: "flex",
-          visibility: "hidden",
-          height: "1px",
+          display: 'flex',
+          visibility: 'hidden',
+          height: '1px',
           transform: `translateY(${marginTop}px)`,
           zIndex: -2,
-          ...(styleDetector || {}),
+          ...(styleDetector ?? {}),
         }}
       />
     </Fragment>

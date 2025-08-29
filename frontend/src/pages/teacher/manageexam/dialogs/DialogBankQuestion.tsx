@@ -22,6 +22,7 @@ import type { IManageExamFormValue } from '@/services/modules/manageexam/interfa
 import { Form, Formik, useFormikContext } from 'formik';
 import { BookOpen, CheckCircle2, FileText, Filter, Loader2, Search } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Fragment } from 'react/jsx-runtime';
 import * as Yup from 'yup';
 
@@ -33,11 +34,6 @@ interface DialogBankQuestionProps extends DialogI<any> {
   initialQuestionBankId?: string;
 }
 
-const validationSchema = Yup.object({
-  questionBankId: Yup.string().required('Ngân hàng câu hỏi là bắt buộc'),
-  questionIds: Yup.array().min(2, 'Cần chọn ít nhất hai câu hỏi').required('Câu hỏi là bắt buộc'),
-});
-
 const QuestionBankIdSync: React.FC<{
   questionBankId: string | null;
   setQuestionBankId: (value: string | null) => void;
@@ -46,7 +42,7 @@ const QuestionBankIdSync: React.FC<{
 
   useEffect(() => {
     if (values.questionBankId !== questionBankId) {
-      setQuestionBankId(values.questionBankId || null);
+      setQuestionBankId(values.questionBankId ?? null);
     }
   }, [values.questionBankId, setQuestionBankId, questionBankId]);
 
@@ -57,6 +53,7 @@ const DialogAddQuestionBankTeacher = (props: DialogBankQuestionProps) => {
   //! State
   const { isOpen, toggle, onSubmit, initialSelectedQuestions = [] } = props;
   const [searchText, setSearchText] = useState('');
+  const { t } = useTranslation('shared');
 
   const { filters } = useFiltersHandler({
     pageSize: 50,
@@ -71,7 +68,7 @@ const DialogAddQuestionBankTeacher = (props: DialogBankQuestionProps) => {
   const initialValues = useMemo(
     () => ({
       questionBankId: '',
-      questionIds: initialSelectedQuestions.map((q) => q.questionId) || [],
+      questionIds: initialSelectedQuestions.map((q) => q.questionId) ?? [],
     }),
     [initialSelectedQuestions],
   );
@@ -84,6 +81,13 @@ const DialogAddQuestionBankTeacher = (props: DialogBankQuestionProps) => {
       isTrigger: !!questionBankId,
     },
   );
+
+  const validationSchema = Yup.object({
+    questionBankId: Yup.string().required(t('ExamManagement.QuestionBankRequired')),
+    questionIds: Yup.array()
+      .min(2, t('ExamManagement.MinTwoQuestionsRequired'))
+      .required(t('ExamManagement.QuestionRequired')),
+  });
 
   // Reset questionBankId when dialog closes
   useEffect(() => {
@@ -107,6 +111,20 @@ const DialogAddQuestionBankTeacher = (props: DialogBankQuestionProps) => {
 
     return filtered;
   }, [dataQuestionBankDetail?.questions, searchText]);
+
+  //! Function
+  const handleSelectAll = (setFieldValue: any, values: any) => {
+    if (values.questionIds.length === filteredQuestions.length) {
+      // If all are selected, deselect all
+      setFieldValue('questionIds', []);
+    } else {
+      // Select all questions
+      setFieldValue(
+        'questionIds',
+        filteredQuestions.map((q) => q.questionId),
+      );
+    }
+  };
 
   //! Render
   return (
@@ -159,10 +177,10 @@ const DialogAddQuestionBankTeacher = (props: DialogBankQuestionProps) => {
                           </div>
                           <div>
                             <DialogTitle className="text-xl font-bold text-gray-900">
-                              Chọn câu hỏi từ ngân hàng
+                              {t('ExamManagement.SelectQuestions')}
                             </DialogTitle>
                             <DialogDescription className="mt-1 text-gray-600">
-                              Chọn các câu hỏi cụ thể từ ngân hàng câu hỏi để tạo đề thi
+                              {t('ExamManagement.SelectQuestionsDescription')}
                             </DialogDescription>
                           </div>
                         </div>
@@ -175,7 +193,9 @@ const DialogAddQuestionBankTeacher = (props: DialogBankQuestionProps) => {
                         <div className="flex h-6 w-6 items-center justify-center rounded-md bg-orange-100 text-orange-600">
                           <Filter className="h-3 w-3" />
                         </div>
-                        <h3 className="text-lg font-semibold text-gray-900">Bộ lọc và tìm kiếm</h3>
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {t('ExamManagement.FilterAndSearch')}
+                        </h3>
                       </div>
 
                       <div className="grid gap-4 lg:grid-cols-3">
@@ -183,7 +203,7 @@ const DialogAddQuestionBankTeacher = (props: DialogBankQuestionProps) => {
                           <div className="relative">
                             <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
                             <Input
-                              placeholder="Nhập từ khóa tìm kiếm câu hỏi..."
+                              placeholder={t('ExamManagement.SearchPlaceholder')}
                               value={searchText}
                               onChange={(e) => setSearchText(e.target.value)}
                               className="h-11 border-gray-200 pl-11 focus:border-blue-400 focus:ring-blue-400"
@@ -195,13 +215,13 @@ const DialogAddQuestionBankTeacher = (props: DialogBankQuestionProps) => {
                           <FormikField
                             component={SelectField}
                             name="questionBankId"
-                            placeholder="Chọn ngân hàng câu hỏi"
+                            placeholder={t('ExamManagement.SelectQuestionBank')}
                             required
                             options={
                               dataQuestionBank?.map((item) => ({
                                 value: item.questionBankId,
                                 label: item.title,
-                              })) || []
+                              })) ?? []
                             }
                             shouldHideSearch
                           />
@@ -213,13 +233,15 @@ const DialogAddQuestionBankTeacher = (props: DialogBankQuestionProps) => {
                         <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3">
                           <CheckCircle2 className="h-4 w-4 text-emerald-600" />
                           <span className="text-sm font-medium text-emerald-800">
-                            Đã chọn {values.questionIds.length} câu hỏi
+                            Chosen {values.questionIds.length} questions
                           </span>
                           <Badge
                             variant="secondary"
                             className="ml-auto bg-emerald-100 text-emerald-700"
                           >
-                            {values.questionIds.length >= 2 ? 'Đủ điều kiện' : 'Cần thêm câu hỏi'}
+                            {values.questionIds.length >= 2
+                              ? t('ExamManagement.SelectQuestions')
+                              : t('ExamManagement.NeedMoreQuestions')}
                           </Badge>
                         </div>
                       )}
@@ -228,18 +250,30 @@ const DialogAddQuestionBankTeacher = (props: DialogBankQuestionProps) => {
                     {/* Questions List */}
                     {values.questionBankId && (
                       <div className="min-h-0 flex-1 overflow-hidden">
-                        <div className="mb-4 flex items-center gap-3">
-                          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-purple-100 text-purple-600">
-                            <FileText className="h-3 w-3" />
+                        <div className="mb-4 flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-purple-100 text-purple-600">
+                              <FileText className="h-3 w-3" />
+                            </div>
+                            <h3 className="text-lg font-semibold text-gray-900">
+                              Question List
+                              {dataQuestionBankDetail?.questionBankName && (
+                                <span className="ml-2 text-sm font-normal text-gray-500">
+                                  from "{dataQuestionBankDetail.questionBankName}"
+                                </span>
+                              )}
+                            </h3>
                           </div>
-                          <h3 className="text-lg font-semibold text-gray-900">
-                            Danh sách câu hỏi
-                            {dataQuestionBankDetail?.questionBankName && (
-                              <span className="ml-2 text-sm font-normal text-gray-500">
-                                từ "{dataQuestionBankDetail.questionBankName}"
-                              </span>
-                            )}
-                          </h3>
+                          <Button
+                            variant="outline"
+                            className="h-9 px-4"
+                            onClick={() => handleSelectAll(setFieldValue, values)}
+                            disabled={filteredQuestions.length === 0}
+                          >
+                            {values.questionIds.length === filteredQuestions.length
+                              ? 'Deselect All'
+                              : 'Select All'}
+                          </Button>
                         </div>
 
                         <div className="h-full overflow-y-auto rounded-xl border border-gray-200 bg-gray-50/30">
@@ -247,7 +281,7 @@ const DialogAddQuestionBankTeacher = (props: DialogBankQuestionProps) => {
                             <div className="flex items-center justify-center py-12">
                               <div className="flex items-center gap-3 text-gray-500">
                                 <Loader2 className="h-5 w-5 animate-spin" />
-                                <span>Đang tải câu hỏi...</span>
+                                <span>Loading questions...</span>
                               </div>
                             </div>
                           ) : filteredQuestions.length > 0 ? (
@@ -292,7 +326,7 @@ const DialogAddQuestionBankTeacher = (props: DialogBankQuestionProps) => {
                                           </Badge>
                                           {values.questionIds.includes(question.questionId) && (
                                             <Badge className="bg-blue-100 text-xs text-blue-700">
-                                              Đã chọn
+                                              {t('ExamManagement.Selected')}
                                             </Badge>
                                           )}
                                         </div>
@@ -302,8 +336,8 @@ const DialogAddQuestionBankTeacher = (props: DialogBankQuestionProps) => {
                                         <div className="flex items-center gap-4 text-xs text-gray-500">
                                           <span className="flex items-center gap-1">
                                             <BookOpen className="h-3 w-3" />
-                                            {dataQuestionBankDetail?.questionBankName ||
-                                              'Đang tải...'}
+                                            {dataQuestionBankDetail?.questionBankName ??
+                                              'Loading...'}
                                           </span>
                                           {dataQuestionBankDetail?.subjectName && (
                                             <span className="flex items-center gap-1">
@@ -326,13 +360,13 @@ const DialogAddQuestionBankTeacher = (props: DialogBankQuestionProps) => {
                               <div className="text-center">
                                 <p className="mb-1 text-lg font-medium text-gray-900">
                                   {searchText
-                                    ? 'Không tìm thấy câu hỏi phù hợp'
-                                    : 'Chưa có câu hỏi'}
+                                    ? 'No matching questions found'
+                                    : 'No questions available'}
                                 </p>
                                 <p className="text-sm text-gray-500">
                                   {searchText
-                                    ? 'Thử thay đổi từ khóa tìm kiếm'
-                                    : 'Chọn ngân hàng câu hỏi để xem danh sách câu hỏi'}
+                                    ? 'Try changing the search keyword'
+                                    : 'Select a question bank to view the list of questions'}
                                 </p>
                               </div>
                             </div>
@@ -346,7 +380,7 @@ const DialogAddQuestionBankTeacher = (props: DialogBankQuestionProps) => {
                       <div className="text-sm text-gray-600">
                         {values.questionIds.length < 2 && (
                           <span className="font-medium text-amber-600">
-                            ⚠️ Cần chọn ít nhất 2 câu hỏi để tạo đề thi
+                            ⚠️ Need at least 2 questions to create an exam
                           </span>
                         )}
                       </div>
@@ -357,7 +391,7 @@ const DialogAddQuestionBankTeacher = (props: DialogBankQuestionProps) => {
                             type="button"
                             className="h-11 bg-transparent px-6"
                           >
-                            Hủy
+                            Cancel
                           </Button>
                         </DialogClose>
                         <Button
@@ -368,12 +402,12 @@ const DialogAddQuestionBankTeacher = (props: DialogBankQuestionProps) => {
                           {isSubmitting ? (
                             <div className="flex items-center gap-2">
                               <Loader2 className="h-4 w-4 animate-spin" />
-                              Đang xử lý...
+                              Processing...
                             </div>
                           ) : (
                             <div className="flex items-center gap-2">
                               <CheckCircle2 className="h-4 w-4" />
-                              Xác nhận ({values.questionIds.length})
+                              Confirm ({values.questionIds.length})
                             </div>
                           )}
                         </Button>

@@ -11,6 +11,7 @@ import type { DialogI } from '@/interfaces/common';
 import useGetViewGuideLine from '@/services/modules/manageexam/hooks/useGetViewGuideLine';
 import type { StudentExamList } from '@/services/modules/studentexam/interfaces/studentexam.interface';
 import { BookOpen, Clock, FileText, AlertCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface DialogShowGuidelineProps extends DialogI<any> {
   isOpen: boolean;
@@ -20,9 +21,10 @@ interface DialogShowGuidelineProps extends DialogI<any> {
 }
 
 const DialogShowGuideline = (props: DialogShowGuidelineProps) => {
+  const { t } = useTranslation('shared');
   const { isOpen, toggle, onSubmit, selectedExam } = props;
 
-  const { guideLine } = useGetViewGuideLine(selectedExam?.examId || '', {
+  const { guideLine } = useGetViewGuideLine(selectedExam?.examId ?? '', {
     isTrigger: isOpen,
   });
 
@@ -40,12 +42,12 @@ const DialogShowGuideline = (props: DialogShowGuidelineProps) => {
                   <div className="rounded-full bg-white/20 p-2">
                     <BookOpen className="h-6 w-6" />
                   </div>
-                  Hướng dẫn làm bài thi
+                  {t('Guidelines.Title')}
                 </DialogTitle>
                 {selectedExam && (
                   <div className="mt-3 text-center">
                     <p className="text-sm font-medium text-blue-100">
-                      Mã bài thi: {selectedExam.examId}
+                      {t('Guidelines.ExamCode')}: {selectedExam.examId}
                     </p>
                   </div>
                 )}
@@ -53,7 +55,7 @@ const DialogShowGuideline = (props: DialogShowGuidelineProps) => {
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto max-h-[calc(100vh-400px)] p-4">
+            <div className="max-h-[calc(100vh-400px)] flex-1 overflow-y-auto p-4">
               {guideLine ? (
                 <div className="p-8">
                   {/* Info Cards */}
@@ -63,8 +65,8 @@ const DialogShowGuideline = (props: DialogShowGuidelineProps) => {
                         <Clock className="h-5 w-5 text-blue-600" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-blue-900">Thời gian</p>
-                        <p className="text-xs text-blue-700">Xem hướng dẫn cẩn thận</p>
+                        <p className="text-sm font-medium text-blue-900">{t('Guidelines.Time')}</p>
+                        <p className="text-xs text-blue-700">{t('Guidelines.ReadCarefully')}</p>
                       </div>
                     </div>
 
@@ -73,8 +75,10 @@ const DialogShowGuideline = (props: DialogShowGuidelineProps) => {
                         <FileText className="h-5 w-5 text-green-600" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-green-900">Quy định</p>
-                        <p className="text-xs text-green-700">Tuân thủ nghiêm ngặt</p>
+                        <p className="text-sm font-medium text-green-900">
+                          {t('Guidelines.Regulations')}
+                        </p>
+                        <p className="text-xs text-green-700">{t('Guidelines.StrictCompliance')}</p>
                       </div>
                     </div>
 
@@ -83,8 +87,8 @@ const DialogShowGuideline = (props: DialogShowGuidelineProps) => {
                         <AlertCircle className="h-5 w-5 text-amber-600" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-amber-900">Lưu ý</p>
-                        <p className="text-xs text-amber-700">Đọc kỹ trước khi thi</p>
+                        <p className="text-sm font-medium text-amber-900">{t('Guidelines.Note')}</p>
+                        <p className="text-xs text-amber-700">{t('Guidelines.ReadCarefully')}</p>
                       </div>
                     </div>
                   </div>
@@ -105,10 +109,10 @@ const DialogShowGuideline = (props: DialogShowGuidelineProps) => {
                     <FileText className="h-8 w-8 text-gray-400" />
                   </div>
                   <h3 className="mb-2 text-lg font-semibold text-gray-900">
-                    Đang tải hướng dẫn...
+                    {t('Guidelines.Loading')}
                   </h3>
                   <p className="max-w-md text-center text-gray-600">
-                    Vui lòng đợi trong giây lát để hệ thống tải hướng dẫn làm bài thi.
+                    {t('Guidelines.LoadingDescription')}
                   </p>
                   <div className="mt-6 flex space-x-1">
                     <div className="h-2 w-2 animate-bounce rounded-full bg-blue-600"></div>
@@ -130,7 +134,7 @@ const DialogShowGuideline = (props: DialogShowGuidelineProps) => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <AlertCircle className="h-4 w-4" />
-                  <span>Vui lòng đọc kỹ hướng dẫn trước khi bắt đầu làm bài</span>
+                  <span>{t('Guidelines.ReadCarefully')}</span>
                 </div>
 
                 <div className="flex gap-3">
@@ -140,14 +144,14 @@ const DialogShowGuideline = (props: DialogShowGuidelineProps) => {
                       type="button"
                       className="rounded-lg border-gray-300 bg-white px-6 py-2 font-medium text-gray-700 transition-all duration-200 hover:border-gray-400 hover:bg-gray-50"
                     >
-                      Hủy
+                      {t('Close')}
                     </Button>
                   </DialogClose>
                   <Button
                     onClick={onSubmit}
                     className="rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-2 font-medium text-white shadow-lg transition-all duration-200 hover:from-blue-700 hover:to-blue-800 hover:shadow-xl"
                   >
-                    Tôi đã hiểu và xác nhận
+                    {t('Confirm')}
                   </Button>
                 </div>
               </div>

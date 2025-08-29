@@ -18,7 +18,7 @@ const LoginForm = () => {
     isTrigger: true,
   });
 
-  const [selectedCampus, setSelectedCampus] = useState(httpService.getSelectedCampus() || '');
+  const [selectedCampus, setSelectedCampus] = useState(httpService.getSelectedCampus() ?? '');
 
   const [loading, setLoading] = useState(false);
   const { login, setIsLogging } = useAuth();
@@ -68,7 +68,7 @@ const LoginForm = () => {
           }
         })
         .catch((error) => {
-          showError(error.message || 'Login failed');
+          showError(error.message ?? 'Login failed');
         })
         .finally(() => {
           setLoading(false);

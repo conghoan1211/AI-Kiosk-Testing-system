@@ -7,7 +7,7 @@ import {
 } from './interfaces/manageExam.interface';
 import { ActiveStatusExamTeacher } from '@/consts/common';
 
-class manageExamService {
+class ManageExamService {
   addNewExam(examData: IManageExamFormValue) {
     return httpService.post(`${TEACHER_EXAM_URL}/add`, examData, {});
   }
@@ -51,4 +51,4 @@ class manageExamService {
   }
 }
 
-export default new manageExamService();
+export default new ManageExamService();

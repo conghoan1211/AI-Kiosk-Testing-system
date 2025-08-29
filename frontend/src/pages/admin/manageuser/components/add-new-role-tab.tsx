@@ -16,6 +16,7 @@ import { useGet, useSave } from '@/stores/useStores';
 import { Form, Formik } from 'formik';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import * as yup from 'yup';
 
@@ -41,6 +42,7 @@ const validationSchema = yup.object().shape({
 
 const AddNewRoleTab = ({ onNext }: AddNewRoleTabProps) => {
   //! State
+  const { t } = useTranslation('shared');
   const { roleId } = useParams();
   const save = useSave();
   const defaultData = useGet('dataPermissions');
@@ -52,9 +54,9 @@ const AddNewRoleTab = ({ onNext }: AddNewRoleTabProps) => {
   );
 
   const { filters } = useFiltersHandler({
-    PageSize: cachesFilterPermissions?.PageSize || 50,
-    CurrentPage: cachesFilterPermissions?.CurrentPage || 1,
-    TextSearch: cachesFilterPermissions?.TextSearch || '',
+    PageSize: cachesFilterPermissions?.PageSize ?? 50,
+    CurrentPage: cachesFilterPermissions?.CurrentPage ?? 1,
+    TextSearch: cachesFilterPermissions?.TextSearch ?? '',
   });
 
   const { data: mockDataRoles } = useGetListRoles();
@@ -79,8 +81,8 @@ const AddNewRoleTab = ({ onNext }: AddNewRoleTabProps) => {
   );
 
   const initialValues: FormDataRoles = {
-    id: roleId || '',
-    name: roleId ? mockDataRoles.find((role) => String(role.id) === roleId)?.name || '' : '',
+    id: roleId ?? '',
+    name: roleId ? (mockDataRoles.find((role) => String(role.id) === roleId)?.name ?? '') : '',
   };
 
   //! Functions
@@ -141,8 +143,8 @@ const AddNewRoleTab = ({ onNext }: AddNewRoleTabProps) => {
               <div className="space-y-2">
                 <FormikField
                   component={SelectField}
-                  label="Tên vai trò"
-                  placeholder="Nhập tên vai trò..."
+                  label={t('UserManagement.RoleName')}
+                  placeholder={t('UserManagement.RoleNamePlaceholder')}
                   name="id"
                   options={mockDataRoles.map((role) => ({
                     value: role.id,
@@ -159,9 +161,14 @@ const AddNewRoleTab = ({ onNext }: AddNewRoleTabProps) => {
                   shouldHideSearch
                   disabled={!!roleId}
                 />
-                <FormikField component={InputField} label="Mô tả" name="name" disabled />
+                <FormikField
+                  component={InputField}
+                  label={t('UserManagement.Description')}
+                  name="name"
+                  disabled
+                />
                 <p className="text-sm text-muted-foreground">
-                  Tên vai trò phải duy nhất và mô tả rõ chức năng
+                  {t('UserManagement.DescriptionHelpText')}
                 </p>
               </div>
             </div>
@@ -170,13 +177,15 @@ const AddNewRoleTab = ({ onNext }: AddNewRoleTabProps) => {
             <div className="space-y-4 rounded-lg border p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-base font-medium">Quyền hạn chi tiết</h3>
+                  <h3 className="text-base font-medium">
+                    {t('UserManagement.DetailedPermissions')}
+                  </h3>
                   <p className="text-sm text-muted-foreground">
-                    Chọn các quyền hạn cụ thể cho vai trò này
+                    {t('UserManagement.SelectSpecificPermissions')}
                   </p>
                 </div>
                 <div className="text-sm font-medium">
-                  Đã chọn: {selectedPermissions.length} quyền
+                  {t('UserManagement.SelectedPermissions', { count: selectedPermissions.length })}
                 </div>
               </div>
 
@@ -252,7 +261,7 @@ const AddNewRoleTab = ({ onNext }: AddNewRoleTabProps) => {
             </div>
           </div>
           <Button type="submit" className="mt-6 w-full">
-            Tiếp theo
+            {t('UserManagement.SaveAndNext')}
           </Button>
         </Form>
       )}

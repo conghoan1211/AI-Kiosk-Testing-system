@@ -3,16 +3,13 @@ import SelectField from '@/components/customFieldsFormik/SelectField';
 import useGetListCampus from '@/services/modules/campus/hooks/useGetListCampus';
 import useGetListDepartment from '@/services/modules/department/hooks/useGetListDepartment';
 import useGetListMajor from '@/services/modules/major/hooks/useGetListMajor';
+import positionService from '@/services/modules/position/position.service';
 import useGetListSpecialization from '@/services/modules/specialization/hooks/useGetSpecialization';
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface WorkStudyInfoProps {
   values: any;
-  handleChange: (e: React.ChangeEvent<any>) => void;
-  handleBlur: (e: React.FocusEvent<any>) => void;
-  fetchPositions: (departmentId: string) => void;
-  mockDataPositionIds: any[];
-  loadingPosition: boolean;
   isStudent: boolean;
   isLecturer: boolean;
   isAdminOrSupervisor: boolean;
@@ -22,13 +19,13 @@ interface WorkStudyInfoProps {
 const WorkStudyInfoSection = ({
   userId,
   values,
-  fetchPositions,
-  mockDataPositionIds,
-  loadingPosition,
   isStudent,
   isLecturer,
   isAdminOrSupervisor,
 }: WorkStudyInfoProps) => {
+  const { t } = useTranslation('shared');
+  const [mockDataPositionIds, setMockDataPositionIds] = useState<any[]>([]);
+  const [loadingPosition, setLoadingPosition] = useState(false);
   const {
     data: mockDataCampus,
     loading: loadingCampus,
@@ -62,19 +59,40 @@ const WorkStudyInfoSection = ({
   const hasFetchedDepartmentRef = useRef(false);
   const hasFetchedMajorRef = useRef(false);
   const hasFetchedSpecializationRef = useRef(false);
+  const hasFetchedPositionRef = useRef(false);
+
+  const fetchPositions = async (departmentId: string) => {
+    try {
+      setLoadingPosition(true);
+      setMockDataPositionIds([]);
+      const response = await positionService.getListPosition(departmentId);
+      setMockDataPositionIds(response.data);
+    } catch (error) {
+      setMockDataPositionIds([]);
+    } finally {
+      setLoadingPosition(false);
+    }
+  };
+
+  useEffect(() => {
+    if (userId && values.departmentId && !hasFetchedPositionRef.current) {
+      hasFetchedPositionRef.current = true;
+      fetchPositions(values.departmentId);
+    }
+  }, [userId, values.departmentId]);
 
   return (
     <div className="space-y-6">
       <h3 className="border-b pb-2 text-lg font-semibold text-gray-900">
-        Thông tin công việc/học tập
+        {t('UserManagement.WorkStudyInfoSectionTitle')}
       </h3>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <div className="space-y-2">
           <FormikField
             component={SelectField}
             name="campusId"
-            label="Campus"
-            placeholder="Chọn campus"
+            label={t('UserManagement.Campus')}
+            placeholder={t('UserManagement.CampusPlaceholder')}
             options={mockDataCampus.map((campus: any) => ({
               label: campus.code,
               value: campus.id,
@@ -95,8 +113,8 @@ const WorkStudyInfoSection = ({
             <FormikField
               component={SelectField}
               name="majorId"
-              label="Chuyên ngành cho sinh viên"
-              placeholder="Chọn chuyên ngành cho sinh viên"
+              label={t('UserManagement.Major')}
+              placeholder={t('UserManagement.MajorPlaceholder')}
               required
               loading={loadingMajor}
               options={mockDataForMajor.map((major: any) => ({
@@ -118,8 +136,8 @@ const WorkStudyInfoSection = ({
             <FormikField
               component={SelectField}
               name="specializationId"
-              label="Chuyên ngành cho giảng viên"
-              placeholder="Chọn chuyên ngành"
+              label={t('UserManagement.Specialization')}
+              placeholder={t('UserManagement.SpecializationPlaceholder')}
               options={mockDataspecializationIds.map((specialization: any) => ({
                 label: specialization.name,
                 value: specialization.id,
@@ -143,8 +161,8 @@ const WorkStudyInfoSection = ({
             <FormikField
               component={SelectField}
               name="departmentId"
-              label="Khoa/Phòng ban"
-              placeholder="Chọn khoa/phòng ban"
+              label={t('UserManagement.Department')}
+              placeholder={t('UserManagement.DepartmentPlaceholder')}
               options={mockDataDepartments.map((department: any) => ({
                 label: department.name,
                 value: department.id,
@@ -164,8 +182,8 @@ const WorkStudyInfoSection = ({
             <FormikField
               component={SelectField}
               name="positionId"
-              label="Chức vụ"
-              placeholder="Chọn chức vụ"
+              label={t('UserManagement.Position')}
+              placeholder={t('UserManagement.PositionPlaceholder')}
               required
               shouldHideSearch
               disabled={!values.departmentId}
@@ -175,7 +193,9 @@ const WorkStudyInfoSection = ({
                 value: position.id,
               }))}
               onToggle={(open: any) => {
-                if (open && values.departmentId) fetchPositions(values.departmentId);
+                if (open && values.departmentId && !userId) {
+                  fetchPositions(values.departmentId);
+                }
               }}
             />
           </div>

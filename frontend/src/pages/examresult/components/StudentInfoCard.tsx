@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { getStudentInitials } from '@/utils/exam.utils';
 import { User, GraduationCap, BadgeIcon as IdCard } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface StudentInfoCardProps {
   studentName?: string;
@@ -14,10 +15,11 @@ export default function StudentInfoCard({
   studentName,
   studentCode,
   className = '',
-}: StudentInfoCardProps) {
-  const initials = getStudentInitials(studentName || '');
-  const displayName = studentName || 'Không có tên';
-  const displayCode = studentCode || 'N/A';
+}: Readonly<StudentInfoCardProps>) {
+  const { t } = useTranslation('shared');
+  const initials = getStudentInitials(studentName ?? '');
+  const displayName = studentName ?? t('StudentExamResultDetail.noName');
+  const displayCode = studentCode ?? t('StudentExamResultDetail.na');
 
   return (
     <Card
@@ -32,7 +34,7 @@ export default function StudentInfoCard({
             <User className="h-4 w-4 text-white" />
           </div>
           <span className="bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-            Thông tin học sinh
+            {t('StudentExamResultDetail.studentInfo')}
           </span>
         </CardTitle>
       </CardHeader>
@@ -59,14 +61,14 @@ export default function StudentInfoCard({
               {studentName && (
                 <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-200">
                   <GraduationCap className="mr-1 h-3 w-3" />
-                  Học sinh
+                  {t('StudentExamResultDetail.student')}
                 </Badge>
               )}
             </div>
 
             <div className="flex items-center gap-1.5 text-sm text-gray-600">
               <IdCard className="h-4 w-4 text-gray-400" />
-              <span className="font-medium">Mã HS:</span>
+              <span className="font-medium">{t('StudentExamResultDetail.studentCodeLabel')}:</span>
               <span className="font-mono text-gray-800">{displayCode}</span>
             </div>
           </div>
@@ -79,10 +81,12 @@ export default function StudentInfoCard({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="h-2 w-2 rounded-full bg-green-500" />
-                <span className="text-sm font-medium text-gray-700">Trạng thái</span>
+                <span className="text-sm font-medium text-gray-700">
+                  {t('StudentExamResultDetail.status')}
+                </span>
               </div>
               <Badge variant="secondary" className="bg-green-100 text-green-700">
-                Đã hoàn thành
+                {t('StudentExamResultDetail.completed')}
               </Badge>
             </div>
           </div>

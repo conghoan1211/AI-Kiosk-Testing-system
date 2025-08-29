@@ -1,4 +1,3 @@
-
 import { momentInstance } from '@/helpers/common';
 import type { AdditionalFormikProps } from '@/interfaces/common';
 import { cn } from '@/lib/utils';
@@ -14,7 +13,7 @@ import type { InputProps } from '../ui/input';
 import { Label } from '../ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { CustomCaption } from './CustomCaption';
+import CalendarCaption from './CalendarCaption';
 
 interface DateTimePickerFieldProps extends InputProps {
   label?: string | React.ReactNode;
@@ -86,9 +85,16 @@ const DateTimePickerField = (props: DateTimePickerFieldProps & AdditionalFormikP
 
   // Generate hour options
   const hourOptions = Array.from({ length: timeFormat === '12' ? 12 : 24 }, (_, i) => {
-    const hour = timeFormat === '12' ? (i === 0 ? 12 : i) : i;
+    let hour = i;
+    let value = i;
+
+    if (timeFormat === '12') {
+      hour = i === 0 ? 12 : i;
+      value = i === 0 ? 0 : i;
+    }
+
     return {
-      value: timeFormat === '12' ? (i === 0 ? 0 : i).toString() : i.toString(),
+      value: value.toString(),
       label: hour.toString().padStart(2, '0'),
     };
   });
@@ -104,10 +110,16 @@ const DateTimePickerField = (props: DateTimePickerFieldProps & AdditionalFormikP
 
   const getCurrentHour = () => {
     if (!value) return '';
+
     const hour = momentInstance(value).hour();
+
     if (timeFormat === '12') {
-      return hour === 0 ? '0' : hour > 12 ? (hour - 12).toString() : hour.toString();
+      let displayHour = hour;
+      if (hour === 0) displayHour = 0;
+      else if (hour > 12) displayHour = hour - 12;
+      return displayHour.toString();
     }
+
     return hour.toString();
   };
 
@@ -192,7 +204,9 @@ const DateTimePickerField = (props: DateTimePickerFieldProps & AdditionalFormikP
                 month={currentMonth}
                 onMonthChange={(newMonth) => setCurrentMonth(newMonth)}
                 components={{
-                  Caption: (props) => <CustomCaption {...props} setMonth={setCurrentMonth} />,
+                  Caption: (captionProps) => (
+                    <CalendarCaption props={captionProps} setMonth={setCurrentMonth} />
+                  ),
                 }}
                 disabled={disableCallback}
               />

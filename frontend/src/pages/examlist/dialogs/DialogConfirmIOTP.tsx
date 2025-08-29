@@ -15,6 +15,7 @@ import { StudentExamList } from '@/services/modules/studentexam/interfaces/stude
 import { Form, Formik } from 'formik';
 import { Lock } from 'lucide-react';
 import { Fragment } from 'react/jsx-runtime';
+import { useTranslation } from 'react-i18next';
 import * as Yup from 'yup';
 
 export interface ConfirmOTPFormValues {
@@ -29,19 +30,32 @@ interface DialogConfirmOTPProps extends DialogI<any> {
   selectedExam?: StudentExamList;
 }
 
-const validationSchema = Yup.object({
-  otpCode: Yup.string()
-    .required('Mã OTP là bắt buộc')
-    .matches(/^\d{6}$/, 'Mã OTP phải là 6 chữ số'),
-  examId: Yup.string().required('Mã bài thi là bắt buộc'),
-});
-
 const DialogConfirmOTP = (props: DialogConfirmOTPProps) => {
+  const { t } = useTranslation('shared');
   const { isOpen, toggle, onSubmit, selectedExam } = props;
 
   const initialValues: ConfirmOTPFormValues = {
     otpCode: '',
-    examId: selectedExam?.examId || '',
+    examId: selectedExam?.examId ?? '',
+  };
+
+  const validationSchema = Yup.object({
+    otpCode: Yup.string()
+      .required(t('OTP.Invalid') ?? 'Please enter OTP')
+      .matches(/^\d{6}$/, t('OTP.Placeholder') ?? 'OTP must be 6 digits'),
+    examId: Yup.string().required(t('OTP.ExamId') ?? 'Exam ID is required'),
+  });
+
+  const handleSubmit = async (values: ConfirmOTPFormValues, { setSubmitting }: any) => {
+    try {
+      setSubmitting(true);
+      await onSubmit(values);
+    } catch (error) {
+      toggle();
+      showError(t('OTP.Invalid') ?? 'Invalid OTP');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -52,16 +66,7 @@ const DialogConfirmOTP = (props: DialogConfirmOTPProps) => {
           <Formik
             initialValues={initialValues}
             validationSchema={validationSchema}
-            onSubmit={async (values, { setSubmitting }) => {
-              try {
-                setSubmitting(true);
-                await onSubmit(values);
-              } catch (error) {
-                showError(error);
-              } finally {
-                setSubmitting(false);
-              }
-            }}
+            onSubmit={handleSubmit}
             enableReinitialize
           >
             {({ isSubmitting }) => (
@@ -70,10 +75,10 @@ const DialogConfirmOTP = (props: DialogConfirmOTPProps) => {
                   <div className="text-center">
                     <DialogTitle className="flex items-center justify-center gap-2 text-2xl font-semibold text-gray-900">
                       <Lock className="h-6 w-6 text-blue-600" />
-                      Xác nhận OTP
+                      {t('OTP.Title') ?? 'Enter OTP'}
                     </DialogTitle>
                     <p className="mt-2 text-sm text-gray-500">
-                      Vui lòng nhập mã OTP gồm 6 chữ số để xác nhận bài thi.
+                      {t('OTP.Description') ?? 'Please enter the OTP to access the exam'}
                     </p>
                   </div>
 
@@ -84,7 +89,7 @@ const DialogConfirmOTP = (props: DialogConfirmOTPProps) => {
                       <FormikField
                         component={InputField}
                         name="examId"
-                        label="Mã bài thi"
+                        label={t('OTP.ExamId') ?? 'Exam ID'}
                         disabled
                         className="pr-10"
                         iconText="#"
@@ -96,8 +101,8 @@ const DialogConfirmOTP = (props: DialogConfirmOTPProps) => {
                       <FormikField
                         component={InputField}
                         name="otpCode"
-                        placeholder="Nhập mã OTP (6 chữ số)"
-                        label="Mã OTP bài thi"
+                        label={t('OTP.Title') ?? 'OTP Code'}
+                        placeholder={t('OTP.Placeholder') ?? 'Enter 6-digit OTP'}
                         required
                         isNumberic
                         className="pr-10"
@@ -112,15 +117,16 @@ const DialogConfirmOTP = (props: DialogConfirmOTPProps) => {
                         type="button"
                         className="rounded-md border-gray-300 bg-gray-50 text-gray-700 transition-colors duration-200 hover:bg-gray-100"
                       >
-                        Hủy
+                        {t('Close') ?? 'Close'}
                       </Button>
                     </DialogClose>
                     <Button
                       type="submit"
                       isLoading={isSubmitting}
-                      className="rounded-md bg-blue-600 text-white transition-colors duration-200 hover:bg-blue-700"
+                      disabled={isSubmitting}
+                      className="rounded-md bg-blue-600 text-white transition-colors duration-200 hover:bg-blue-700 disabled:bg-gray-400"
                     >
-                      Xác nhận
+                      {t('Confirm') ?? 'Confirm'}
                     </Button>
                   </div>
                 </Form>

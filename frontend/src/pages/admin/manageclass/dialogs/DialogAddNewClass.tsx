@@ -11,10 +11,12 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { showError } from '@/helpers/toast';
 import { DialogI } from '@/interfaces/common';
 import useGetDetailClass from '@/services/modules/class/hooks/useGetDetailClass';
 import { ClassList } from '@/services/modules/class/interfaces/class.interface';
 import { Form, Formik } from 'formik';
+import { useTranslation } from 'react-i18next';
 import { Fragment } from 'react/jsx-runtime';
 import * as Yup from 'yup';
 
@@ -25,26 +27,25 @@ interface DialogAddNewClassProps extends DialogI<any> {
   editClass?: ClassList | null;
 }
 
-const validationSchema = Yup.object({
-  classCode: Yup.string()
-    .required('Mã lớp là bắt buộc')
-    .matches(/^[A-Z0-9]+$/, 'Mã lớp chỉ chứa chữ hoa và số'),
-  // description: Yup.string().required("Mô tả là bắt buộc"),
-  // isActive: Yup.string().required("Trạng thái là bắt buộc"),
-});
-
 const DialogAddNewClass = (props: DialogAddNewClassProps) => {
   //!State
+  const { t } = useTranslation('shared');
   const { isOpen, toggle, onSubmit, editClass } = props;
   const { data: classDetail } = useGetDetailClass(editClass?.classId, {
     isTrigger: !!editClass,
   });
 
   const initialValues: ClassList = {
-    classCode: editClass?.classCode || classDetail?.classCode || '',
-    description: editClass?.description || classDetail?.description || '',
+    classCode: editClass?.classCode ?? classDetail?.classCode ?? '',
+    description: editClass?.description ?? classDetail?.description ?? '',
     isActive: editClass?.isActive !== undefined ? editClass.isActive : true,
   };
+
+  const validationSchema = Yup.object({
+    classCode: Yup.string()
+      .required(t('ClassManagement.ClassCodeRequired'))
+      .matches(/^[A-Z0-9]+$/, t('ClassManagement.ClassCodeInvalid')),
+  });
 
   //!Functions
 
@@ -61,7 +62,7 @@ const DialogAddNewClass = (props: DialogAddNewClassProps) => {
               try {
                 await onSubmit(values);
               } catch (error) {
-                console.error('Error submitting form:', error);
+                showError(error);
               }
               setSubmitting(false);
             }}
@@ -72,7 +73,9 @@ const DialogAddNewClass = (props: DialogAddNewClassProps) => {
                   <Form className="space-y-4">
                     <div>
                       <DialogTitle className="text-xl font-medium">
-                        {editClass ? 'Chỉnh sửa lớp học' : 'Tạo lớp học mới'}
+                        {editClass
+                          ? t('ClassManagement.EditClass')
+                          : t('ClassManagement.CreateNewClass')}
                       </DialogTitle>
                     </div>
 
@@ -82,9 +85,9 @@ const DialogAddNewClass = (props: DialogAddNewClassProps) => {
                           id="classCode"
                           component={InputField}
                           name="classCode"
-                          placeholder="Nhập mã lớp(VD: CS101)"
+                          label={t('ClassManagement.ClassCode')}
+                          placeholder={t('ClassManagement.ClassCodePlaceholder')}
                           value={values.classCode}
-                          label="Mã lớp"
                           required
                         />
                       </div>
@@ -93,8 +96,8 @@ const DialogAddNewClass = (props: DialogAddNewClassProps) => {
                         <FormikField
                           component={Textarea}
                           name="description"
-                          placeholder="Nhập mô tả lớp học"
-                          label="Mô tả"
+                          placeholder={t('ClassManagement.DescriptionPlaceholder')}
+                          label={t('ClassManagement.Description')}
                         />
                       </div>
 
@@ -102,11 +105,11 @@ const DialogAddNewClass = (props: DialogAddNewClassProps) => {
                         <FormikField
                           component={SelectField}
                           name="isActive"
-                          placeholder="Chọn trạng thái"
-                          label="Trạng thái"
+                          label={t('ClassManagement.Status')}
+                          placeholder={t('ClassManagement.StatusPlaceholder')}
                           options={[
-                            { label: 'Active', value: true },
-                            { label: 'InActive', value: false },
+                            { label: t('ClassManagement.Active'), value: true },
+                            { label: t('ClassManagement.Inactive'), value: false },
                           ]}
                           shouldHideSearch
                         />
@@ -120,7 +123,9 @@ const DialogAddNewClass = (props: DialogAddNewClassProps) => {
                         </Button>
                       </DialogClose>
                       <Button type="submit" isLoading={isSubmitting}>
-                        {editClass ? 'Cập nhật lớp học' : 'Tạo lớp học mới'}
+                        {editClass
+                          ? t('ClassManagement.UpdateClass')
+                          : t('ClassManagement.CreateClass')}
                       </Button>
                     </div>
                   </Form>

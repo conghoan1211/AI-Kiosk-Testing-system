@@ -1,5 +1,5 @@
 @startuml
-' Class Diagram for ReAssign Exam Feature
+' Class Diagram for ReAssign Exam Feature (tách riêng Subject/Observer, bỏ Entities, bỏ ExamHub)
 
 title ReAssign Exam Class Diagram
 
@@ -51,15 +51,29 @@ package "Services" {
         + ReAssignStudent(assignStudent: ReAssignStudent, usertoken: string): Task<string>
     }
     class MonitoringService <<Service>> {
-        - _context: DbContext
-        - _examHub: ExamHub
+        - _unitOfWork: IUnitOfWork
         - _log: ILog
         - _s3Service: IAmazonS3Service
+        - _reAssignSubject: IReAssignSubject
         + ReAssignStudent(assignStudent: ReAssignStudent, usertoken: string): Task<string>
     }
-    class ExamHub {
-        + SendReAssignExamToGroup(groupName: string, data: object): Task
+}
+
+package "Subject" {
+    interface IReAssignSubject <<Interface>> {
+        + Attach(observer: IReAssignObserver)
+        + Detach(observer: IReAssignObserver)
+        + Notify(reAssign: ReAssignStudent, exam, userId: string, studentExamId: string): Task
     }
+}
+
+package "Observer" {
+    interface IReAssignObserver <<Interface>> {
+        + OnStudentReAssigned(reAssign: ReAssignStudent, exam, userId: string, studentExamId: string): Task
+    }
+}
+
+package "Services" {
     interface ILog <<Interface>> {
         + WriteActivity(log: AddUserLogVM): Task<string>
     }
@@ -83,32 +97,6 @@ package "Models & DTOs" {
     }
 }
 
-package "Entities" {
-    class Exam {
-        + ExamId: string
-        + Title: string
-        + Status: int
-        + StartTime: DateTime
-        + EndTime: DateTime
-        + Duration: int
-    }
-    class StudentExam {
-        + StudentExamId: string
-        + ExamId: string
-        + StudentId: string
-        + Status: int
-    }
-    class StudentAnswer {
-        + StudentExamId: string
-        + QuestionId: string
-        + UserAnswer: string
-    }
-    class FaceCapture {
-        + StudentExamId: string
-        + ImageUrl: string
-    }
-}
-
 package "Enums" {
     enum LogStatus {
         Success
@@ -121,21 +109,15 @@ package "Enums" {
 }
 
 ' Relationships
-MonitoringController ..> IMonitoringService : <<uses>>
-MonitoringController ..> ReAssignStudent : <<uses>>
+MonitoringController ..> IMonitoringService : uses
+MonitoringController ..> ReAssignStudent : uses
 IMonitoringService <|.. MonitoringService
-MonitoringService ..> Exam : <<queries>>
-MonitoringService ..> StudentExam : <<queries/removes>>
-MonitoringService ..> StudentAnswer : <<removes>>
-MonitoringService ..> FaceCapture : <<removes/files>>
-MonitoringService ..> IAmazonS3Service : <<deletes file>>
-MonitoringService ..> ExamHub : <<notifies>>
-MonitoringService ..> ILog : <<logs>>
-MonitoringService ..> AddUserLogVM : <<logs>>
-StudentExam o-- Exam : <<for>>
-StudentAnswer o-- StudentExam : <<for>>
-FaceCapture o-- StudentExam : <<for>>
-AddUserLogVM ..> LogStatus : <<uses>>
-StudentExam ..> StudentExamStatus : <<uses>>
+MonitoringService ..> ILog : logs
+MonitoringService ..> AddUserLogVM : logs
+MonitoringService ..> IAmazonS3Service : deletes file
+MonitoringService ..> IReAssignSubject : notifies
+IReAssignSubject o-- IReAssignObserver : observers
+ReAssignStudent ..> AddUserLogVM : for
+AddUserLogVM ..> LogStatus : uses
 
-@enduml 
+@enduml

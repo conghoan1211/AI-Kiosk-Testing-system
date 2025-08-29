@@ -17,6 +17,7 @@ import { showError } from '@/helpers/toast';
 import { DialogI } from '@/interfaces/common';
 import useGetDetailKeyboardShortcut from '@/services/modules/keyboardshortcut/hooks/useGetDetailKeyboardShortcut';
 import { Form, Formik } from 'formik';
+import { useTranslation } from 'react-i18next';
 import { Fragment } from 'react/jsx-runtime';
 import * as Yup from 'yup';
 
@@ -36,20 +37,8 @@ interface DialogAddNewKeyboardShortcutProps extends DialogI<any> {
   editKeyboardShortcut?: KeyboardShortcutFormValues | null;
 }
 
-const validationSchema = Yup.object({
-  keyCode: Yup.string()
-    .required('Tên tổ hợp phím là bắt buộc')
-    .max(100, 'Tên tổ hợp phím không được vượt quá 100 ký tự')
-    .matches(/^[a-zA-Z0-9]+$/, 'KeyCode phải là ký tự chữ và số.'),
-  keyCombination: Yup.string()
-    .required('Tổ hợp phím là bắt buộc')
-    .max(100, 'Tổ hợp phím không được vượt quá 100 ký tự'),
-  description: Yup.string().max(500, 'Mô tả không được vượt quá 500 ký tự'),
-  riskLevel: Yup.number().required('Mức độ rủi ro là bắt buộc'),
-  isActive: Yup.boolean(),
-});
-
 const DialogAddNewKeyboardShortcut = (props: DialogAddNewKeyboardShortcutProps) => {
+  const { t } = useTranslation('shared');
   const { isOpen, toggle, onSubmit, editKeyboardShortcut } = props;
 
   const { data: detailKeyboardShortcut } = useGetDetailKeyboardShortcut(
@@ -60,14 +49,27 @@ const DialogAddNewKeyboardShortcut = (props: DialogAddNewKeyboardShortcutProps) 
   );
 
   const initialValues: KeyboardShortcutFormValues = {
-    keyId: editKeyboardShortcut?.keyId || detailKeyboardShortcut?.keyId || '',
-    keyCode: editKeyboardShortcut?.keyCode || detailKeyboardShortcut?.keyCode || '',
+    keyId: editKeyboardShortcut?.keyId ?? detailKeyboardShortcut?.keyId ?? '',
+    keyCode: editKeyboardShortcut?.keyCode ?? detailKeyboardShortcut?.keyCode ?? '',
     keyCombination:
-      editKeyboardShortcut?.keyCombination || detailKeyboardShortcut?.keyCombination || '',
-    description: editKeyboardShortcut?.description || detailKeyboardShortcut?.description || '',
-    riskLevel: editKeyboardShortcut?.riskLevel || detailKeyboardShortcut?.riskLevel || 0,
+      editKeyboardShortcut?.keyCombination ?? detailKeyboardShortcut?.keyCombination ?? '',
+    description: editKeyboardShortcut?.description ?? detailKeyboardShortcut?.description ?? '',
+    riskLevel: editKeyboardShortcut?.riskLevel ?? detailKeyboardShortcut?.riskLevel ?? 0,
     isActive: editKeyboardShortcut?.isActive ?? detailKeyboardShortcut?.isActive ?? false,
   };
+
+  const validationSchema = Yup.object({
+    keyCode: Yup.string()
+      .required(t('KeyboardShortcutManagement.KeyCodeRequired'))
+      .max(100, t('KeyboardShortcutManagement.KeyCodeMaxLength'))
+      .matches(/^[a-zA-Z0-9]+$/, t('KeyboardShortcutManagement.KeyCodeInvalid')),
+    keyCombination: Yup.string()
+      .required(t('KeyboardShortcutManagement.KeyCombinationRequired'))
+      .max(100, t('KeyboardShortcutManagement.KeyCombinationMaxLength')),
+    description: Yup.string().max(500, t('KeyboardShortcutManagement.DescriptionMaxLength')),
+    riskLevel: Yup.number().required(t('KeyboardShortcutManagement.RiskLevelRequired')),
+    isActive: Yup.boolean(),
+  });
 
   return (
     <Dialog open={isOpen} onOpenChange={toggle}>
@@ -91,7 +93,8 @@ const DialogAddNewKeyboardShortcut = (props: DialogAddNewKeyboardShortcutProps) 
                 <Form className="space-y-4">
                   <div>
                     <DialogTitle className="text-xl font-medium">
-                      {editKeyboardShortcut ? 'Chỉnh sửa' : 'Thêm mới'} tổ hợp phím
+                      {editKeyboardShortcut ? t('Edit') : t('Add')}{' '}
+                      {t('KeyboardShortcutManagement.KeyboardShortcut')}
                     </DialogTitle>
                   </div>
 
@@ -102,9 +105,9 @@ const DialogAddNewKeyboardShortcut = (props: DialogAddNewKeyboardShortcutProps) 
                       <FormikField
                         component={InputField}
                         name="keyCode"
-                        placeholder="Tên tổ hợp phím"
+                        label={t('KeyboardShortcutManagement.KeyCode')}
+                        placeholder={t('KeyboardShortcutManagement.KeyCodePlaceholder')}
                         value={values.keyCode}
-                        label="Tên tổ hợp phím"
                         required
                       />
                     </div>
@@ -113,9 +116,9 @@ const DialogAddNewKeyboardShortcut = (props: DialogAddNewKeyboardShortcutProps) 
                       <FormikField
                         component={InputField}
                         name="keyCombination"
-                        placeholder="Tổ hợp phím"
+                        label={t('KeyboardShortcutManagement.KeyCombination')}
+                        placeholder={t('KeyboardShortcutManagement.KeyCombinationPlaceholder')}
                         value={values.keyCombination}
-                        label="Tổ hợp phím"
                         required
                       />
                     </div>
@@ -125,8 +128,8 @@ const DialogAddNewKeyboardShortcut = (props: DialogAddNewKeyboardShortcutProps) 
                     <FormikField
                       component={SelectField}
                       name="riskLevel"
-                      placeholder="Mức độ rủi ro"
-                      label="Mức độ rủi ro"
+                      label={t('KeyboardShortcutManagement.RiskLevel')}
+                      placeholder={t('KeyboardShortcutManagement.RiskLevelPlaceholder')}
                       options={OPTION_RISK_LEVEL}
                       shouldHideSearch
                       required
@@ -137,8 +140,8 @@ const DialogAddNewKeyboardShortcut = (props: DialogAddNewKeyboardShortcutProps) 
                     <FormikField
                       component={Textarea}
                       name="description"
-                      placeholder="Nhập mô tả ứng dụng"
-                      label="Mô tả ứng dụng"
+                      placeholder={t('KeyboardShortcutManagement.DescriptionPlaceholder')}
+                      label={t('KeyboardShortcutManagement.Description')}
                     />
                   </div>
 
@@ -146,7 +149,7 @@ const DialogAddNewKeyboardShortcut = (props: DialogAddNewKeyboardShortcutProps) 
                     <FormikField
                       component={CheckBoxField}
                       name="isActive"
-                      label="Kích hoạt ngay"
+                      label={t('KeyboardShortcutManagement.IsActive')}
                       checked={values.isActive}
                     />
                   </div>
@@ -158,7 +161,7 @@ const DialogAddNewKeyboardShortcut = (props: DialogAddNewKeyboardShortcutProps) 
                       </Button>
                     </DialogClose>
                     <Button type="submit" isLoading={isSubmitting}>
-                      {editKeyboardShortcut ? 'Cập nhật' : 'Tạo mới'}
+                      {editKeyboardShortcut ? t('Edit') : t('Add')}
                     </Button>
                   </div>
                 </Form>

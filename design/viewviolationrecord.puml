@@ -1,5 +1,5 @@
 @startuml
-' Class Diagram for View Violation Record Feature
+' Class Diagram for View Violation Record Feature (giống View List Role)
 
 title View Violation Record Class Diagram
 
@@ -26,18 +26,13 @@ skinparam package {
     FontSize 14
     FontStyle bold
 }
-
 skinparam interface {
     BackgroundColor LightGreen
     BorderColor DarkGreen
     FontSize 12
 }
 
-skinparam enum {
-    BackgroundColor LightCyan
-    BorderColor DarkCyan
-    FontSize 12
-}
+title View Violation Record Class Diagram
 
 package "Controllers" {
     class StudentViolationController <<Controller>> {
@@ -51,8 +46,16 @@ package "Services" {
         + GetAll(search: SearchStudentViolation): Task<(string, SearchResult?)>
     }
     class StudentViolationService <<Service>> {
-        - _context: DbContext
+        - _unitofWork: IUnitOfWork
         + GetAll(search: SearchStudentViolation): Task<(string, SearchResult?)>
+    }
+}
+
+package "Repositories" {
+    interface IStudentViolationRepository {
+        + GetViolations(search: SearchStudentViolation): Task<List<StudentViolationVM>>
+        + GetViolationById(violationId: string): Task<StudentViolationVM>
+        + CountViolations(search: SearchStudentViolation): Task<int>
     }
 }
 
@@ -88,40 +91,14 @@ package "Models & DTOs" {
     }
 }
 
-package "Entities" {
-    class StudentViolation {
-        + Id: string
-        + StudentExamId: string
-        + Message: string
-        + ScreenshotPath: string
-        + CreatedAt: DateTime
-        + ViolationName: string
-        + StudentExam: StudentExam
-    }
-    class StudentExam {
-        + StudentExamId: string
-        + User: User
-    }
-    class User {
-        + UserId: string
-        + FullName: string
-        + UserCode: string
-        + Email: string
-    }
-}
-
 ' Relationships
 StudentViolationController ..> IStudentViolationService : <<uses>>
 StudentViolationController ..> SearchStudentViolation : <<uses>>
-IStudentViolationService <|.. StudentViolationService
-StudentViolationService ..> StudentViolation : <<queries>>
-StudentViolationService ..> StudentExam : <<includes>>
-StudentViolationService ..> User : <<includes>>
+IStudentViolationService <|.. StudentViolationService : <<implements>>
+StudentViolationService ..> IStudentViolationRepository : <<uses>>
 StudentViolationService ..> SearchResult : <<returns>>
+IStudentViolationRepository ..> StudentViolationVM : <<returns>>
 SearchStudentViolation --|> SearchRequestVM
 SearchResult o-- StudentViolationVM : <<contains>>
-StudentViolation o-- StudentExam : <<for>>
-StudentExam o-- User : <<for>>
-StudentViolationVM o-- StudentViolation : <<maps from>>
 
-@enduml 
+@enduml

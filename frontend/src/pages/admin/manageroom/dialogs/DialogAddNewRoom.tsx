@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import FormikField from '@/components/customFieldsFormik/FormikField';
 import InputField from '@/components/customFieldsFormik/InputField';
 import SelectField from '@/components/customFieldsFormik/SelectField';
@@ -16,10 +15,12 @@ import { DialogI } from '@/interfaces/common';
 import useGetAllClasses from '@/services/modules/class/hooks/useGetAllClasses';
 import useGetDetailRoom from '@/services/modules/room/hooks/useGetRoomDetail';
 import { RoomList } from '@/services/modules/room/interfaces/room.interface';
+import useGetListSubject from '@/services/modules/subject/hooks/useGetAllSubject';
 import { Form, Formik } from 'formik';
+import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Fragment } from 'react/jsx-runtime';
 import * as Yup from 'yup';
-import useGetListSubject from '@/services/modules/subject/hooks/useGetAllSubject';
 
 export interface RoomFormValues {
   roomId?: string;
@@ -38,21 +39,22 @@ interface DialogAddNewRoomProps extends DialogI<any> {
   editRoom?: RoomList | null;
 }
 
-const validationSchema = Yup.object({
-  roomCode: Yup.string()
-    .required('Mã phòng là bắt buộc')
-    .matches(/^[A-Z0-9]+$/, 'Mã phòng chỉ chứa chữ hoa và số'),
-  capacity: Yup.number()
-    .required('Số lượng sinh viên tối đa là bắt buộc')
-    .min(1, 'Số lượng sinh viên tối thiểu là 1'),
-  roomDescription: Yup.string().required('Mô tả phòng học là bắt buộc'),
-  isActive: Yup.boolean().required('Trạng thái là bắt buộc'),
-});
-
 const DialogAddNewRoom = (props: DialogAddNewRoomProps) => {
+  const { t } = useTranslation('shared');
   const { isOpen, toggle, onSubmit, editRoom } = props;
   const { data: roomDetail } = useGetDetailRoom(editRoom?.roomId, {
     isTrigger: !!editRoom,
+  });
+
+  const validationSchema = Yup.object({
+    roomCode: Yup.string()
+      .required(t('ExamRoomManagement.RoomCodeRequired'))
+      .matches(/^[A-Z0-9]+$/, t('ExamRoomManagement.RoomCodeFormat')),
+    capacity: Yup.number()
+      .required(t('ExamRoomManagement.CapacityRequired'))
+      .min(1, t('ExamRoomManagement.CapacityMin')),
+    roomDescription: Yup.string().required(t('ExamRoomManagement.RoomDescriptionRequired')),
+    isActive: Yup.boolean().required(t('ExamRoomManagement.StatusRequired')),
   });
 
   const { data: dataClasses, loading: loadingClasses } = useGetAllClasses(
@@ -66,11 +68,11 @@ const DialogAddNewRoom = (props: DialogAddNewRoomProps) => {
   const initialValues = useMemo(
     () => ({
       isActive: editRoom?.isRoomActive ?? true,
-      roomDescription: editRoom?.roomDescription || roomDetail?.roomDescription || '',
-      roomCode: editRoom?.roomCode || roomDetail?.roomCode || '',
-      capacity: editRoom?.capacity || roomDetail?.capacity || 0,
-      classId: editRoom?.classId || roomDetail?.classId || '',
-      subjectId: editRoom?.subjectId || roomDetail?.subjectId || '',
+      roomDescription: editRoom?.roomDescription ?? roomDetail?.roomDescription ?? '',
+      roomCode: editRoom?.roomCode ?? roomDetail?.roomCode ?? '',
+      capacity: editRoom?.capacity ?? roomDetail?.capacity ?? 0,
+      classId: editRoom?.classId ?? roomDetail?.classId ?? '',
+      subjectId: editRoom?.subjectId ?? roomDetail?.subjectId ?? '',
     }),
     [editRoom, roomDetail],
   );
@@ -80,7 +82,7 @@ const DialogAddNewRoom = (props: DialogAddNewRoomProps) => {
       dataClasses?.map((item: any) => ({
         label: item.classCode,
         value: item.classId,
-      })) || [],
+      })) ?? [],
     [dataClasses],
   );
 
@@ -89,7 +91,7 @@ const DialogAddNewRoom = (props: DialogAddNewRoomProps) => {
       dataSubject?.map((item: any) => ({
         label: item.subjectName,
         value: item.subjectId,
-      })) || [],
+      })) ?? [],
     [dataSubject],
   );
 
@@ -115,7 +117,9 @@ const DialogAddNewRoom = (props: DialogAddNewRoomProps) => {
                 <Form className="space-y-4">
                   <div>
                     <DialogTitle className="text-xl font-medium">
-                      {editRoom ? 'Chỉnh sửa phòng học' : 'Tạo phòng học mới'}
+                      {editRoom
+                        ? t('ExamRoomManagement.EditRoom')
+                        : t('ExamRoomManagement.CreateRoom')}
                     </DialogTitle>
                   </div>
 
@@ -125,9 +129,9 @@ const DialogAddNewRoom = (props: DialogAddNewRoomProps) => {
                         id="roomCode"
                         component={InputField}
                         name="roomCode"
-                        placeholder="Nhập mã phòng (VD: CS101)"
+                        label={t('ExamRoomManagement.RoomCode')}
+                        placeholder={t('ExamRoomManagement.RoomCodePlaceholder')}
                         value={values.roomCode}
-                        label="Mã phòng"
                         required
                       />
                     </div>
@@ -136,9 +140,9 @@ const DialogAddNewRoom = (props: DialogAddNewRoomProps) => {
                       <FormikField
                         component={SelectField}
                         name="classId"
-                        placeholder="Chọn lớp học"
+                        placeholder={t('ExamRoomManagement.ClassPlaceholder')}
                         options={classOptions}
-                        label="Lớp học"
+                        label={t('ExamRoomManagement.ClassLabel')}
                         required
                         shouldHideSearch
                         loading={loadingClasses}
@@ -149,9 +153,9 @@ const DialogAddNewRoom = (props: DialogAddNewRoomProps) => {
                       <FormikField
                         component={SelectField}
                         name="subjectId"
-                        placeholder="Chọn môn học"
+                        label={t('ExamRoomManagement.SubjectLabel')}
+                        placeholder={t('ExamRoomManagement.SubjectPlaceholder')}
                         options={subjectOptions}
-                        label="Môn học"
                         required
                         shouldHideSearch
                         loading={loadingSubject}
@@ -163,9 +167,9 @@ const DialogAddNewRoom = (props: DialogAddNewRoomProps) => {
                         component={InputField}
                         id="capacity"
                         name="capacity"
-                        placeholder="Nhập số lượng sinh viên tối đa"
+                        label={t('ExamRoomManagement.CapacityLabel')}
+                        placeholder={t('ExamRoomManagement.CapacityPlaceholder')}
                         value={values.capacity}
-                        label="Số lượng sinh viên tối đa"
                         required
                       />
                     </div>
@@ -175,9 +179,9 @@ const DialogAddNewRoom = (props: DialogAddNewRoomProps) => {
                         component={InputField}
                         id="roomDescription"
                         name="roomDescription"
-                        placeholder="Nhập mô tả phòng học"
+                        label={t('ExamRoomManagement.RoomDescriptionLabel')}
+                        placeholder={t('ExamRoomManagement.RoomDescriptionPlaceholder')}
                         value={values.roomDescription}
-                        label="Mô tả phòng học"
                         required
                       />
                     </div>
@@ -186,11 +190,11 @@ const DialogAddNewRoom = (props: DialogAddNewRoomProps) => {
                       <FormikField
                         component={SelectField}
                         name="isActive"
-                        placeholder="Chọn trạng thái"
-                        label="Trạng thái"
+                        placeholder={t('ExamRoomManagement.StatusPlaceholder')}
+                        label={t('ExamRoomManagement.StatusLabel')}
                         options={[
-                          { label: 'Kích hoạt', value: true },
-                          { label: 'Không kích hoạt', value: false },
+                          { label: t('ExamRoomManagement.Active'), value: true },
+                          { label: t('ExamRoomManagement.Inactive'), value: false },
                         ]}
                         required
                         shouldHideSearch
@@ -205,7 +209,9 @@ const DialogAddNewRoom = (props: DialogAddNewRoomProps) => {
                       </Button>
                     </DialogClose>
                     <Button type="submit" isLoading={isSubmitting}>
-                      {editRoom ? 'Cập nhật phòng học' : 'Tạo phòng học mới'}
+                      {editRoom
+                        ? t('ExamRoomManagement.EditRoom')
+                        : t('ExamRoomManagement.CreateRoom')}
                     </Button>
                   </div>
                 </Form>

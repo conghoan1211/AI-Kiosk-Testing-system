@@ -2,6 +2,7 @@ import PageWrapper from '@/components/PageWrapper/PageWrapper';
 import { AlbumIcon, XCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import ExamHeader from '@/pages/teacher/examsupervision/components/ExamHeader';
 import examresultdetailService from '@/services/modules/examresultdetail/examresultdetail.service';
@@ -13,6 +14,7 @@ import StudentInfoCard from '../components/StudentInfoCard';
 import { showError } from '@/helpers/toast';
 
 export default function ExamResultDetail() {
+  const { t } = useTranslation('shared');
   const { studentExamId } = useParams<{ studentExamId?: string }>();
   const [examInfo, setExamInfo] = useState<ExamInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -24,7 +26,7 @@ export default function ExamResultDetail() {
       setLoading(true);
       setError(null);
       try {
-        if (!studentExamId) throw new Error('Invalid exam ID');
+        if (!studentExamId) throw new Error(t('StudentExamResultDetail.invalidExamId'));
         const response = await examresultdetailService.getHistoryExamDetail(studentExamId);
         if (mounted) {
           setExamInfo(response.data.data);
@@ -40,11 +42,11 @@ export default function ExamResultDetail() {
     return () => {
       mounted = false;
     };
-  }, [studentExamId]);
+  }, [studentExamId, t]);
 
   if (error) {
     return (
-      <PageWrapper name="Chi tiết kết quả thi" isLoading={false}>
+      <PageWrapper name={t('StudentExamResultDetail.title')} isLoading={false}>
         <div className="flex min-h-screen items-center justify-center">
           <div className="text-center">
             <XCircle className="mx-auto h-12 w-12 text-red-500" />
@@ -56,10 +58,10 @@ export default function ExamResultDetail() {
   }
 
   return (
-    <PageWrapper name="Chi tiết kết quả thi" isLoading={loading}>
+    <PageWrapper name={t('StudentExamResultDetail.title')} isLoading={loading}>
       <ExamHeader
-        title="Quản lý chi tiết kết quả thi"
-        subtitle="Xem chi tiết kết quả thi của học sinh"
+        title={t('StudentExamResultDetail.headerTitle')}
+        subtitle={t('StudentExamResultDetail.headerSubtitle')}
         icon={<AlbumIcon className="h-8 w-8 text-white" />}
         className="border-b border-white/20 bg-gradient-to-r from-blue-600 to-green-700 px-6 py-6 shadow-lg"
       />

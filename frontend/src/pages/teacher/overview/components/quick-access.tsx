@@ -86,7 +86,7 @@ const QuickAccess = () => {
                 <Building className="h-6 w-6 text-blue-600" />
               </div>
             }
-            title={'View Exam Monitoring'}
+            title={t('Overview.ViewExamMonitoring')}
             onClick={handleViewExamMonitoring}
           />
 
@@ -96,7 +96,7 @@ const QuickAccess = () => {
                 <BarChart3 className="h-6 w-6 text-orange-600" />
               </div>
             }
-            title={'View Exam Results'}
+            title={t('Overview.ViewExamResults')}
             onClick={handleViewExamResults}
           />
         </div>

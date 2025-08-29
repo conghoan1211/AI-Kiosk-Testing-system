@@ -3,10 +3,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { showError, showSuccess } from '@/helpers/toast';
-import httpService from '@/services/httpService';
 import authorizeService from '@/services/modules/authorize/role.Service';
 import { useSave } from '@/stores/useStores';
 import { Plus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { FormDataRoles } from './add-new-role-tab';
 
@@ -16,20 +16,19 @@ interface PreviewTabProps {
 
 const PreviewTab = ({ formDataRoles }: PreviewTabProps) => {
   //! State
-  const permissionIdList = formDataRoles?.permissions?.map((permission) => permission.id) || [];
+  const { t } = useTranslation('shared');
+  const permissionIdList = formDataRoles?.permissions?.map((permission) => permission.id) ?? [];
   const navigate = useNavigate();
-  const token = httpService.getTokenStorage();
   const save = useSave();
 
   //! Functions
   const handleCreateRole = async () => {
     try {
-      httpService.attachTokenToHeader(token);
       await authorizeService.addPermissionToRole({
         roleId: formDataRoles?.id ? String(formDataRoles.id) : '',
         permissions: permissionIdList,
       });
-      showSuccess('Vai trò đã được assign thành công!');
+      showSuccess(t('UserManagement.CreateRoleSuccess'));
       save('activeTab', 'roles');
       navigate(-1);
     } catch (error) {
@@ -40,7 +39,7 @@ const PreviewTab = ({ formDataRoles }: PreviewTabProps) => {
   //! Render
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6 py-6">
-      <h1 className="text-2xl font-semibold">Xem trước vai trò</h1>
+      <h1 className="text-2xl font-semibold">{t('UserManagement.PreviewRole')}</h1>
 
       <Card className="border shadow-sm">
         <CardHeader className="pb-2">
@@ -49,12 +48,14 @@ const PreviewTab = ({ formDataRoles }: PreviewTabProps) => {
               <span className="text-gray-500">O</span>
             </div>
             <div className="flex items-center gap-2">
-              <h2 className="text-xl font-semibold">{formDataRoles?.name || 'Tên vai trò'}</h2>
+              <h2 className="text-xl font-semibold">
+                {formDataRoles?.name ?? t('UserManagement.RoleNamePlaceholder')}
+              </h2>
               <Badge
                 variant="outline"
                 className="border-green-200 bg-green-50 text-green-700 hover:bg-green-50"
               >
-                Hoạt động
+                {t('UserManagement.Active')}
               </Badge>
             </div>
           </div>
@@ -63,12 +64,12 @@ const PreviewTab = ({ formDataRoles }: PreviewTabProps) => {
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <p className="mb-1 text-sm text-gray-500">Hành động chính:</p>
-              <p className="font-medium">Cập nhật</p>
+              <p className="mb-1 text-sm text-gray-500">{t('UserManagement.MainAction')}:</p>
+              <p className="font-medium">{t('UserManagement.Update')}</p>
             </div>
             <div>
-              <p className="mb-1 text-sm text-gray-500">Tài nguyên chính:</p>
-              <p className="font-medium">Người dùng</p>
+              <p className="mb-1 text-sm text-gray-500">{t('UserManagement.MainResource')}:</p>
+              <p className="font-medium">{t('UserManagement.User')}</p>
             </div>
           </div>
 
@@ -76,7 +77,7 @@ const PreviewTab = ({ formDataRoles }: PreviewTabProps) => {
 
           <div>
             <p className="mb-3 text-sm text-gray-500">
-              Quyền hạn chi tiết: {formDataRoles?.permissions?.length || 0}
+              {t('UserManagement.DetailedPermissions')} : {formDataRoles?.permissions?.length ?? 0}
             </p>
             <div className="rounded-md bg-gray-50 p-4 text-sm text-gray-500">
               {(formDataRoles?.permissions?.length ?? 0) > 0 ? (
@@ -88,7 +89,7 @@ const PreviewTab = ({ formDataRoles }: PreviewTabProps) => {
                   ))}
                 </ul>
               ) : (
-                <p>Không có quyền hạn nào được chọn.</p>
+                <p>{t('UserManagement.NoPermissionsSelected')}</p>
               )}
             </div>
           </div>
@@ -102,7 +103,7 @@ const PreviewTab = ({ formDataRoles }: PreviewTabProps) => {
             disabled={!formDataRoles || formDataRoles?.permissions?.length === 0}
           >
             <Plus className="h-4 w-4" />
-            Tạo vai trò
+            {t('UserManagement.CreateRole')}
           </Button>
         </CardFooter>
       </Card>

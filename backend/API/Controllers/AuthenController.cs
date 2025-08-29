@@ -67,8 +67,8 @@ namespace API.Controllers
             {
                 var clientId = ConfigManager.gI().GoogleClientIp;
                 var clientSecret = ConfigManager.gI().GoogleClientSecert;
-                //var redirectUri = "https://g77-sep490-su25-ab4781.gitlab.io/login";
-                var redirectUri = "http://localhost:5173/login";
+                var redirectUri = "https://g77-sep490-su25-ab4781.gitlab.io/login";
+                //var redirectUri = "http://localhost:5173/login";
 
                 var tokenRequestData = new Dictionary<string, string>
                 {
@@ -295,8 +295,8 @@ namespace API.Controllers
         public IActionResult GetGoogleLoginLink()
         {
             var clientId = ConfigManager.gI().GoogleClientIp; // Google OAuth ClientId
-            //var redirectUri = "https://g77-sep490-su25-ab4781.gitlab.io/login"; // URL callback thực tế
-            var redirectUri = "http://localhost:5173/login";
+            var redirectUri = "https://g77-sep490-su25-ab4781.gitlab.io/login"; // URL callback thực tế
+            //var redirectUri = "http://localhost:5173/login";
             var scope = "openid profile email";
             var responseType = "code";
             var accessType = "offline"; // Để lấy refresh_token

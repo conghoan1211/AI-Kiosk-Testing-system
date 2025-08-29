@@ -1,10 +1,10 @@
-import { CAMPUS_URL } from "@/consts/apiUrl";
-import httpService from "@/services/httpService";
+import { CAMPUS_URL } from '@/consts/apiUrl';
+import httpService from '@/services/httpService';
 
-class campusService {
+class CampusService {
   getCampusList() {
     return httpService.get(`${CAMPUS_URL}`);
   }
 }
 
-export default new campusService();
+export default new CampusService();

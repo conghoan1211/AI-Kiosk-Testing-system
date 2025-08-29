@@ -1,13 +1,14 @@
+import { ImageSource } from '@/assets';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import type { UserInfo } from '@/interfaces/user';
 import { cn } from '@/lib/utils';
-import { MenuIcon, Sparkles, User } from 'lucide-react';
+import httpService from '@/services/httpService';
+import { MenuIcon, User } from 'lucide-react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import MenuItem from './MenuItem';
-import httpService from '@/services/httpService';
 
 interface SubItem {
   title: string;
@@ -32,7 +33,6 @@ interface SideBarProps {
   user?: UserInfo | null;
   studentMenuItems?: MenuItemType[];
   teacherMenuItems?: MenuItemType[];
-  currentPath?: string;
 }
 
 const SideBar = ({ isOpen, onToggle, user, studentMenuItems, teacherMenuItems }: SideBarProps) => {
@@ -43,9 +43,11 @@ const SideBar = ({ isOpen, onToggle, user, studentMenuItems, teacherMenuItems }:
     <>
       {/* Mobile Overlay with enhanced backdrop */}
       {isOpen && (
-        <div
+        <button
+          type="button"
           className="fixed inset-0 z-40 bg-black/60 backdrop-blur-md transition-all duration-300 md:hidden"
           onClick={onToggle}
+          aria-label="Close overlay"
         />
       )}
 
@@ -68,7 +70,7 @@ const SideBar = ({ isOpen, onToggle, user, studentMenuItems, teacherMenuItems }:
             {isOpen && (
               <div className="flex items-center gap-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg">
-                  <Sparkles className="h-4 w-4 text-white" />
+                  <img src={ImageSource.logoApp} alt="Logo" className="h-8 w-8 rounded-lg" />
                 </div>
                 <div className="flex flex-col">
                   <span className="text-md whitespace-nowrap bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 bg-clip-text font-bold text-transparent">
@@ -107,7 +109,7 @@ const SideBar = ({ isOpen, onToggle, user, studentMenuItems, teacherMenuItems }:
                   <User className="h-3 w-3 text-blue-600 dark:text-blue-400" />
                 </div>
                 <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                  Quản lý hệ thống
+                  {t('SideBar.SystemManagement')}
                 </h3>
               </div>
             )}
@@ -132,7 +134,7 @@ const SideBar = ({ isOpen, onToggle, user, studentMenuItems, teacherMenuItems }:
               <div className="relative">
                 <Avatar className="h-10 w-10 shadow-lg ring-2 ring-white dark:ring-slate-700">
                   <AvatarImage
-                    src={user?.avatarUrl || ''}
+                    src={user?.avatarUrl ?? ''}
                     alt={user?.fullName}
                     className="object-cover"
                   />

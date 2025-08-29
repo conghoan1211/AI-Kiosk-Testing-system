@@ -1,13 +1,13 @@
 import { isDefine } from '@/helpers/common';
 import { AdditionalFormikProps, SelectOption } from '@/interfaces/common';
 import { cn } from '@/lib/utils';
-import { get, isEmpty, isString, toString } from 'lodash';
+import { get, isEmpty, isString } from 'lodash';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { twMerge } from 'tailwind-merge';
 import CommonIcons from '../commonIcons';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
-import { Command, CommandGroup, CommandInput, CommandItem } from '../ui/command';
+import { Command, CommandGroup, CommandInput } from '../ui/command';
 import { Label } from '../ui/label';
 import Loading from '../ui/loading';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
@@ -29,14 +29,12 @@ interface SelectFieldProps {
   hasMore?: boolean;
   onSearchAPI?: (value: any) => void;
   handleLoadMore?: () => void;
-  currentPage?: number;
   onToggle?: (open: boolean) => void;
   className?: string;
   defaultValue?: string;
   shouldHideSearch?: boolean;
   hideIconCheck?: boolean;
   icon?: React.ReactNode;
-  onKeyDown?: (e: any) => void;
   multiple?: boolean;
   onSelect?: (option: any, valueOption?: SelectOption[], deleteItem?: any) => void;
 }
@@ -79,7 +77,7 @@ const SelectField = (props: SelectFieldProps & AdditionalFormikProps) => {
 
   const msgError =
     get(touched, name) &&
-    (multiple ? isEmpty(value) : isEmpty(value) || value === '') &&
+    (multiple ? isEmpty(value) : (isEmpty(value) ?? value === '')) &&
     (get(errors, name) as string);
 
   //! Function
@@ -133,12 +131,12 @@ const SelectField = (props: SelectFieldProps & AdditionalFormikProps) => {
   );
 
   //! Render
-  const widthPopover = buttonRef.current?.getBoundingClientRect().width || 0;
+  const widthPopover = buttonRef.current?.getBoundingClientRect().width ?? 0;
 
   const renderValue = () => {
     if (isDefine(value)) {
       if (multiple) {
-        const optionValue = values[name] || [];
+        const optionValue = values[name] ?? [];
         return (
           <div className="flex flex-wrap gap-2">
             {optionValue.map((el: SelectOption) => (
@@ -159,11 +157,7 @@ const SelectField = (props: SelectFieldProps & AdditionalFormikProps) => {
       const valueResult = options.find((option) => `${option.value}` === `${value}`);
       return valueResult ? valueResult?.label : defaultValue;
     } else {
-      if (defaultValue) {
-        return defaultValue;
-      } else {
-        return <div className="typo-3 2xl:text-typo-2">{placeholder}</div>;
-      }
+      return defaultValue ?? <div className="typo-3 2xl:text-typo-2">{placeholder}</div>;
     }
   };
 
@@ -171,6 +165,7 @@ const SelectField = (props: SelectFieldProps & AdditionalFormikProps) => {
     <div className={twMerge('grid w-full gap-1.5', classNameContainer)}>
       {label && (
         <Label
+          id={`${name}-label`}
           className={twMerge(
             'typo-7 mb-1 block font-medium text-black',
             required && 'required',
@@ -180,6 +175,7 @@ const SelectField = (props: SelectFieldProps & AdditionalFormikProps) => {
           {label}
         </Label>
       )}
+
       <Popover
         open={open}
         onOpenChange={(open) => {
@@ -187,12 +183,16 @@ const SelectField = (props: SelectFieldProps & AdditionalFormikProps) => {
           onToggle?.(open);
         }}
       >
-        <PopoverTrigger disabled={disabled} className="w-full">
+        {/* Trigger */}
+        <PopoverTrigger asChild>
           <Button
             ref={buttonRef}
             variant="outline"
-            role="combobox"
+            aria-haspopup="listbox"
             aria-expanded={open}
+            aria-controls={`${name}-listbox`}
+            aria-labelledby={`${name}-label`}
+            disabled={disabled}
             className={twMerge(
               'flex w-full justify-between',
               multiple ? 'h-fit' : '',
@@ -212,71 +212,107 @@ const SelectField = (props: SelectFieldProps & AdditionalFormikProps) => {
             >
               {renderValue()}
             </div>
-            {icon ? icon : <CommonIcons.ChevronDown className="ml-2 h-6 w-6 shrink-0" />}
+            {icon ?? <CommonIcons.ChevronDown className="ml-2 h-6 w-6 shrink-0" />}
           </Button>
         </PopoverTrigger>
 
+        {/* Dropdown list */}
         <PopoverContent
           style={{
             width: widthPopover,
             position: 'relative',
           }}
         >
-          <Command shouldFilter={onSearchAPI ? false : true}>
+          <Command shouldFilter={!onSearchAPI}>
             {!shouldHideSearch && (
               <CommandInput
                 style={{ letterSpacing: '2px' }}
-                onValueChange={onSearchAPI ? onSearchAPI : undefined}
-                placeholder={placeholderSearch || 'Search...'}
+                onValueChange={onSearchAPI ?? undefined}
+                placeholder={placeholderSearch ?? 'Search...'}
               />
             )}
-            <div className={'relative'}>
+
+            <div className="relative">
               {isEmpty(options) && (
-                <div className="flex justify-center">{messageItemNotFound || 'No item found.'}</div>
+                <div className="flex justify-center">{messageItemNotFound ?? 'No item found.'}</div>
               )}
 
-              <CommandGroup className={'max-h-[200px] overflow-auto'}>
-                <ScrollWrapper
-                  key={`${loading}`}
-                  onScrollEnd={() => {
-                    if (hasMore && !loading && !loadingMore) {
-                      handleLoadMore?.();
-                    }
-                  }}
-                >
-                  {options.map((option) => {
-                    if (option.isHide) return null;
-                    const isChecked = multiple
-                      ? !!(value || [])?.find((el: any) => el.value === option.value)
-                      : value === option.value;
-                    return (
-                      <CommandItem
-                        key={option.value}
-                        value={toString(option.value)}
-                        onSelect={() => handleSelect(option)}
-                      >
-                        {!hideIconCheck && (
-                          <CommonIcons.Check
-                            className={cn('mr-2 h-4 w-4', isChecked ? 'opacity-100' : 'opacity-0')}
-                          />
-                        )}
-                        <div className="flex flex-col gap-1 tracking-[2px]">
-                          <div className={option?.subLabel ? 'font-semibold' : 'font-normal'}>
-                            {option.label}
-                          </div>
-                          <div className={'font-light'}>{option?.subLabel}</div>
-                        </div>
-                      </CommandItem>
-                    );
-                  })}
-                </ScrollWrapper>
-              </CommandGroup>
-              {(loading || loadingMore) && (
+              <CommandGroup className="max-h-[200px] overflow-auto">
                 <div
-                  className={
-                    'absolute bottom-0 left-0 right-0 top-0 flex h-full w-full items-center justify-center backdrop-blur-sm'
-                  }
+                  role="combobox"
+                  aria-haspopup="listbox"
+                  aria-expanded={options.length > 0}
+                  aria-owns={`${name}-listbox`}
+                  aria-labelledby={`${name}-label`}
+                  aria-controls={`${name}-listbox`}
+                  tabIndex={0}
                 >
+                  <ul
+                    id={`${name}-listbox`}
+                    role="listbox"
+                    aria-labelledby={`${name}-label`}
+                    aria-multiselectable={multiple || undefined}
+                  >
+                    <ScrollWrapper
+                      key={`${loading}`}
+                      onScrollEnd={() => {
+                        if (hasMore && !loading && !loadingMore) {
+                          handleLoadMore?.();
+                        }
+                      }}
+                    >
+                      {options.map((option, idx) => {
+                        if (option.isHide) return null;
+                        const isChecked = multiple
+                          ? !!(value ?? [])?.find((el: any) => el.value === option.value)
+                          : value === option.value;
+
+                        return (
+                          <li
+                            id={`${name}-option-${idx}`}
+                            key={option.value}
+                            role="option"
+                            aria-selected={isChecked}
+                            tabIndex={0}
+                            onClick={() => handleSelect(option)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                handleSelect(option);
+                              }
+                            }}
+                            className={cn(
+                              'flex cursor-pointer items-center gap-2 px-2 py-1',
+                              isChecked && 'bg-accent text-accent-foreground',
+                            )}
+                          >
+                            {/* icon check + label */}
+                            {!hideIconCheck && (
+                              <CommonIcons.Check
+                                className={cn(
+                                  'mr-2 h-4 w-4',
+                                  isChecked ? 'opacity-100' : 'opacity-0',
+                                )}
+                              />
+                            )}
+                            <div className="flex flex-col gap-1 tracking-[2px]">
+                              <div className={option?.subLabel ? 'font-semibold' : 'font-normal'}>
+                                {option.label}
+                              </div>
+                              {option?.subLabel && (
+                                <div className="font-light">{option.subLabel}</div>
+                              )}
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ScrollWrapper>
+                  </ul>
+                </div>
+              </CommandGroup>
+
+              {(loading || loadingMore) && (
+                <div className="absolute inset-0 flex items-center justify-center backdrop-blur-sm">
                   <Loading />
                 </div>
               )}

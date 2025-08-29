@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { errorHandler } from '@/helpers/errors';
 import { showError } from '@/helpers/toast';
-import httpService from '@/services/httpService';
 import { PermissionDetail, ResponsePermissionDetail } from '../interfaces/permission.interface';
 import permissionService from '../permission.service';
 
@@ -30,7 +29,6 @@ const useGetDetailCategoryPermission = (
   const [isLoading, setLoading] = useState(false);
   const [isRefetching, setRefetching] = useState(false);
   const [error, setError] = useState<unknown>(null);
-  const token = httpService.getTokenStorage();
 
   //! Function
   const fetch: () => Promise<ResponsePermissionDetail> | undefined = useCallback(() => {
@@ -41,7 +39,6 @@ const useGetDetailCategoryPermission = (
     return new Promise((resolve, reject) => {
       (async () => {
         try {
-          httpService.attachTokenToHeader(token);
           const response = await permissionService.getDetailPermissionByCategoryID(id as string);
           resolve(response);
         } catch (error) {
@@ -50,7 +47,7 @@ const useGetDetailCategoryPermission = (
         }
       })();
     });
-  }, [id, isTrigger, token]);
+  }, [id, isTrigger]);
 
   const checkConditionPass = useCallback((response: ResponsePermissionDetail) => {
     //* Check condition of response here to set data

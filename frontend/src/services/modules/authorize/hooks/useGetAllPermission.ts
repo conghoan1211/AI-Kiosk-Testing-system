@@ -1,6 +1,5 @@
 import cachedKeys from '@/consts/cachedKeys';
 import { showError } from '@/helpers/toast';
-import httpService from '@/services/httpService';
 import { useSave } from '@/stores/useStores';
 import { isArray } from 'lodash';
 import cloneDeep from 'lodash/cloneDeep';
@@ -49,7 +48,6 @@ const useGetListPermission = (
   const [hasMore, setHasMore] = useState(false);
   const [totalPage, setTotalPage] = useState<number>(1);
   const [total, setTotal] = useState<number>(0);
-  const token = httpService.getTokenStorage();
   const [loadingMore, setLoadingMore] = useState(false);
 
   //! Function
@@ -62,7 +60,6 @@ const useGetListPermission = (
       (async () => {
         try {
           const nextFilters = parseRequest(filters);
-          httpService.attachTokenToHeader(token);
           const response = await requestAPI(nextFilters, {
             signal: signal.current.signal,
           });
@@ -77,7 +74,7 @@ const useGetListPermission = (
         }
       })();
     });
-  }, [filters, isTrigger, token, saveData, save]);
+  }, [filters, isTrigger, saveData, save]);
 
   const checkConditionPass = useCallback(
     (response: ResponseGetListPermissions, options: { isLoadmore?: boolean } = {}) => {

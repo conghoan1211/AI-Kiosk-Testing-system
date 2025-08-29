@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useState } from 'react';
 
 const useToggleDialog = () => {
   const [open, setOpen] = useState(false);
@@ -11,7 +11,7 @@ const useToggleDialog = () => {
     }, 500);
   }, []);
 
-  const shouldRender = open || close;
+  const shouldRender = open ?? close;
 
   return [open, toggle, shouldRender] as const;
 };

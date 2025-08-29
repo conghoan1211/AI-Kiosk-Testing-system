@@ -1,6 +1,5 @@
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
 import {
   Select,
   SelectContent,
@@ -8,16 +7,11 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { motion } from "framer-motion";
-import {
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-} from "lucide-react";
-import React from "react";
-import { twMerge } from "tailwind-merge";
+} from '@/components/ui/select';
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import React from 'react';
+import { useTranslation } from 'react-i18next';
+import NavigationButton from './NavigationButton';
 
 export interface IPaginationVersionTop {
   currentPage?: number;
@@ -28,7 +22,6 @@ export interface IPaginationVersionTop {
   onPageSizeChange?: (size?: number) => void;
   dataLength?: number;
   total?: number;
-  showPageNumbers?: boolean;
   compact?: boolean;
 }
 
@@ -46,44 +39,10 @@ const PaginationVersionTop = (props: IPaginationVersionTop) => {
     total = 0,
     compact = false,
   } = props;
+  const { t } = useTranslation('shared');
 
   const startItem = (currentPage - 1) * rowPerPage + 1;
   const endItem = (currentPage - 1) * rowPerPage + dataLength;
-
-  const NavigationButton = ({
-    onClick,
-    disabled,
-    icon: Icon,
-    label,
-    variant = "outline",
-  }: {
-    onClick: () => void;
-    disabled: boolean;
-    icon: any;
-    label: string;
-    variant?: "outline" | "ghost";
-  }) => (
-    <motion.div
-      whileHover={{ scale: disabled ? 1 : 1.05 }}
-      whileTap={{ scale: disabled ? 1 : 0.95 }}
-    >
-      <Button
-        variant={variant}
-        size="sm"
-        onClick={onClick}
-        disabled={disabled}
-        className={twMerge(
-          "h-9 w-9 p-0 transition-all duration-200",
-          disabled
-            ? "cursor-not-allowed opacity-40"
-            : "shadow-sm hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600",
-        )}
-        aria-label={label}
-      >
-        <Icon className="h-4 w-4" />
-      </Button>
-    </motion.div>
-  );
 
   if (compact) {
     return (
@@ -129,28 +88,21 @@ const PaginationVersionTop = (props: IPaginationVersionTop) => {
         {/* Left side - Info and Row selector */}
         <div className="flex flex-col items-center gap-4 sm:flex-row">
           <div className="flex items-center gap-2 text-sm text-gray-600">
-            <span>Hiển thị</span>
+            <span>{t('Display')}</span>
             <span className="font-semibold text-gray-900">
               {startItem}-{endItem}
             </span>
-            <span>trong</span>
-            <Badge
-              variant="secondary"
-              className="bg-blue-100 font-semibold text-blue-800"
-            >
-              {total} mục
+            <span>{t('In')}</span>
+            <Badge variant="secondary" className="bg-blue-100 font-semibold text-blue-800">
+              {total} {t('Items')}
             </Badge>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="whitespace-nowrap text-sm text-gray-600">
-              Số hàng:
-            </span>
+            <span className="whitespace-nowrap text-sm text-gray-600">{t('NumberOfRows')}:</span>
             <Select
               value={`${rowPerPage}`}
-              onValueChange={(value: string) =>
-                onPageSizeChange?.(Number(value))
-              }
+              onValueChange={(value: string) => onPageSizeChange?.(Number(value))}
             >
               <SelectTrigger className="h-9 w-20 border-gray-200 bg-white transition-colors hover:border-blue-300 focus:border-blue-500">
                 <SelectValue />
@@ -191,16 +143,12 @@ const PaginationVersionTop = (props: IPaginationVersionTop) => {
           />
 
           {/* Page numbers */}
-          <div className={"text-text-sub flex"}>
+          <div className={'text-text-sub flex'}>
             {currentPage && totalPage && (
               <>
-                <span className="typo-30 2xl:text-typo-30 text-black">
-                  {currentPage}
-                </span>
+                <span className="typo-30 2xl:text-typo-30 text-black">{currentPage}</span>
                 <span className="typo-30 2xl:text-typo-30">/</span>
-                <span className="typo-30 2xl:text-typo-30 text-text-sub">
-                  {totalPage}
-                </span>
+                <span className="typo-30 2xl:text-typo-30 text-text-sub">{totalPage}</span>
               </>
             )}
           </div>
@@ -215,7 +163,7 @@ const PaginationVersionTop = (props: IPaginationVersionTop) => {
             onClick={() => onChangePage?.(currentPage + 1)}
             disabled={currentPage === totalPage}
             icon={ChevronRight}
-            label="Trang sau"
+            label={t('NextPage')}
           />
 
           {/* Last page button */}
@@ -223,7 +171,7 @@ const PaginationVersionTop = (props: IPaginationVersionTop) => {
             onClick={() => onChangePage?.(totalPage)}
             disabled={currentPage === totalPage}
             icon={ChevronsRight}
-            label="Trang cuối"
+            label={t('LastPage')}
           />
         </div>
       </div>

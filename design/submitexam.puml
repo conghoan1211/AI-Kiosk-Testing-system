@@ -1,7 +1,5 @@
 @startuml
-' Class Diagram for SubmitExam Feature
-
-title SubmitExam Class Diagram
+' Simplified Submit Exam Class Diagram (bỏ Strategy, sát code thực tế SubmitExam)
 
 hide empty members
 skinparam packageStyle rectangle
@@ -26,34 +24,47 @@ skinparam package {
     FontSize 14
     FontStyle bold
 }
-
 skinparam interface {
     BackgroundColor LightGreen
     BorderColor DarkGreen
     FontSize 12
 }
 
-' Controllers
+title Submit Exam Class Diagram
+
 package "Controllers" {
     class StudentExamController <<Controller>> {
         - _iService: IStudentExamService
-        + StudentExamController(iService: IStudentExamService)
         + SubmitExam(request: SubmitExamRequest): Task<IActionResult>
     }
 }
 
-' Services
 package "Services" {
     interface IStudentExamService <<Interface>> {
         + SubmitExam(request: SubmitExamRequest, usertoken: string, context: HttpContext): Task<string>
     }
     class StudentExamService <<Service>> {
-        - _context: DbContext
+        - _unitOfWork: IUnitOfWork
         + SubmitExam(request: SubmitExamRequest, usertoken: string, context: HttpContext): Task<string>
     }
 }
 
-' DTOs & Models
+package "Repositories" {
+    interface IStudentExamRepository {
+        + GetByIdWithExam(studentExamId: string, examId: string, userId: string)
+        + Update(studentExam)
+    }
+    interface IStudentAnswerRepository {
+        + GetByStudentExamAndQuestionIds(studentExamId: string, questionIds: List<string>)
+        + GetByStudentExamId(studentExamId: string)
+        + UpdateRange(answers: List<StudentAnswer>)
+        + AddRangeAsync(answers: List<StudentAnswer>)
+    }
+    interface IExamQuestionRepository {
+        + GetByExamAndQuestionIds(examId: string, questionIds: List<string>)
+    }
+}
+
 package "Models & DTOs" {
     class SubmitExamRequest <<DTO>> {
         + StudentExamId: string
@@ -66,56 +77,26 @@ package "Models & DTOs" {
     }
 }
 
-' Entities
-package "Entities" {
-    class StudentExam {
-        + StudentExamId: string
-        + ExamId: string
-        + StudentId: string
-        + Status: int
-        + Score: decimal
-        + SubmitTime: DateTime
-        + UpdatedAt: DateTime
-        + IpAddress: string
-        + BrowserInfo: string
-        + Exam: Exam
+package "Utilities" {
+    class Utils <<static>> {
+        + GetClientIpAddress(context: HttpContext): string
+        + GetClientBrowser(context: HttpContext): string
     }
-    class StudentAnswer {
-        + StudentAnswerId: string
-        + StudentExamId: string
-        + QuestionId: string
-        + UserAnswer: string
-        + IsCorrect: bool
-        + PointsEarned: decimal
-        + CreatedAt: DateTime
-        + UpdatedAt: DateTime
-    }
-    class Question {
-        + QuestionId: string
-        + CorrectAnswer: string
-        + Point: decimal
-    }
-    class Exam {
-        + ExamId: string
-        + Title: string
-        + ExamType: int
-        + Guidelines: string
-        + StartTime: DateTime
-        + EndTime: DateTime
+    class SubmitExamValidator <<static>> {
+        + Validate(studentExam, now: DateTime): string
     }
 }
 
 ' Relationships
 StudentExamController ..> IStudentExamService : <<uses>>
 StudentExamController ..> SubmitExamRequest : <<uses>>
-IStudentExamService <|.. StudentExamService
+IStudentExamService <|.. StudentExamService : <<implements>>
 StudentExamService ..> SubmitExamRequest : <<uses>>
-StudentExamService ..> StudentExam : <<uses>>
-StudentExamService ..> StudentAnswer : <<uses>>
-StudentExamService ..> Question : <<uses>>
-StudentExamService ..> Exam : <<uses>>
-SubmitExamRequest "1" *-- "*" StudentAnswerVM : contains
-StudentExam ..> Exam : <<has>>
-StudentAnswer ..> Question : <<for>>
+StudentExamService ..> IStudentExamRepository : <<uses>>
+StudentExamService ..> IStudentAnswerRepository : <<uses>>
+StudentExamService ..> IExamQuestionRepository : <<uses>>
+StudentExamService ..> Utils : <<uses>>
+StudentExamService ..> SubmitExamValidator : <<uses>>
+SubmitExamRequest o-- StudentAnswerVM : <<contains>>
 
-@enduml 
+@enduml

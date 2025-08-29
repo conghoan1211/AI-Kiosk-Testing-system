@@ -28,9 +28,9 @@ const AdminLoginPage = () => {
         <div className="relative z-10 flex h-full flex-col items-center justify-center">
           <img
             loading="lazy"
-            src={ImageSource.LogoFPT || ''}
+            src={ImageSource.LogoFPT ?? ''}
             alt="Logo"
-            className="h-26 mb-8 w-80 rounded-md bg-gradient-to-r from-blue-500 to-purple-400"
+            className="mb-8 h-32 rounded-md"
           />
           <FormLogin />
         </div>

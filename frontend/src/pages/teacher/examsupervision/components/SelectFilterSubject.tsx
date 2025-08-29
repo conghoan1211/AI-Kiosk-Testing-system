@@ -4,6 +4,7 @@ import Timer from '@/helpers/timer';
 import useFiltersHandler from '@/hooks/useFiltersHandler';
 import useGetListSubject from '@/services/modules/subject/hooks/useGetAllSubject';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export interface ISelectPlace {
   name: string;
@@ -18,6 +19,7 @@ export interface ISelectPlace {
 const timer = new Timer();
 
 const SelectFilterSubject = ({ name, defaultValue, defaultSubject, onChange }: ISelectPlace) => {
+  const { t } = useTranslation('shared');
   const [openSelect, setOpenSelect] = useState(false);
 
   const { filters, handleChangePage, setFilters } = useFiltersHandler({
@@ -69,10 +71,10 @@ const SelectFilterSubject = ({ name, defaultValue, defaultSubject, onChange }: I
         }
       }}
       shouldHideSearch
-      placeholder={'Tất cả môn học'}
+      placeholder={t('ExamSupervision.SelectSubject') ?? 'Chọn môn học'}
       options={options}
       loadingMore={loadingMore}
-      loading={loading || refetching}
+      loading={loading ?? refetching}
       hasMore={hasMore}
       messageItemNotFound={''}
       handleLoadMore={async () => {

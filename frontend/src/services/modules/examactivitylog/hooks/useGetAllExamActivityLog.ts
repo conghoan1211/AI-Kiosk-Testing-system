@@ -1,13 +1,13 @@
 import { showError } from '@/helpers/toast';
-import httpService from '@/services/httpService';
 import { isArray } from 'lodash';
 import cloneDeep from 'lodash/cloneDeep';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import examactivitylogService from '../examactivitylog.service';
 import {
   IExamActivityLogRequest,
   IListExamActivityLog,
+  ResponseExamActivityLog,
 } from '../interfaces/examactivitylog.interface';
-import examactivitylogService from '../examactivitylog.service';
 
 //* Check parse body request
 const parseRequest = (filters: IExamActivityLogRequest) => {
@@ -18,14 +18,14 @@ const parseRequest = (filters: IExamActivityLogRequest) => {
     textSearch: filters?.textSearch || '',
   });
 };
-
+const requestAPI = examactivitylogService.getListExamActivityLog;
 const useGetListExamActivityLog = (
   filters: IExamActivityLogRequest,
   options: {
     isTrigger?: boolean;
   } = {
-    isTrigger: true,
-  },
+      isTrigger: true,
+    },
 ) => {
   //! State
   const { isTrigger = true } = options;
@@ -33,54 +33,103 @@ const useGetListExamActivityLog = (
   const [data, setData] = useState<IListExamActivityLog[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<unknown>(null);
-  const [hasMore] = useState(false);
+  const signal = useRef(new AbortController());
   const [totalPage, setTotalPage] = useState<number>(1);
-  const [total] = useState<number>(0);
-  const token = httpService.getTokenStorage();
+  const [refetching, setRefetching] = useState(false);
+  const [total, setTotal] = useState<number>(0);
   const [loadingMore] = useState(false);
 
   //! Function
-  const fetchData = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const nextFilters = parseRequest(filters);
-      httpService.attachTokenToHeader(token);
-      const response = await examactivitylogService.getListExamActivityLog(nextFilters, {});
-      if (isArray(response?.data?.data?.result)) {
-        setData(response.data.data.result);
-        setTotalPage(response.data.data.totalPage);
-      } else {
-        setData([]);
-      }
-    } catch (error: any) {
-      setError(error);
-      if (error?.response?.data.message === 'No found any log') {
-        setData([]);
-      } else {
-        showError(error.message || 'An error occurred while fetching user activity logs');
-      }
-    } finally {
-      setLoading(false);
+  const fetch = useCallback(() => {
+    if (!isTrigger) {
+      return Promise.resolve(null); // Return null if not triggered
     }
-  }, [filters, token]);
+
+    return new Promise((resolve, reject) => {
+      (async () => {
+        try {
+          const nextFilters = parseRequest(filters);
+          const response = await requestAPI(nextFilters, {
+            signal: signal.current.signal,
+          });
+          resolve(response);
+        } catch (error) {
+          setData([]);
+          setTotalPage(1);
+          setTotal(0);
+          setError(error);
+          reject(error);
+        }
+      })();
+    });
+  }, [filters, isTrigger]);
+
+  const checkConditionPass = useCallback((response: ResponseExamActivityLog) => {
+    if (isArray(response?.data?.data?.result)) {
+      setTotalPage(response.data.data.totalPage || 1);
+      setData(response.data.data.result);
+      setTotal(response.data.data.total || 0);
+    }
+  }, []);
+
+  const refetch = useCallback(async () => {
+    try {
+      if (signal.current) {
+        signal.current.abort();
+        signal.current = new AbortController();
+      }
+
+      setRefetching(true);
+      const response = await fetch();
+      if (response) {
+        checkConditionPass(response as ResponseExamActivityLog);
+      }
+      setRefetching(false);
+    } catch (error: any) {
+      if (!error.isCanceled) {
+        showError(error);
+      }
+    }
+  }, [fetch, checkConditionPass]);
 
   useEffect(() => {
-    if (!isTrigger) {
-      return;
+    signal.current = new AbortController();
+
+    const fetchAPI = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch();
+        if (response) {
+          checkConditionPass(response as ResponseExamActivityLog);
+        }
+      } catch (error) {
+        showError(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (isTrigger) {
+      fetchAPI();
     }
-    fetchData();
-  }, [filters, token, isTrigger, fetchData]);
+
+    return () => {
+      if (signal.current) {
+        signal.current.abort();
+      }
+    };
+  }, [isTrigger, fetch, checkConditionPass]);
 
   return {
     data,
     loading,
     error,
-    hasMore,
     setData,
     totalPage,
     total,
     loadingMore,
+    refetching,
+    refetch
   };
 };
 

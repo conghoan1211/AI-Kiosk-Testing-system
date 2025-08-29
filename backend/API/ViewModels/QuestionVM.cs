@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using API.Attributes;
 using API.Helper;
 
 namespace API.ViewModels
@@ -20,7 +21,7 @@ namespace API.ViewModels
         public string? ObjectFile { get; set; }
         public int Status { get; set; }
         public string? CreatorId { get; set; }
-        
+
     }
 
     public class QuestionListVM
@@ -29,7 +30,7 @@ namespace API.ViewModels
         public string SubjectId { get; set; } = null!;
         public string? SubjectName { get; set; }
         public string QuestionBankId { get; set; } = null!;
-        public string? QuestionBankName { get; set; } 
+        public string? QuestionBankName { get; set; }
 
         public string Content { get; set; } = null!;
         public int Type { get; set; }
@@ -92,13 +93,14 @@ namespace API.ViewModels
 
         [Required]
         [DefaultValue(1)]
-        public int Type { get; set; } 
+        public int Type { get; set; }
 
         [Required]
         public int DifficultLevel { get; set; }
 
         [Required]
         [Range(1, 10)]
+        [DefaultValue(1)]
         public decimal Point { get; set; }
 
         [Required]
@@ -118,5 +120,14 @@ namespace API.ViewModels
     public class QuestionListResponse : SearchResult
     {
         public int TotalQuestions { get; set; }
+    }
+
+    public class FormatQuestionList
+    {
+        [Required(ErrorMessage =("QuestionBankId cannot null or empty"))]
+        public string QuestionBankId { get; set; } = null!;
+        [Required(ErrorMessage =("File cannot null or empty"))]
+        [MaxFileSize(Constant.FILE_SIZE)]
+        public IFormFile File { get; set; } = null!;
     }
 }

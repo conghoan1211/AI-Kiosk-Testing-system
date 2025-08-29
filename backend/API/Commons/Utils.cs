@@ -82,7 +82,7 @@ namespace API.Commons
             {
                 Content = JsonConvert.SerializeObject(cacheResponse, jsonSerializerSettings),
                 ContentType = "application/json",
-                StatusCode = 200
+                StatusCode = 401
             };
             return contentResult;
         }

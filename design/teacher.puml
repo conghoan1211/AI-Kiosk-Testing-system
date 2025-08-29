@@ -46,8 +46,6 @@ rectangle "AKTs System" {
     usecase "Deactive/Active Question Bank" as UC5 
     usecase "Export Question Bank" as UC26
     usecase "Import Question List" as UC27
-    usecase "View Alert Events" as UC6
-    usecase "View Detail Alert" as UC7
     usecase "Add Question" as UC8
     usecase "Edit Question" as UC9
     usecase "Activate/Deactivate Question" as UC10
@@ -76,7 +74,6 @@ rectangle "AKTs System" {
 
     
     Lecturer -- UC1
-    Lecturer --> UC6
     Lecturer --> UC12
     Lecturer --> UC21
 
@@ -86,7 +83,6 @@ User <|-d- Lecturer
     UC4 .u.> UC1 : <<extend>>
     UC5 .u.> UC1 : <<extend>>
     UC11 .u.> UC1 : <<extend>>
-    UC7 .u.> UC6 : <<extend>>
     UC8 .u.> UC2 : <<extend>>
     UC9 .u.> UC2 : <<extend>>
     UC10 .u.> UC2 : <<extend>>

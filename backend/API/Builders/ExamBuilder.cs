@@ -11,7 +11,7 @@ namespace API.Builders
         {
             _exam.ExamId = examId;
             _exam.RoomId = request.RoomId;
-            _exam.Title = request.Title;
+            _exam.Title = request.Title.Trim();
             _exam.Description = request.Description;
             _exam.Duration = request.Duration;
             _exam.TotalPoints = 10;

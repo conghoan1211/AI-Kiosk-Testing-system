@@ -1,58 +1,33 @@
-import { Card, CardContent } from '@/components/ui/card';
 import { Activity, Users } from 'lucide-react';
-
-interface Stats {
-  totalActivities: number;
-  activeUsers: number;
-}
+import { UserStats } from '../../manageuser/components/user-stats';
+import { useTranslation } from 'react-i18next';
 
 interface ActivityStatsProps {
-  stats: Stats;
+  stats: {
+    totalActivities: number;
+    activeUsers: number;
+  };
 }
 
-export function ActivityStats({ stats }: ActivityStatsProps) {
+export function ActivityStats({ stats }: Readonly<ActivityStatsProps>) {
+  const { t } = useTranslation('shared');
+
   const statCards = [
     {
-      title: 'Tổng hoạt động',
+      title: t('ActivityLog.totalActivities'),
       value: stats.totalActivities.toLocaleString(),
-      subtitle: 'Trong 30 ngày qua',
-      icon: Activity,
-      bgColor: 'bg-blue-50',
-      iconColor: 'text-blue-600',
+      subtitle: t('ActivityLog.last30Days'),
+      icon: <Activity className="h-8 w-8 text-emerald-600" />,
+      bgColor: 'bg-gradient-to-br from-emerald-50 to-emerald-100',
     },
     {
-      title: 'Người dùng hoạt động',
+      title: t('ActivityLog.activeUsers'),
       value: stats.activeUsers.toString(),
-      subtitle: 'Trong 24h qua',
-      icon: Users,
-      bgColor: 'bg-green-50',
-      iconColor: 'text-green-600',
+      subtitle: t('ActivityLog.last24Hours'),
+      icon: <Users className="h-8 w-8 text-blue-600" />,
+      bgColor: 'bg-gradient-to-br from-blue-50 to-blue-100',
     },
   ];
 
-  return (
-    <div className="grid grid-cols-2 gap-6">
-      {statCards.map((stat, index) => {
-        const Icon = stat.icon;
-        return (
-          <Card key={index}>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="mb-1 text-sm text-gray-600">{stat.title}</p>
-                  <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                  <p className="mt-1 text-xs text-gray-500">{stat.subtitle}</p>
-                </div>
-                <div
-                  className={`h-12 w-12 ${stat.bgColor} flex items-center justify-center rounded-lg`}
-                >
-                  <Icon className={`h-6 w-6 ${stat.iconColor}`} />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        );
-      })}
-    </div>
-  );
+  return <UserStats statItems={statCards} className="grid-cols-1 md:grid-cols-2 lg:grid-cols-2" />;
 }

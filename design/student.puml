@@ -54,7 +54,6 @@ rectangle "AKTs System" {
   (Save Exam Progress) as SaveExamProgress
   (Flag/RemoveFlag Question) as FlagQuestion
   (Resume Interrupted Exam) as ResumeInterruptedExam
-  (Retake Exam) as RetakeExam
   (View Violation Record) as ViewViolationRecord
   (View Violation Record) as ViewViolationRecord
 }
@@ -63,7 +62,6 @@ Student -- ViewLiveExam
 Student -- ViewExamHistory
 Student -- TakeExam
 Student -- ResumeInterruptedExam
-Student -- RetakeExam
 Student -- ViewViolationRecord
 
 ViewDetailLiveExam .u.> ViewLiveExam : <<extend>>

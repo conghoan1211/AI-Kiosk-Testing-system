@@ -17,6 +17,7 @@ import { DialogI } from '@/interfaces/common';
 import useGetDetailProhibited from '@/services/modules/prohibited/hooks/useGetDetailProhibited';
 import { ProhbitedList } from '@/services/modules/prohibited/interfaces/prohibited.interface';
 import { Form, Formik } from 'formik';
+import { useTranslation } from 'react-i18next';
 import { Fragment } from 'react/jsx-runtime';
 import * as Yup from 'yup';
 
@@ -39,33 +40,35 @@ interface DialogAddNewProhibitedAppProps extends DialogI<any> {
   editProhibited?: ProhbitedList | null;
 }
 
-const validationSchema = Yup.object({
-  AppName: Yup.string().required('Tên ứng dụng là bắt buộc'),
-  ProcessName: Yup.string().required('Tên tiến trình là bắt buộc'),
-  Category: Yup.number().required('Danh mục là bắt buộc').nullable(),
-  RiskLevel: Yup.number().required('Mức độ rủi ro là bắt buộc').nullable(),
-  TypeApp: Yup.string().required('Loại ứng dụng là bắt buộc'),
-});
-
 const DialogAddNewProhibitedApp = (props: DialogAddNewProhibitedAppProps) => {
+  //!State
+  const { t } = useTranslation('shared');
   const { isOpen, toggle, onSubmit, editProhibited } = props;
-
   const { data: detailProhibited } = useGetDetailProhibited(editProhibited?.appId, {
     isTrigger: !!editProhibited,
   });
 
+  const validationSchema = Yup.object({
+    AppName: Yup.string().required(t('ProhibitedManagement.AppNameRequired')),
+    ProcessName: Yup.string().required(t('ProhibitedManagement.ProcessNameRequired')),
+    Category: Yup.number().required(t('ProhibitedManagement.CategoryRequired')).nullable(),
+    RiskLevel: Yup.number().required(t('ProhibitedManagement.RiskLevelRequired')).nullable(),
+    TypeApp: Yup.string().required(t('ProhibitedManagement.TypeAppRequired')),
+  });
+
   const initialValues: ProhibitedFormValues = {
-    AppId: editProhibited?.appId || detailProhibited?.appId || '',
-    AppName: editProhibited?.appName || detailProhibited?.appName || '',
-    ProcessName: editProhibited?.processName || detailProhibited?.processName || '',
-    Description: editProhibited?.description || detailProhibited?.description || '',
-    AppIconUrl: editProhibited?.appIconUrl || detailProhibited?.appIconUrl || '',
+    AppId: editProhibited?.appId ?? detailProhibited?.appId ?? '',
+    AppName: editProhibited?.appName ?? detailProhibited?.appName ?? '',
+    ProcessName: editProhibited?.processName ?? detailProhibited?.processName ?? '',
+    Description: editProhibited?.description ?? detailProhibited?.description ?? '',
+    AppIconUrl: editProhibited?.appIconUrl ?? detailProhibited?.appIconUrl ?? '',
     IsActive: editProhibited?.isActive ?? detailProhibited?.isActive ?? true,
-    RiskLevel: editProhibited?.riskLevel || detailProhibited?.riskLevel || 1,
-    Category: editProhibited?.category || detailProhibited?.category || 1,
+    RiskLevel: editProhibited?.riskLevel ?? detailProhibited?.riskLevel ?? 1,
+    Category: editProhibited?.category ?? detailProhibited?.category ?? 1,
     TypeApp: String(editProhibited?.typeApp ?? detailProhibited?.typeApp ?? ''),
   };
 
+  //!Render
   return (
     <Dialog open={isOpen} onOpenChange={toggle}>
       <DialogOverlay className="fixed inset-0 bg-black/10 backdrop-blur-sm" />
@@ -89,7 +92,9 @@ const DialogAddNewProhibitedApp = (props: DialogAddNewProhibitedAppProps) => {
                 <Form className="space-y-4">
                   <div>
                     <DialogTitle className="text-xl font-medium">
-                      {editProhibited ? 'Cập nhật ứng dụng cấm' : 'Tạo ứng dụng cấm mới'}
+                      {editProhibited
+                        ? t('ProhibitedManagement.UpdateProhibitedApp')
+                        : t('ProhibitedManagement.CreateProhibitedApp')}
                     </DialogTitle>
                   </div>
 
@@ -100,9 +105,9 @@ const DialogAddNewProhibitedApp = (props: DialogAddNewProhibitedAppProps) => {
                       <FormikField
                         component={InputField}
                         name="AppName"
-                        placeholder="Tên ứng dụng"
+                        label={t('ProhibitedManagement.AppName')}
+                        placeholder={t('ProhibitedManagement.AppNamePlaceholder')}
                         value={values.AppName}
-                        label="Tên ứng dụng"
                         required
                       />
                     </div>
@@ -111,9 +116,9 @@ const DialogAddNewProhibitedApp = (props: DialogAddNewProhibitedAppProps) => {
                       <FormikField
                         component={InputField}
                         name="ProcessName"
-                        placeholder="Tên tiến trình"
+                        label={t('ProhibitedManagement.ProcessName')}
+                        placeholder={t('ProhibitedManagement.ProcessNamePlaceholder')}
                         value={values.ProcessName}
-                        label="Tên tiến trình"
                         required
                       />
                     </div>
@@ -124,8 +129,8 @@ const DialogAddNewProhibitedApp = (props: DialogAddNewProhibitedAppProps) => {
                       <FormikField
                         component={SelectField}
                         name="Category"
-                        placeholder="Danh mục"
-                        label="Danh mục"
+                        label={t('ProhibitedManagement.Category')}
+                        placeholder={t('ProhibitedManagement.CategoryPlaceholder')}
                         options={[
                           { label: 'Website', value: 1 },
                           { label: 'Tool', value: 2 },
@@ -138,12 +143,12 @@ const DialogAddNewProhibitedApp = (props: DialogAddNewProhibitedAppProps) => {
                       <FormikField
                         component={SelectField}
                         name="RiskLevel"
-                        placeholder="Mức độ rủi ro"
-                        label="Mức độ rủi ro"
+                        label={t('ProhibitedManagement.RiskLevel')}
+                        placeholder={t('ProhibitedManagement.RiskLevelPlaceholder')}
                         options={[
-                          { label: 'Rủi ro thấp', value: 0 },
-                          { label: 'Rủi ro trung bình', value: 1 },
-                          { label: 'Rủi ro cao', value: 2 },
+                          { label: t('ProhibitedManagement.LowRisk'), value: 0 },
+                          { label: t('ProhibitedManagement.MediumRisk'), value: 1 },
+                          { label: t('ProhibitedManagement.HighRisk'), value: 2 },
                         ]}
                         shouldHideSearch
                       />
@@ -154,8 +159,8 @@ const DialogAddNewProhibitedApp = (props: DialogAddNewProhibitedAppProps) => {
                     <FormikField
                       component={InputField}
                       name="AppIconUrl"
-                      placeholder="URL icon ứng dụng"
-                      label="URL icon ứng dụng"
+                      label={t('ProhibitedManagement.AppIconUrl')}
+                      placeholder={t('ProhibitedManagement.AppIconUrlPlaceholder')}
                       value={values.AppIconUrl}
                     />
                   </div>
@@ -164,11 +169,11 @@ const DialogAddNewProhibitedApp = (props: DialogAddNewProhibitedAppProps) => {
                     <FormikField
                       component={SelectField}
                       name="TypeApp"
-                      placeholder="Loại ứng dụng"
-                      label="Loại ứng dụng"
+                      placeholder={t('ProhibitedManagement.TypeAppPlaceholder')}
+                      label={t('ProhibitedManagement.TypeApp')}
                       options={[
-                        { label: 'Cấm', value: '0' },
-                        { label: 'Cho phép', value: '1' },
+                        { label: t('ProhibitedManagement.TypeAppDeny'), value: '0' },
+                        { label: t('ProhibitedManagement.TypeAppAllow'), value: '1' },
                       ]}
                       shouldHideSearch
                     />
@@ -178,8 +183,8 @@ const DialogAddNewProhibitedApp = (props: DialogAddNewProhibitedAppProps) => {
                     <FormikField
                       component={Textarea}
                       name="Description"
-                      placeholder="Nhập mô tả ứng dụng"
-                      label="Mô tả ứng dụng"
+                      label={t('ProhibitedManagement.Description')}
+                      placeholder={t('ProhibitedManagement.DescriptionPlaceholder')}
                     />
                   </div>
 
@@ -187,7 +192,7 @@ const DialogAddNewProhibitedApp = (props: DialogAddNewProhibitedAppProps) => {
                     <FormikField
                       component={CheckBoxField}
                       name="IsActive"
-                      label="Kích hoạt ngay"
+                      label={t('ProhibitedManagement.IsActive')}
                       checked={values.IsActive}
                     />
                   </div>
@@ -195,11 +200,11 @@ const DialogAddNewProhibitedApp = (props: DialogAddNewProhibitedAppProps) => {
                   <div className="flex justify-end gap-2 pt-4">
                     <DialogClose asChild>
                       <Button variant="outline" type="button">
-                        Hủy
+                        {t('Close')}
                       </Button>
                     </DialogClose>
                     <Button type="submit" isLoading={isSubmitting}>
-                      {editProhibited ? 'Cập nhật' : 'Tạo mới'}
+                      {editProhibited ? t('Edit') : t('Add')}
                     </Button>
                   </div>
                 </Form>

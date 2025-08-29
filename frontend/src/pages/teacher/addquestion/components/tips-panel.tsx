@@ -1,7 +1,9 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { t } from "i18next";
 import { CheckCircle, AlertCircle, Lightbulb } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface Tip {
   title: string;
@@ -12,38 +14,39 @@ interface Tip {
 
 const tips: Tip[] = [
   {
-    title: "Câu hỏi rõ ràng",
-    description: "Sử dụng ngôn ngữ rõ ràng, dễ hiểu",
+    title: t('AddQuestion.tip1'),
+    description: t('AddQuestion.tip1Description'),
     icon: CheckCircle,
     color: "text-green-600",
   },
   {
-    title: "Lựa chọn hợp lý",
-    description: "Các lựa chọn phải có độ dài tương đương",
+    title: t('AddQuestion.tip2'),
+    description: t('AddQuestion.tip2Description'),
     icon: AlertCircle,
     color: "text-blue-600",
   },
   {
-    title: "Tránh gợi ý trực tiếp",
-    description: "Đáp án đúng không nên có từ khóa gợi ý rõ ràng",
+    title: t('AddQuestion.tip3'),
+    description: t('AddQuestion.tip3Description'),
     icon: Lightbulb,
     color: "text-orange-600",
   },
   {
-    title: "Tránh phủ định",
-    description: "Hạn chế sử dụng từ phủ định trong câu hỏi",
+    title: t('AddQuestion.tip4'),
+    description: t('AddQuestion.tip4Description'),
     icon: AlertCircle,
     color: "text-red-600",
   },
 ];
 
 export function TipsPanel() {
+  const { t } = useTranslation('shared');
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center text-lg font-medium">
           <Lightbulb className="mr-2 h-5 w-5" />
-          Mẹo tạo câu hỏi
+          {t('AddQuestion.TipCreateQuestion')}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -66,9 +69,9 @@ export function TipsPanel() {
 
         <div className="text-xs text-gray-500">
           <p className="mb-1 font-medium">
-            Gợi ý: Bắt đầu với những câu hỏi đơn giản
+            {t('AddQuestion.Suggest')}
           </p>
-          <p>Tạo câu hỏi từ dễ đến khó để học sinh dễ tiếp cận</p>
+          <p>{t('AddQuestion.SuggestDescription')}</p>
         </div>
       </CardContent>
     </Card>

@@ -4,7 +4,7 @@ import httpService from '@/services/httpService';
 import { ROOM_URL } from '@/consts/apiUrl';
 import { RoomFormValues } from '@/pages/admin/manageroom/dialogs/DialogAddNewRoom';
 
-class roomService {
+class RoomService {
   getAllRooms(filter: IRoomRequest, config: AxiosRequestConfig) {
     const params = new URLSearchParams({
       PageSize: (filter?.PageSize ?? 10).toString(),
@@ -32,4 +32,4 @@ class roomService {
   }
 }
 
-export default new roomService();
+export default new RoomService();

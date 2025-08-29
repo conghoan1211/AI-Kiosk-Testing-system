@@ -24,6 +24,7 @@ import { useGet, useSave } from '@/stores/useStores';
 import { Edit, Keyboard, MoreHorizontal, Trash2 } from 'lucide-react';
 import moment from 'moment';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { GenericFilters, IValueFormPageHeader } from '../manageuser/components/generic-filters';
 import { UserStats } from '../manageuser/components/user-stats';
 import DialogAddNewKeyboardShortcut, {
@@ -32,11 +33,12 @@ import DialogAddNewKeyboardShortcut, {
 
 const KeyboardShortcutPage = () => {
   //!State
+  const { t } = useTranslation('shared');
   const defaultShortcuts = useGet('dataKeyboardShortcut');
   const totalKeyboardShortcutCount = useGet('totalKeyboardShortcutCount');
   const totalPageKeyboardShortcutCount = useGet('totalPageKeyboardShortcutCount');
   const cachesFilterKeyboardShortcut = useGet('cachesFilterKeyboardShortcut');
-  const [isTrigger, setTrigger] = useState(Boolean(!defaultShortcuts));
+  const [isTrigger, setIsTrigger] = useState(Boolean(!defaultShortcuts));
   const save = useSave();
   const [editKeyboardShortcut, setEditKeyboardShortcut] = useState<KeyboardShortcutList | null>(
     null,
@@ -55,9 +57,9 @@ const KeyboardShortcutPage = () => {
   }, [openAskAddNewKeyboardShortcut, toggleAskAddNewKeyboardShortcut]);
 
   const { filters, setFilters } = useFiltersHandler({
-    PageSize: cachesFilterKeyboardShortcut?.PageSize || 50,
-    CurrentPage: cachesFilterKeyboardShortcut?.CurrentPage || 1,
-    TextSearch: cachesFilterKeyboardShortcut?.TextSearch || '',
+    PageSize: cachesFilterKeyboardShortcut?.PageSize ?? 50,
+    CurrentPage: cachesFilterKeyboardShortcut?.CurrentPage ?? 1,
+    TextSearch: cachesFilterKeyboardShortcut?.TextSearch ?? '',
     IsActive:
       cachesFilterKeyboardShortcut?.IsActive !== undefined
         ? cachesFilterKeyboardShortcut.IsActive
@@ -93,31 +95,31 @@ const KeyboardShortcutPage = () => {
 
   const columns = [
     {
-      label: 'Phím tắt',
+      label: t('KeyboardShortcutManagement.KeyCode'),
       accessor: 'keyCode',
       sortable: false,
       Cell: (row: KeyboardShortcutList) => (
-        <span className="font-medium">{row.keyCode || 'N/A'}</span>
+        <span className="font-medium">{row.keyCode ?? 'N/A'}</span>
       ),
     },
     {
-      label: 'Tổ hợp phím',
+      label: t('KeyboardShortcutManagement.KeyCombination'),
       accessor: 'keyCombination',
       sortable: false,
       Cell: (row: KeyboardShortcutList) => (
-        <span className="text-sm text-gray-600">{row.keyCombination || 'N/A'}</span>
+        <span className="text-sm text-gray-600">{row.keyCombination ?? 'N/A'}</span>
       ),
     },
     {
-      label: 'Mô tả',
+      label: t('KeyboardShortcutManagement.Description'),
       accessor: 'description',
       sortable: false,
       Cell: (row: KeyboardShortcutList) => (
-        <span className="text-sm text-gray-600">{row.description || 'Không có mô tả'}</span>
+        <span className="text-sm text-gray-600">{row.description ?? 'Không có mô tả'}</span>
       ),
     },
     {
-      label: 'Mức độ rủi ro',
+      label: t('KeyboardShortcutManagement.RiskLevel'),
       accessor: 'riskLevel',
       sortable: false,
       Cell: (row: KeyboardShortcutList) => (
@@ -131,15 +133,15 @@ const KeyboardShortcutPage = () => {
           }`}
         >
           {row.riskLevel === 0
-            ? 'Rủi ro thấp'
+            ? t('KeyboardShortcutManagement.LowRisk')
             : row.riskLevel === 1
-              ? 'Rủi ro trung bình'
-              : 'Rủi ro cao'}
+              ? t('KeyboardShortcutManagement.MediumRisk')
+              : t('KeyboardShortcutManagement.HighRisk')}
         </span>
       ),
     },
     {
-      label: 'Trạng thái',
+      label: t('KeyboardShortcutManagement.Status'),
       accessor: 'isActive',
       sortable: false,
       Cell: (row: KeyboardShortcutList) => (
@@ -148,22 +150,24 @@ const KeyboardShortcutPage = () => {
             row.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
           }`}
         >
-          {row.isActive ? 'Đang hoạt động' : 'Không hoạt động'}
+          {row.isActive
+            ? t('KeyboardShortcutManagement.Active')
+            : t('KeyboardShortcutManagement.Inactive')}
         </span>
       ),
     },
     {
-      label: 'Cập nhật lần cuối',
+      label: t('KeyboardShortcutManagement.LastUpdated'),
       accessor: 'updatedAt',
       sortable: false,
       Cell: (row: KeyboardShortcutList) => (
         <span className="text-sm text-gray-600">
-          {moment(row.updatedAt).format(DateTimeFormat.DayMonthYear) || 'Không có mô tả'}
+          {moment(row.updatedAt).format(DateTimeFormat.DayMonthYear) ?? 'Không có mô tả'}
         </span>
       ),
     },
     {
-      label: 'Thay đổi trạng thái',
+      label: t('KeyboardShortcutManagement.ChangeStatus'),
       accessor: 'changeStatus',
       sortable: false,
       Cell: (row: KeyboardShortcutList) => (
@@ -172,9 +176,9 @@ const KeyboardShortcutPage = () => {
           onCheckedChange={async () => {
             try {
               await keyboardShortcutService.changeStatusKeyboardShortcut([row.keyId]);
-              showSuccess(`Trạng thái ứng dụng ${row.keyCode} đã được cập nhật!`);
+              showSuccess(t('KeyboardShortcutManagement.StatusUpdated'));
               save(cachedKeys.dataKeyboardShortcut, null);
-              setTrigger(true);
+              setIsTrigger(true);
               refetch();
             } catch (error) {
               showError(error);
@@ -184,7 +188,7 @@ const KeyboardShortcutPage = () => {
       ),
     },
     {
-      label: 'Hành động',
+      label: t('KeyboardShortcutManagement.Actions'),
       accessor: 'actions',
       width: 120,
       sortable: false,
@@ -204,13 +208,13 @@ const KeyboardShortcutPage = () => {
                   toggleAskAddNewKeyboardShortcut();
                 }}
               >
-                <Edit className="mr-2 h-4 w-4" /> Chỉnh sửa
+                <Edit className="mr-2 h-4 w-4" /> {t('Edit')}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={async () => {
                   try {
                     await keyboardShortcutService.deleteKeyboardShortcut([row.keyId]);
-                    showSuccess('Xoá phím tắt thành công!');
+                    showSuccess(t('KeyboardShortcutManagement.DeletedSuccess'));
                     refetch();
                   } catch (error) {
                     showError(error);
@@ -218,7 +222,7 @@ const KeyboardShortcutPage = () => {
                 }}
                 className="cursor-pointer text-red-600"
               >
-                <Trash2 className="mr-2 h-4 w-4" /> Xoá
+                <Trash2 className="mr-2 h-4 w-4" /> {t('Delete')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -228,31 +232,31 @@ const KeyboardShortcutPage = () => {
   ];
 
   const statItems = useMemo(() => {
-    const totalKeyboardShortcut = dataMain.length || 0;
-    const totalActive = dataMain?.filter((item: any) => item.isActive).length || 0;
-    const highRiskCount = dataMain?.filter((item: any) => item.riskLevel === 2).length || 0;
+    const totalKeyboardShortcut = dataMain.length ?? 0;
+    const totalActive = dataMain?.filter((item: any) => item.isActive).length ?? 0;
+    const highRiskCount = dataMain?.filter((item: any) => item.riskLevel === 2).length ?? 0;
 
     return [
       {
-        title: 'Tổng số ứng dụng',
+        title: t('KeyboardShortcutManagement.TotalApplications'),
         value: totalKeyboardShortcut,
         icon: <Keyboard className="h-6 w-6 text-blue-500" />,
         bgColor: 'bg-blue-100',
       },
       {
-        title: 'Ứng dụng đang hoạt động',
+        title: t('KeyboardShortcutManagement.ActiveApplications'),
         value: totalActive,
         icon: <Keyboard className="h-6 w-6 text-green-500" />,
         bgColor: 'bg-green-100',
       },
       {
-        title: 'Ứng dụng rủi ro cao',
+        title: t('KeyboardShortcutManagement.HighRiskApplications'),
         value: highRiskCount,
         icon: <Keyboard className="h-6 w-6 text-red-500" />,
         bgColor: 'bg-red-100',
       },
     ];
-  }, [dataMain]);
+  }, [dataMain, t]);
 
   //!Functions
   const handleChangePage = useCallback(
@@ -271,7 +275,7 @@ const KeyboardShortcutPage = () => {
 
   const handleChangePageSize = useCallback(
     (size: number) => {
-      setTrigger(true);
+      setIsTrigger(true);
       setFilters((prev: any) => {
         const newParams = {
           ...prev,
@@ -287,7 +291,7 @@ const KeyboardShortcutPage = () => {
 
   const handleSearch = useCallback(
     (searchText: IValueFormPageHeader) => {
-      setTrigger(true);
+      setIsTrigger(true);
       setFilters((prev: any) => {
         const newParams = {
           ...prev,
@@ -314,7 +318,9 @@ const KeyboardShortcutPage = () => {
       }
       toggleAskAddNewKeyboardShortcut();
       showSuccess(
-        editKeyboardShortcut ? 'Cập nhật phím tắt thành công!' : 'Thêm phím tắt mới thành công!',
+        editKeyboardShortcut
+          ? t('KeyboardShortcutManagement.UpdatedSuccess')
+          : t('KeyboardShortcutManagement.CreatedSuccess'),
       );
       refetch();
     } catch (error) {
@@ -324,10 +330,10 @@ const KeyboardShortcutPage = () => {
 
   //!Render
   return (
-    <PageWrapper name="Quản lý phím tắt" className="bg-white dark:bg-gray-900">
+    <PageWrapper name={t('KeyboardShortcutManagement.Title')} className="bg-white dark:bg-gray-900">
       <ExamHeader
-        title="Quản lý phím tắt"
-        subtitle="Quản lý các phím tắt trong hệ thống"
+        title={t('KeyboardShortcutManagement.Title')}
+        subtitle={t('KeyboardShortcutManagement.Subtitle')}
         icon={<Keyboard className="h-8 w-8 text-white" />}
         className="border-b border-white/20 bg-gradient-to-r from-blue-600 to-pink-700 px-6 py-6 shadow-lg"
       />
@@ -343,35 +349,35 @@ const KeyboardShortcutPage = () => {
         )}
         <GenericFilters
           className="md:grid-cols-3 lg:grid-cols-5"
-          searchPlaceholder="Tìm kiếm ứng dụng..."
+          searchPlaceholder={t('KeyboardShortcutManagement.SearchPlaceholder')}
           onSearch={handleSearch}
-          initialFilterValues={cachesFilterKeyboardShortcut || {}}
-          initialSearchQuery={filters?.TextSearch || ''}
+          initialFilterValues={cachesFilterKeyboardShortcut ?? {}}
+          initialSearchQuery={filters?.TextSearch ?? ''}
           filters={[
             {
               key: 'IsActive',
-              placeholder: 'Tất cả trạng thái',
+              placeholder: t('KeyboardShortcutManagement.Status'),
               options: [
-                { value: undefined, label: 'Tất cả trạng thái' },
-                { value: true, label: 'Đang hoạt động' },
-                { value: false, label: 'Không hoạt động' },
+                { value: undefined, label: t('KeyboardShortcutManagement.AllStatus') },
+                { value: true, label: t('KeyboardShortcutManagement.Active') },
+                { value: false, label: t('KeyboardShortcutManagement.Inactive') },
               ],
             },
             {
               key: 'RiskLevel',
-              placeholder: 'Mức độ rủi ro',
+              placeholder: t('KeyboardShortcutManagement.RiskLevel'),
               options: [
-                { value: undefined, label: 'Tất cả mức độ' },
-                { value: 0, label: 'Rủi ro thấp' },
-                { value: 1, label: 'Rủi ro trung bình' },
-                { value: 2, label: 'Rủi ro cao' },
+                { value: undefined, label: t('KeyboardShortcutManagement.AllRiskLevels') },
+                { value: 0, label: t('KeyboardShortcutManagement.LowRisk') },
+                { value: 1, label: t('KeyboardShortcutManagement.MediumRisk') },
+                { value: 2, label: t('KeyboardShortcutManagement.HighRisk') },
               ],
             },
           ]}
           onFilterChange={(
             newFilters: Record<string, string | number | boolean | null | undefined>,
           ) => {
-            setTrigger(true);
+            setIsTrigger(true);
             setFilters((prev: any) => {
               const newParams = {
                 ...prev,
@@ -385,14 +391,13 @@ const KeyboardShortcutPage = () => {
           addNewButtonText="Thêm phím tắt mới"
         />
         <MemoizedTablePaging
-          id="manage-subject-table"
           keyRow="keyId"
           columns={columns}
-          data={dataMain || []}
-          currentPage={filters?.CurrentPage || 1}
-          currentSize={filters?.PageSize || 50}
-          totalPage={totalPageKeyboardShortcutCount || 1}
-          total={totalKeyboardShortcutCount || 0}
+          data={dataMain ?? []}
+          currentPage={filters?.CurrentPage ?? 1}
+          currentSize={filters?.PageSize ?? 50}
+          totalPage={totalPageKeyboardShortcutCount ?? 1}
+          total={totalKeyboardShortcutCount ?? 0}
           loading={loading}
           handleChangePage={handleChangePage}
           handleChangeSize={handleChangePageSize}

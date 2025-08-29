@@ -19,14 +19,13 @@ namespace DesktopApp.Interops
             _monitoringService = monitoringService ?? throw new ArgumentNullException(nameof(monitoringService));
             _apiService = apiService ?? throw new ArgumentNullException(nameof(apiService));
             _monitoringService.LogInfo("MonitorWatcher initialized.");
-            
         }
         public static void Start()
         {
             _lastMonitorCount = Screen.AllScreens.Length;
             _monitoringService.LogInfo($"Initial monitor count: {_lastMonitorCount}");
 
-            _timer = new System.Timers.Timer(2000); // Kiểm tra mỗi 2 giây
+            _timer = new System.Timers.Timer(15000); // Kiểm tra mỗi 2 giây
             _timer.Elapsed += CheckMonitors;
             _timer.AutoReset = true;
             _timer.Start();
@@ -84,10 +83,10 @@ namespace DesktopApp.Interops
                     {
                         ActionType = "MultipleMonitors",
                         Description = "Detected multiple monitors. Captured screenshot from desktop app\"",
-                        LogType = LogType.Info,
+                        LogType = LogType.Violation,
                         StudentExamId = DataStorage.StudentExamId!,
                         UserId = DataStorage.UserId!,
-                        ScreenshotPath = ScreenCaptureHelper.CaptureScreenAsJpeg(),
+                        ScreenshotPath = screenshot,
                     };
 
                     var logResult = await _apiService.SendLogToServer(log);

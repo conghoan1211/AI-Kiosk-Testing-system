@@ -1,7 +1,5 @@
 @startuml
-' Class Diagram for View List Question Feature
-
-title View List Question Class Diagram
+' View Question Bank Detail Class Diagram
 
 hide empty members
 skinparam packageStyle rectangle
@@ -13,7 +11,6 @@ skinparam classFontName Arial
 skinparam noteFontSize 11
 skinparam noteFontName Arial
 
-' Increase spacing and sizing
 skinparam class {
     BackgroundColor LightBlue
     BorderColor DarkBlue
@@ -27,143 +24,94 @@ skinparam package {
     FontSize 14
     FontStyle bold
 }
-
 skinparam interface {
     BackgroundColor LightGreen
     BorderColor DarkGreen
     FontSize 12
 }
 
-skinparam enum {
-    BackgroundColor LightCyan
-    BorderColor DarkCyan
-    FontSize 12
-}
+title View Question Bank Detail Class Diagram
 
 package "Controllers" {
     class QuestionController <<Controller>> {
         - _questionService: IQuestionService
-        + GetListQuestion(request: QuestionRequestVM): Task<IActionResult>
+        + GetListQuestion(request: QuestionRequestVM)
     }
 }
 
 package "Services" {
     interface IQuestionService <<Interface>> {
-        + GetListQuestionAsync(request: QuestionRequestVM, userId: string): Task<(bool, string, QuestionListResponse)>
+        + GetListQuestionAsync(request: QuestionRequestVM, userId: string)
     }
     class QuestionService <<Service>> {
-        - _context: DbContext
-        + GetListQuestionAsync(request: QuestionRequestVM, userId: string): Task<(bool, string, QuestionListResponse)>
+        - _unitOfWork: IUnitOfWork
+        + GetListQuestionAsync(request: QuestionRequestVM, userId: string)
     }
 }
 
-package "Models" {
+package "Repositories" {
+    interface IQuestionRepository {
+        + GetQuestions(search: QuestionRequestVM)
+        + GetQuestionById(questionId: string)
+        + CountQuestions(search: QuestionRequestVM)
+    }
+    interface ISubjectRepository {
+        + GetSubjectById(subjectId: string)
+        + GetAllSubjects()
+    }
+    interface IQuestionBankRepository {
+        + GetQuestionBankById(questionBankId: string)
+        + GetAllQuestionBanks()
+    }
+    interface IUserRepository {
+        + GetUserById(userId: string)
+    }
+}
+
+package "Models & DTOs" {
     class QuestionRequestVM <<DTO>> {
-        + Status: ActiveStatus?
-        + IsMyQuestion: bool?
-        + DifficultyLevel: DifficultyLevel?
-        + PageSize: int
-        + CurrentPage: int
-        + TextSearch: string
-    }
-    class SearchRequestVM <<DTO>> {
-        + PageSize: int
-        + CurrentPage: int
-        + TextSearch: string
-    }
-    class QuestionListResponse <<DTO>> {
-        + TotalQuestions: int
-        + Result: object?
-        + TotalPage: int
-        + PageSize: int
-        + CurrentPage: int
-        + Total: int
+        + Status
+        + IsMyQuestion
+        + DifficultyLevel
+        + PageSize
+        + CurrentPage
+        + TextSearch
     }
     class SearchResult <<DTO>> {
-        + Result: object?
-        + TotalPage: int
-        + PageSize: int
-        + CurrentPage: int
-        + Total: int
+        + Result
+        + TotalPage
+        + PageSize
+        + CurrentPage
+        + Total
     }
     class QuestionListVM <<DTO>> {
-        + QuestionId: string
-        + SubjectId: string
-        + SubjectName: string
-        + QuestionBankId: string
-        + QuestionBankName: string
-        + Content: string
-        + Type: int
-        + DifficultLevel: int
-        + Point: decimal
-        + Options: List<string>
-        + CorrectAnswer: string
-        + Explanation: string
-        + ObjectFile: string
-        + Status: int
-        + CreatorId: string
-    }
-}
-
-package "Entities" {
-    class Question {
-        + QuestionId: string
-        + SubjectId: string
-        + QuestionBankId: string
-        + Content: string
-        + Type: int
-        + DifficultLevel: int
-        + Point: decimal
-        + Options: string
-        + CorrectAnswer: string
-        + Explanation: string
-        + ObjectFile: string
-        + Status: int
-        + CreateUser: string
-        + CreatedAt: DateTime
-        + Subject: Subject
-        + QuestionBank: QuestionBank
-    }
-    class Subject {
-        + SubjectId: string
-        + SubjectName: string
-    }
-    class QuestionBank {
-        + QuestionBankId: string
-        + Title: string
-    }
-    class User {
-        + UserId: string
-    }
-}
-
-package "Enums" {
-    enum ActiveStatus {
-        Inactive
-        Active
-        Pending
-    }
-    enum DifficultyLevel {
-        Easy
-        Medium
-        Hard
-        VeryHard
+        + QuestionId
+        + SubjectId
+        + SubjectName
+        + QuestionBankId
+        + QuestionBankName
+        + Content
+        + Type
+        + DifficultLevel
+        + Point
+        + Options
+        + CorrectAnswer
+        + Explanation
+        + ObjectFile
+        + Status
+        + CreatorId
     }
 }
 
 ' Relationships
 QuestionController ..> IQuestionService : <<uses>>
-IQuestionService <|.. QuestionService
 QuestionController ..> QuestionRequestVM : <<uses>>
-QuestionService ..> Question : <<uses>>
-QuestionService ..> QuestionListResponse : <<maps to>>
-QuestionService ..> QuestionListVM : <<maps to>>
-QuestionRequestVM --|> SearchRequestVM
-QuestionListResponse --|> SearchResult
-Question o-- Subject : <<has>>
-Question o-- QuestionBank : <<has>>
-Question ..> ActiveStatus : <<uses>>
-Question ..> DifficultyLevel : <<uses>>
-QuestionListVM --> Question : <<maps from>>
+IQuestionService <|.. QuestionService : <<implements>>
+QuestionService ..> IQuestionRepository : <<uses>>
+QuestionService ..> ISubjectRepository : <<uses>>
+QuestionService ..> IQuestionBankRepository : <<uses>>
+QuestionService ..> IUserRepository : <<uses>>
+QuestionService ..> SearchResult : <<returns>>
+SearchResult o-- QuestionListVM : <<contains>>
 
-@enduml 
+@enduml

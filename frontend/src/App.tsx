@@ -12,6 +12,7 @@ import i18n from './i18n/config';
 import AuthenticationProvider from './providers/AuthenticationProvider';
 import { ThemeProvider } from './providers/ThemeProvider';
 import { useGet } from './stores/useStores';
+import { SignalRProvider } from './providers/SignalRContextProvider';
 
 const ErrorFallback = ({ error, resetErrorBoundary }: any) => {
   return (
@@ -25,6 +26,41 @@ const ErrorFallback = ({ error, resetErrorBoundary }: any) => {
 
 const App = () => {
   const loadingApp = useGet('loadingApp');
+
+  type ToastType = keyof typeof toastIcons;
+
+  const ToastIcon = ({ context }: { context: { type?: string } }) => {
+    const type: ToastType = (
+      context.type && context.type in toastIcons ? context.type : 'default'
+    ) as ToastType;
+    return <img src={toastIcons[type]} alt="icons" />;
+  };
+
+  const ToastCloseButton = ({
+    context,
+  }: {
+    context: { type?: keyof typeof toastCloseIcons; closeToast: () => void };
+  }) => {
+    const type: keyof typeof toastCloseIcons =
+      context.type && context.type in toastCloseIcons
+        ? (context.type as keyof typeof toastCloseIcons)
+        : 'default';
+
+    return (
+      <button
+        onClick={context.closeToast}
+        aria-label="Close toast"
+        style={{
+          background: 'none',
+          border: 'none',
+          padding: 0,
+          cursor: 'pointer',
+        }}
+      >
+        <img src={toastCloseIcons[type]} alt="Close icon" />
+      </button>
+    );
+  };
 
   const renderContent = React.useMemo(() => {
     return (
@@ -82,39 +118,23 @@ const App = () => {
       <ThemeProvider defaultTheme="light" storageKey="theme">
         <Router>
           <AuthenticationProvider>
-            {renderContent}
-            <ToastContainer
-              position="top-center"
-              theme="light"
-              toastClassName={(context) =>
-                toastContainer[
-                  context?.type && context.type in toastContainer ? context.type : 'default'
-                ] +
-                ' relative flex justify-between items-center py-1 rounded pl-4 pr-1 gap-3 py-1 border'
-              }
-              icon={(context) => (
-                <img
-                  src={
-                    toastIcons[
-                      context.type && context.type in toastIcons ? context.type : 'default'
-                    ]
-                  }
-                  alt="icons"
-                />
-              )}
-              closeButton={(context) => (
-                <img
-                  src={
-                    toastCloseIcons[
-                      context.type && context.type in toastCloseIcons ? context.type : 'default'
-                    ]
-                  }
-                  alt="icons"
-                  onClick={context.closeToast}
-                />
-              )}
-            />
-            {loadingApp && <Loading />}
+            <SignalRProvider>
+              {renderContent}
+              <ToastContainer
+                position="top-center"
+                theme="light"
+                toastClassName={(context) =>
+                  toastContainer[
+                    context?.type && context.type in toastContainer ? context.type : 'default'
+                  ] +
+                  ' relative flex justify-between items-center py-1 rounded pl-4 pr-1 gap-3 py-1 border'
+                }
+                icon={(context) => <ToastIcon context={context} />}
+                closeButton={(context) => <ToastCloseButton context={context} />}
+              />
+
+              {loadingApp && <Loading />}
+            </SignalRProvider>
           </AuthenticationProvider>
         </Router>
       </ThemeProvider>

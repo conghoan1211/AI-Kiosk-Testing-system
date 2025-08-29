@@ -8,7 +8,7 @@ import {
 import httpService from '@/services/httpService';
 import { SUBJECT_URL } from '@/consts/apiUrl';
 
-class subjectService {
+class SubjectService {
   getAllSubjects(
     filter: ISubjectRequest,
     config: AxiosRequestConfig,
@@ -43,4 +43,4 @@ class subjectService {
   }
 }
 
-export default new subjectService();
+export default new SubjectService();

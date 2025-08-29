@@ -16,7 +16,6 @@ import { showError, showSuccess } from '@/helpers/toast';
 import useFiltersHandler from '@/hooks/useFiltersHandler';
 import useToggleDialog from '@/hooks/useToggleDialog';
 import ExamHeader from '@/pages/teacher/examsupervision/components/ExamHeader';
-import httpService from '@/services/httpService';
 import useGetListSubject from '@/services/modules/subject/hooks/useGetAllSubject';
 import {
   ISubjectForm,
@@ -27,28 +26,29 @@ import subjectService from '@/services/modules/subject/subject.service';
 import { useGet, useSave } from '@/stores/useStores';
 import { Book, BookOpen, BookOpenIcon, Code, Edit, MoreHorizontal } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { GenericFilters, IValueFormPageHeader } from '../manageuser/components/generic-filters';
 import { UserStats } from '../manageuser/components/user-stats';
 import DialogAddNewSubject from './dialogs/DialogAddNewSubject';
 
 const ManageSubject = () => {
   //!State
+  const { t } = useTranslation('shared');
   const [openAskAddNewSubject, toggleAskAddNewSubject, shouldRenderAskNewSubject] =
     useToggleDialog();
   const defaultData = useGet('dataSubject');
   const totalSubjectCount = useGet('totalSubjectCount');
   const totalPageSubjectCount = useGet('totalPageSubjectCount');
   const cachedFiltersSubject = useGet('cachesFilterSubject');
-  const [isTrigger, setTrigger] = useState(Boolean(!defaultData));
+  const [isTrigger, setIsTrigger] = useState(Boolean(!defaultData));
   const save = useSave();
   const [editSubject, setEditSubject] = useState<ISubjectForm | null>(null);
-  const token = httpService.getTokenStorage();
 
   const { filters, setFilters } = useFiltersHandler({
-    pageSize: cachedFiltersSubject?.pageSize || 50,
-    currentPage: cachedFiltersSubject?.currentPage || 1,
-    textSearch: cachedFiltersSubject?.textSearch || '',
-    status: cachedFiltersSubject?.status || undefined,
+    pageSize: cachedFiltersSubject?.pageSize ?? 50,
+    currentPage: cachedFiltersSubject?.currentPage ?? 1,
+    textSearch: cachedFiltersSubject?.textSearch ?? '',
+    status: cachedFiltersSubject?.status ?? undefined,
   });
 
   const handleToggleAskAddNewSubject = useCallback(() => {
@@ -71,7 +71,7 @@ const ManageSubject = () => {
   });
 
   const dataMain = useMemo(
-    () => (isTrigger ? dataSubjects : defaultData) || [],
+    () => (isTrigger ? dataSubjects : defaultData) ?? [],
     [isTrigger, defaultData, dataSubjects],
   );
 
@@ -83,7 +83,7 @@ const ManageSubject = () => {
 
   const columns = [
     {
-      label: 'Tên môn học',
+      label: t('SubjectManagement.SubjectName'),
       accessor: 'subjectName',
       sortable: false,
       Cell: (row: SubjectList) => (
@@ -97,13 +97,12 @@ const ManageSubject = () => {
             <span className="font-semibold text-gray-900 dark:text-gray-100">
               {row.subjectName}
             </span>
-            <span className="text-sm text-gray-500 dark:text-gray-400">Môn học chuyên ngành</span>
           </div>
         </div>
       ),
     },
     {
-      label: 'Mã môn học',
+      label: t('SubjectManagement.SubjectCode'),
       accessor: 'subjectCode',
       sortable: false,
       Cell: (row: SubjectList) => (
@@ -118,7 +117,7 @@ const ManageSubject = () => {
       ),
     },
     {
-      label: 'Mô tả',
+      label: t('SubjectManagement.SubjectDescription'),
       accessor: 'subjectDescription',
       sortable: false,
       Cell: (row: SubjectList) => (
@@ -128,17 +127,19 @@ const ManageSubject = () => {
           </div>
           <div className="flex flex-col">
             <p className="line-clamp-2 text-sm text-gray-900 dark:text-gray-100">
-              {row.subjectDescription || 'Chưa có mô tả'}
+              {row.subjectDescription ?? 'No description available'}
             </p>
             {!row.subjectDescription && (
-              <span className="text-xs italic text-gray-400">Cần cập nhật mô tả</span>
+              <span className="text-xs italic text-gray-400">
+                {t('SubjectManagement.SubjectDescriptionRequired')}
+              </span>
             )}
           </div>
         </div>
       ),
     },
     {
-      label: 'Trạng thái',
+      label: t('SubjectManagement.SubjectStatus'),
       accessor: 'status',
       width: 140,
       sortable: false,
@@ -155,13 +156,13 @@ const ManageSubject = () => {
             <div
               className={`mr-2 h-2 w-2 rounded-full ${row.status ? 'bg-emerald-500' : 'bg-red-500'}`}
             />
-            {row.status ? 'Đang hoạt động' : 'Không hoạt động'}
+            {row.status ? t('SubjectManagement.Active') : t('SubjectManagement.Inactive')}
           </Badge>
         </div>
       ),
     },
     {
-      label: 'Active/Deactive',
+      label: t('SubjectManagement.SubjectStatus'),
       accessor: 'toggleStatus',
       width: 120,
       sortable: false,
@@ -171,7 +172,11 @@ const ManageSubject = () => {
           onCheckedChange={async (checked) => {
             try {
               await subjectService.changeActiveSubject(row.subjectId);
-              showSuccess(checked ? 'Môn học đã được kích hoạt!' : 'Môn học đã được vô hiệu hóa!');
+              showSuccess(
+                checked
+                  ? t('SubjectManagement.SubjectActivated')
+                  : t('SubjectManagement.SubjectDeactivated'),
+              );
               refetch();
             } catch (error) {
               showError(error);
@@ -182,7 +187,7 @@ const ManageSubject = () => {
       ),
     },
     {
-      label: 'Hành động',
+      label: t('SubjectManagement.SubjectActions'),
       accessor: 'actions',
       width: 100,
       sortable: false,
@@ -195,7 +200,7 @@ const ManageSubject = () => {
                 className="h-9 w-9 rounded-lg p-0 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
               >
                 <MoreHorizontal className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-                <span className="sr-only">Mở menu hành động</span>
+                <span className="sr-only">{t('SubjectManagement.OpenMenuActions')}</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
@@ -207,7 +212,7 @@ const ManageSubject = () => {
                 className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
               >
                 <Edit className="mr-2 h-4 w-4 text-amber-500" />
-                <span>Chỉnh sửa</span>
+                <span>{t('Edit')}</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -217,36 +222,35 @@ const ManageSubject = () => {
   ];
 
   const statItems = useMemo(() => {
-    const totalSubject = dataMain?.length || 0;
-    const activeSubjects = dataMain?.filter((subject: any) => subject.status).length || 0;
+    const totalSubject = dataMain?.length ?? 0;
+    const activeSubjects = dataMain?.filter((subject: any) => subject.status).length ?? 0;
     const inactiveSubjects = totalSubject - activeSubjects;
 
     return [
       {
-        title: 'Tổng môn học',
+        title: t('SubjectManagement.TotalSubjects'),
         value: totalSubject,
         icon: <BookOpenIcon className="h-6 w-6 text-blue-500" />,
         bgColor: 'bg-blue-50',
       },
       {
-        title: 'Đang hoạt động',
+        title: t('SubjectManagement.ActiveSubjects'),
         value: activeSubjects,
         icon: <BookOpenIcon className="h-6 w-6 text-green-500" />,
         bgColor: 'bg-green-50',
       },
       {
-        title: 'Không hoạt động',
+        title: t('SubjectManagement.InactiveSubjects'),
         value: inactiveSubjects,
         icon: <BookOpenIcon className="h-6 w-6 text-yellow-500" />,
         bgColor: 'bg-yellow-50',
       },
     ];
-  }, [dataMain]);
+  }, [dataMain, t]);
 
   //!Functions
   const handleAddEditSubject = async (values: ISubjectForm) => {
     try {
-      httpService.attachTokenToHeader(token);
       if (editSubject) {
         await subjectService.updateSubject({
           ...values,
@@ -256,7 +260,9 @@ const ManageSubject = () => {
       } else {
         await subjectService.createSubject(values);
       }
-      showSuccess(editSubject ? 'Cập nhật môn học thành công!' : 'Thêm môn học thành công!');
+      showSuccess(
+        editSubject ? t('SubjectManagement.SubjectUpdated') : t('SubjectManagement.SubjectCreated'),
+      );
       toggleAskAddNewSubject();
       refetch();
     } catch (error) {
@@ -266,7 +272,7 @@ const ManageSubject = () => {
 
   const handleChangePageSize = useCallback(
     (size: number) => {
-      setTrigger(true);
+      setIsTrigger(true);
       setFilters((prev: any) => {
         const newParams = {
           ...prev,
@@ -298,11 +304,11 @@ const ManageSubject = () => {
 
   const handleSearch = useCallback(
     (value: IValueFormPageHeader) => {
-      setTrigger(true);
+      setIsTrigger(true);
       setFilters((prev: any) => {
         const newParams = {
           ...prev,
-          textSearch: value.textSearch || '',
+          textSearch: value.textSearch ?? '',
           currentPage: 1,
         };
         save(cachedKeys.cachesFilterSubject, newParams);
@@ -317,10 +323,10 @@ const ManageSubject = () => {
   }
   //!Render
   return (
-    <PageWrapper name="Quản lý môn học" className="bg-white dark:bg-gray-900">
+    <PageWrapper name={t('SubjectManagement.Title')} className="bg-white dark:bg-gray-900">
       <ExamHeader
-        title="Quản lý môn học"
-        subtitle="Quản lý các môn học trong hệ thống, bao gồm thêm, sửa, xóa và xem thông tin chi tiết"
+        title={t('SubjectManagement.Title')}
+        subtitle={t('SubjectManagement.Subtitle')}
         icon={<Book className="h-8 w-8 text-white" />}
         className="border-b border-white/20 bg-gradient-to-r from-purple-600 to-blue-700 px-6 py-6 shadow-lg"
       />
@@ -336,25 +342,25 @@ const ManageSubject = () => {
         )}
         <GenericFilters
           className="md:grid-cols-4"
-          searchPlaceholder="Tìm kiếm môn học..."
+          searchPlaceholder={t('SubjectManagement.SearchPlaceholder')}
           onSearch={handleSearch}
           filters={[
             {
               key: 'status',
-              placeholder: 'Trạng thái',
+              placeholder: t('SubjectManagement.StatusPlaceholder'),
               options: [
-                { value: undefined, label: 'Tất cả' },
-                { value: true, label: 'Đang hoạt động' },
-                { value: false, label: 'Không hoạt động' },
+                { value: undefined, label: t('SubjectManagement.AllStatuses') },
+                { value: true, label: t('SubjectManagement.Active') },
+                { value: false, label: t('SubjectManagement.Inactive') },
               ],
             },
           ]}
-          initialFilterValues={cachedFiltersSubject || {}}
-          initialSearchQuery={cachedFiltersSubject?.textSearch || ''}
+          initialFilterValues={cachedFiltersSubject ?? {}}
+          initialSearchQuery={cachedFiltersSubject?.textSearch ?? ''}
           onFilterChange={(
             newFilters: Record<string, string | number | boolean | null | undefined>,
           ) => {
-            setTrigger(true);
+            setIsTrigger(true);
             setFilters((prev) => {
               const updatedFilters = {
                 ...prev,
@@ -365,19 +371,19 @@ const ManageSubject = () => {
             });
           }}
           onAddNew={toggleAskAddNewSubject}
-          addNewButtonText="Thêm môn học"
+          addNewButtonText={t('SubjectManagement.AddNewSubject')}
         />
         <MemoizedTablePaging
-          id="manage-subject-table"
           columns={columns}
-          data={dataMain || []}
-          currentPage={filters?.currentPage || 1}
-          currentSize={filters?.pageSize || 50}
-          totalPage={totalPageSubjectCount || 1}
-          total={totalSubjectCount || 0}
+          data={dataMain ?? []}
+          currentPage={filters?.currentPage ?? 1}
+          currentSize={filters?.pageSize ?? 50}
+          totalPage={totalPageSubjectCount ?? 1}
+          total={totalSubjectCount ?? 0}
           loading={loading}
           handleChangePage={handleChangePage}
           handleChangeSize={handleChangePageSize}
+          noResultText={t('SubjectManagement.NoDataFound')}
         />
       </div>
     </PageWrapper>

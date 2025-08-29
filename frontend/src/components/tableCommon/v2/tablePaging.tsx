@@ -5,6 +5,7 @@ import { get } from 'lodash';
 import { ArrowUpDown, ChevronDown, ChevronUp, Database, Sparkles } from 'lucide-react';
 import * as React from 'react';
 import PaginationVersionTop from './PaginationVer2';
+import { useTranslation } from 'react-i18next';
 
 export enum ORDER_BY {
   DESC = 'desc',
@@ -12,7 +13,6 @@ export enum ORDER_BY {
 }
 
 interface TableProps<T> {
-  id: string;
   data: T[];
   columns: {
     label: string;
@@ -22,7 +22,6 @@ interface TableProps<T> {
     Cell?: (row: T) => React.ReactNode;
     sortable?: boolean;
   }[];
-  tableCaption?: string;
   onClickRow?: (rowData: T) => void;
   keyRow?: string;
   className?: string;
@@ -68,7 +67,7 @@ const TablePaging = <T,>(props: TableProps<T>) => {
     title,
     description,
   } = props;
-
+  const { t } = useTranslation('shared');
   const [hoveredRow, setHoveredRow] = React.useState<string | null>(null);
 
   const handleChangeOrderBy = (newAccessor: string) => {
@@ -105,7 +104,7 @@ const TablePaging = <T,>(props: TableProps<T>) => {
 
   const LoadingSkeleton = () => (
     <>
-      {[...Array(currentSize || 5)].map((_, index) => (
+      {[...Array(currentSize ?? 5)].map((_, index) => (
         <tr key={`skeleton-${index}`} className="border-b border-gray-100">
           {columns.map((_, colIndex) => (
             <td key={`skeleton-${index}-${colIndex}`} className="px-6 py-4">
@@ -142,9 +141,9 @@ const TablePaging = <T,>(props: TableProps<T>) => {
             </motion.div>
           </div>
           <div className="space-y-2 text-center">
-            <h3 className="text-lg font-semibold text-gray-900">Not Found</h3>
+            <h3 className="text-lg font-semibold text-gray-900">{t('NoDataFound')}</h3>
             <p className="max-w-sm text-sm text-gray-500">
-              {noResultText || 'Không tìm thấy dữ liệu phù hợp với tiêu chí tìm kiếm của bạn'}
+              {noResultText || t('NoDataFoundDescription')}
             </p>
           </div>
         </motion.div>
@@ -182,7 +181,8 @@ const TablePaging = <T,>(props: TableProps<T>) => {
                       className={`px-6 py-5 text-left ${classHeadAndCell}`}
                       style={{ width: col?.width }}
                     >
-                      <div
+                      <button
+                        type="button"
                         className={`group flex items-center gap-3 ${
                           col.sortable !== false ? 'cursor-pointer' : ''
                         }`}
@@ -192,7 +192,7 @@ const TablePaging = <T,>(props: TableProps<T>) => {
                           {col?.label}
                         </span>
                         {col.sortable !== false && getSortIcon(col.accessor)}
-                      </div>
+                      </button>
                     </th>
                   ))}
                 </tr>
@@ -265,10 +265,10 @@ const TablePaging = <T,>(props: TableProps<T>) => {
               dataLength={data?.length}
               total={total}
               onPageSizeChange={(size: any) => {
-                handleChangeSize?.(size || 10);
+                handleChangeSize?.(size ?? 10);
               }}
               onChangePage={(page?: number) => {
-                handleChangePage?.(page || 1);
+                handleChangePage?.(page ?? 1);
               }}
             />
           </div>

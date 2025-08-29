@@ -17,6 +17,14 @@ namespace API.Controllers
             _faceCaptureService = faceCaptureService;
         }
 
+        [HttpPost("analyze-face-capture/{studentExamId}")]
+        public async Task<IActionResult> AnalyzeFaceCapture(string studentExamId)
+        {
+            var (message, result) = await _faceCaptureService.AnalyzeFaceCapture(studentExamId);
+            if (message.Length > 0) return BadRequest(new { success = false, message, data = new List<object>() });
+            return Ok(new { success = true, message = "Analyze face capture successfully.", data = result });
+        }
+
         [HttpGet("get-list")]
         public async Task<IActionResult> GetList([FromQuery] FaceCaptureSearchVM input)
         {

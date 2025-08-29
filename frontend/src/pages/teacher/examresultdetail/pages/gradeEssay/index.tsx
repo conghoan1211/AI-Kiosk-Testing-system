@@ -18,7 +18,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 export default function GradeEssay() {
   // State
   const { examId, studentExamId } = useParams();
-  const { data, loading } = useGetListEssay(studentExamId || '', examId || '');
+  const { data, loading } = useGetListEssay(studentExamId ?? '', examId ?? '');
   const [quickScore, setQuickScore] = useState<{ [questionId: string]: number }>({});
   const navigate = useNavigate();
 
@@ -33,7 +33,7 @@ export default function GradeEssay() {
       const initialScores = data.answers.reduce(
         (acc, answer) => ({
           ...acc,
-          [answer.questionId]: answer.pointsEarned || 0,
+          [answer.questionId]: answer.pointsEarned ?? 0,
         }),
         {},
       );
@@ -66,8 +66,8 @@ export default function GradeEssay() {
   return (
     <PageWrapper name="Chấm bài luận" className="bg-gray-50 dark:bg-gray-900" isLoading={loading}>
       <ExamHeader
-        title={data?.examTitle || 'Chấm bài luận'}
-        subtitle={`Chấm điểm bài luận của học sinh - ${data?.subjectName || ''}`}
+        title={data?.examTitle ?? 'Chấm bài luận'}
+        subtitle={`Chấm điểm bài luận của học sinh - ${data?.subjectName ?? ''}`}
         icon={<Pen className="h-8 w-8 text-white" />}
         className="border-b border-white/20 bg-gradient-to-r from-blue-600 to-green-700 px-6 py-6 shadow-lg"
       />
@@ -80,19 +80,19 @@ export default function GradeEssay() {
               <div className="flex items-center gap-4">
                 <Avatar className="h-14 w-14 border-2 border-blue-500">
                   <AvatarImage
-                    src={data?.studentAvatar || '/placeholder.svg?height=56&width=56'}
+                    src={data?.studentAvatar ?? '/placeholder.svg?height=56&width=56'}
                     alt="Student Avatar"
                   />
                   <AvatarFallback className="bg-blue-100 text-xl font-semibold text-blue-700">
-                    {data?.studentName?.charAt(0) || 'N/A'}
+                    {data?.studentName?.charAt(0) ?? 'N/A'}
                   </AvatarFallback>
                 </Avatar>
                 <div>
                   <h2 className="text-xl font-bold text-gray-900 dark:text-gray-50">
-                    {data?.studentName || 'N/A'}
+                    {data?.studentName ?? 'N/A'}
                   </h2>
                   <p className="text-sm text-muted-foreground">
-                    Mã HS: {data?.studentCode || 'N/A'} | Lớp: {data?.roomCode || 'N/A'}{' '}
+                    Mã HS: {data?.studentCode ?? 'N/A'} | Lớp: {data?.roomCode ?? 'N/A'}{' '}
                     <Badge
                       variant="outline"
                       className={`ml-2 px-2 py-1 text-xs font-medium ${
@@ -119,19 +119,19 @@ export default function GradeEssay() {
             <CardContent className="text-gray-700 dark:text-gray-300">
               <div className="grid grid-cols-1 gap-x-8 gap-y-2 sm:grid-cols-2">
                 <p>
-                  <strong>Mã kỳ thi:</strong> {data?.examId || 'N/A'}
+                  <strong>Mã kỳ thi:</strong> {data?.examId ?? 'N/A'}
                 </p>
                 <p>
-                  <strong>Mã bài làm:</strong> {data?.studentExamId || 'N/A'}
+                  <strong>Mã bài làm:</strong> {data?.studentExamId ?? 'N/A'}
                 </p>
                 <p>
-                  <strong>Tên kỳ thi:</strong> {data?.examTitle || 'N/A'}
+                  <strong>Tên kỳ thi:</strong> {data?.examTitle ?? 'N/A'}
                 </p>
                 <p>
-                  <strong>Môn học:</strong> {data?.subjectName || 'N/A'}
+                  <strong>Môn học:</strong> {data?.subjectName ?? 'N/A'}
                 </p>
                 <p>
-                  <strong>Phòng thi:</strong> {data?.roomCode || 'N/A'}
+                  <strong>Phòng thi:</strong> {data?.roomCode ?? 'N/A'}
                 </p>
                 <p>
                   <strong>Ngày thi:</strong>{' '}
@@ -146,7 +146,7 @@ export default function GradeEssay() {
                   {data?.durationSpent ? `${data.durationSpent} phút` : 'N/A'}
                 </p>
                 <p>
-                  <strong>Tổng số câu hỏi:</strong> {data?.totalQuestions || 0}
+                  <strong>Tổng số câu hỏi:</strong> {data?.totalQuestions ?? 0}
                 </p>
               </div>
             </CardContent>
@@ -268,7 +268,7 @@ export default function GradeEssay() {
                           min={0}
                           max={answer.maxPoints}
                           step={0.5}
-                          value={[quickScore[answer.questionId] || 0]}
+                          value={[quickScore[answer.questionId] ?? 0]}
                           onValueChange={(value) =>
                             handleQuickScoreChange(answer.questionId, value)
                           }
@@ -280,10 +280,10 @@ export default function GradeEssay() {
                           min={0}
                           max={answer.maxPoints}
                           step={0.5}
-                          value={quickScore[answer.questionId] || 0}
+                          value={quickScore[answer.questionId] ?? 0}
                           onChange={(e) =>
                             handleQuickScoreChange(answer.questionId, [
-                              Number.parseFloat(e.target.value) || 0,
+                              Number.parseFloat(e.target.value) ?? 0,
                             ])
                           }
                           className="w-24 border-gray-300 text-center font-semibold text-gray-900 focus-visible:ring-blue-500 dark:border-gray-700 dark:text-gray-50"

@@ -1,9 +1,9 @@
-import { ImageSource } from "@/assets";
-import { DateTimeFormat } from "@/consts/dates";
-import { RotateCw } from "lucide-react";
-import moment from "moment";
+import { ImageSource } from '@/assets';
+import { DateTimeFormat } from '@/consts/dates';
+import { RotateCw } from 'lucide-react';
+import moment from 'moment';
 
-import { Link } from "react-router-dom";
+import { Link } from 'react-router-dom';
 
 export default function Footer() {
   const currentTime = moment().format(DateTimeFormat.Time);
@@ -17,8 +17,9 @@ export default function Footer() {
           <div className="flex items-center space-x-3">
             <Link to="/" className="group flex items-center space-x-3">
               <div className="w-30 relative h-10 overflow-hidden rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 transition-transform group-hover:scale-105">
-                <img loading="lazy"
-                  src={ImageSource.LogoFPT || ""}
+                <img
+                  loading="lazy"
+                  src={ImageSource.LogoFPT ?? ''}
                   alt="Logo"
                   className="h-full w-full object-cover"
                 />

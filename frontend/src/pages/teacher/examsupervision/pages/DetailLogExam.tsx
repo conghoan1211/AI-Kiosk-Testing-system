@@ -9,7 +9,6 @@ import {
   AlertTriangle,
   Clock,
   Monitor,
-  Download,
   RefreshCw,
   Eye,
   Settings,
@@ -19,8 +18,11 @@ import {
 import { useParams } from 'react-router-dom';
 import useGetDetailExamActivityLog from '@/services/modules/examactivitylog/hooks/useGetDetailExamActivityLog';
 import { LogType } from '@/consts/common';
+import { useTranslation } from 'react-i18next';
 
 export default function ExamActivityLogDetail() {
+  //!State
+  const { t } = useTranslation('shared');
   const [isExpanded, setIsExpanded] = useState(false);
   const { logId } = useParams();
   const { data: examLogDetail } = useGetDetailExamActivityLog(logId);
@@ -69,7 +71,6 @@ export default function ExamActivityLogDetail() {
     }
   } else if (examLogDetail && examLogDetail.metadata === null) {
     parsedMetadata = {};
-    console.warn('Metadata is null, returning empty object');
   }
 
   const getActionTypeBadge = (actionType: any, logType: any) => {
@@ -91,51 +92,66 @@ export default function ExamActivityLogDetail() {
     }
   };
 
+  //!Function
   const getTitleForLog = (logType: any) => {
     switch (logType) {
       case LogType.Info:
-        return <h3 className="text-lg font-semibold text-blue-900">Thông tin</h3>;
+        return (
+          <h3 className="text-lg font-semibold text-blue-900">
+            {t('ExamSupervision.Information')}
+          </h3>
+        );
       case LogType.Warning:
-        return <h3 className="text-lg font-semibold text-yellow-900">Cảnh báo</h3>;
+        return (
+          <h3 className="text-lg font-semibold text-yellow-900">{t('ExamSupervision.Warning')}</h3>
+        );
       case LogType.Violation:
-        return <h3 className="text-lg font-semibold text-red-900">Vi phạm</h3>;
+        return (
+          <h3 className="text-lg font-semibold text-red-900">{t('ExamSupervision.Violation')}</h3>
+        );
       case LogType.Critical:
-        return <h3 className="text-lg font-semibold text-orange-900">Quan trọng</h3>;
+        return (
+          <h3 className="text-lg font-semibold text-orange-900">{t('ExamSupervision.Critical')}</h3>
+        );
       default:
-        return <h3>Thông tin</h3>;
+        return <h3>{t('ExamSupervision.Default')}</h3>;
     }
   };
 
   const getLogTypeBadge = (logType: number | undefined) => {
     switch (logType) {
       case LogType.Info:
-        return <Badge className="bg-blue-100 text-blue-800">Thông tin</Badge>;
+        return (
+          <Badge className="bg-blue-100 text-blue-800">{t('ExamSupervision.Information')}</Badge>
+        );
       case LogType.Warning:
-        return <Badge className="bg-yellow-100 text-yellow-800">Cảnh báo</Badge>;
+        return (
+          <Badge className="bg-yellow-100 text-yellow-800">{t('ExamSupervision.Warning')}</Badge>
+        );
       case LogType.Violation:
-        return <Badge className="bg-red-100 text-red-800">Vi phạm</Badge>;
+        return <Badge className="bg-red-100 text-red-800">{t('ExamSupervision.Violation')}</Badge>;
       case LogType.Critical:
-        return <Badge className="bg-red-100 text-red-800">Quan trọng</Badge>;
+        return <Badge className="bg-red-100 text-red-800">{t('ExamSupervision.Critical')}</Badge>;
       default:
-        return <Badge variant="outline">Không xác định</Badge>;
+        return <Badge variant="outline">{t('ExamSupervision.Default')}</Badge>;
     }
   };
 
   const getRiskLevel = (actionType: any, metadata: any) => {
     if (actionType === 'ProcessDetected') {
-      const filePath = metadata.FilePath || '';
+      const filePath = metadata.FilePath ?? '';
       if (filePath.includes('office') || filePath.includes('word') || filePath.includes('excel')) {
         return {
-          level: 'Cao',
+          level: t('ExamSupervision.High'),
           color: 'bg-red-100 text-red-800 border-red-200',
-          description: 'Phát hiện ứng dụng văn phòng - có thể gian lận',
+          description: t('ExamSupervision.HighRiskDescription'),
         };
       }
     }
     return {
-      level: 'Thấp',
+      level: t('ExamSupervision.Low'),
       color: 'bg-green-100 text-green-800 border-green-200',
-      description: '',
+      description: t('ExamSupervision.LowRiskDescription'),
     };
   };
 
@@ -148,10 +164,11 @@ export default function ExamActivityLogDetail() {
     const diffMins = Math.floor(diffMs / (1000 * 60));
 
     let timeAgo = '';
-    if (diffMins < 1) timeAgo = 'Vừa xong';
-    else if (diffMins < 60) timeAgo = `${diffMins} phút trước`;
-    else if (diffMins < 1440) timeAgo = `${Math.floor(diffMins / 60)} giờ trước`;
-    else timeAgo = `${Math.floor(diffMins / 1440)} ngày trước`;
+    if (diffMins < 1) timeAgo = t('ExamSupervision.JustNow');
+    else if (diffMins < 60) timeAgo = `${diffMins} ${t('ExamSupervision.MinutesAgo')}`;
+    else if (diffMins < 1440)
+      timeAgo = `${Math.floor(diffMins / 60)} ${t('ExamSupervision.HoursAgo')}`;
+    else timeAgo = `${Math.floor(diffMins / 1440)} ${t('ExamSupervision.DaysAgo')}`;
 
     return {
       date: date.toLocaleDateString('vi-VN'),
@@ -169,13 +186,17 @@ export default function ExamActivityLogDetail() {
   const closeScreenshotModal = () => {
     setIsScreenshotModalOpen(false);
   };
+
+  //!Render
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="border-b border-gray-200 bg-white p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Chi tiết nhật ký thi</h1>
+              <h1 className="text-2xl font-bold text-gray-900">
+                {t('ExamSupervision.LogDetailTitle')}
+              </h1>
               <p className="mt-1 text-gray-600">ID: {examLogDetail?.examLogId}</p>
             </div>
             {getLogTypeBadge(examLogDetail?.logType)}
@@ -183,11 +204,7 @@ export default function ExamActivityLogDetail() {
           <div className="flex items-center space-x-3">
             <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
               <RefreshCw className="mr-2 h-4 w-4" />
-              Làm mới
-            </Button>
-            <Button variant="outline" size="sm">
-              <Download className="mr-2 h-4 w-4" />
-              Xuất báo cáo
+              {t('ExamSupervision.Refresh')}
             </Button>
           </div>
         </div>
@@ -226,7 +243,7 @@ export default function ExamActivityLogDetail() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <User className="h-5 w-5" />
-                <span>Thông tin thí sinh</span>
+                <span>{t('ExamSupervision.StudentInformation')}</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -236,11 +253,13 @@ export default function ExamActivityLogDetail() {
                 </div>
                 <div>
                   <p className="font-medium text-gray-900">{examLogDetail?.fullName}</p>
-                  <p className="text-sm text-gray-500">Thí sinh</p>
+                  <p className="text-sm text-gray-500">{t('ExamSupervision.Student')}</p>
                 </div>
                 <div>
                   <br />
-                  <p className="text-sm text-gray-500">Mã sinh viên: {examLogDetail?.userCode}</p>
+                  <p className="text-sm text-gray-500">
+                    {t('ExamSupervision.StudentCode')}: {examLogDetail?.userCode}
+                  </p>
                 </div>
               </div>
 
@@ -248,19 +267,19 @@ export default function ExamActivityLogDetail() {
 
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Thông tin trình duyệt:</span>
+                  <span className="text-gray-500">{t('ExamSupervision.BrowserInfo')}:</span>
                   <span className="font-medium">{examLogDetail?.browserInfo}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">IP:</span>
+                  <span className="text-gray-500">{t('ExamSupervision.IP')}:</span>
                   <span className="font-medium">{examLogDetail?.ipAddress}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Thiết bị:</span>
+                  <span className="text-gray-500">{t('ExamSupervision.Device')}:</span>
                   <span className="font-medium">{examLogDetail?.deviceUsername}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">ID thiết bị:</span>
+                  <span className="text-gray-500">{t('ExamSupervision.DeviceID')}:</span>
                   <span className="font-medium">{examLogDetail?.deviceId}</span>
                 </div>
               </div>
@@ -271,21 +290,25 @@ export default function ExamActivityLogDetail() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <FileText className="h-5 w-5" />
-                <span>Chi tiết hoạt động</span>
+                <span>{t('ExamSupervision.LogDetails')}</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-3 text-sm">
                 <div>
-                  <span className="mb-1 block text-gray-500">Loại hành động</span>
+                  <span className="mb-1 block text-gray-500">
+                    {t('ExamSupervision.ActionType')}:
+                  </span>
                   {getActionTypeBadge(examLogDetail?.actionType, examLogDetail?.logType)}
                 </div>
                 <div>
-                  <span className="mb-1 block text-gray-500">Mô tả</span>
+                  <span className="mb-1 block text-gray-500">
+                    {t('ExamSupervision.Description')}:
+                  </span>
                   <p className="text-gray-900">{examLogDetail?.description}</p>
                 </div>
                 <div>
-                  <span className="mb-1 block text-gray-500">Mức độ nghiêm trọng</span>
+                  <span className="mb-1 block text-gray-500">{t('ExamSupervision.Severity')}:</span>
                   {getLogTypeBadge(examLogDetail?.logType)}
                 </div>
               </div>
@@ -296,21 +319,21 @@ export default function ExamActivityLogDetail() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Clock className="h-5 w-5" />
-                <span>Thông tin thời gian</span>
+                <span>{t('ExamSupervision.Timestamp')}</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Ngày:</span>
+                  <span className="text-gray-500">{t('ExamSupervision.Date')}:</span>
                   <span className="font-medium">{dateTime.date}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Giờ:</span>
+                  <span className="text-gray-500">{t('ExamSupervision.Time')}:</span>
                   <span className="font-medium">{dateTime.time}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Thời gian:</span>
+                  <span className="text-gray-500">{t('ExamSupervision.TimeAgo')}:</span>
                   <span className="font-medium text-orange-600">{dateTime.timeAgo}</span>
                 </div>
               </div>
@@ -323,34 +346,45 @@ export default function ExamActivityLogDetail() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <ImageIcon className="h-5 w-5" />
-                <span>Ảnh chụp màn hình</span>
+                <span>{t('ExamSupervision.ScreenshotEvidence')}</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm text-gray-600">Screenshot được chụp tự động</p>
+                  <p className="text-sm text-gray-600">
+                    {t('ExamSupervision.ScreenshotAutoCapture')}
+                  </p>
                   <Button variant="outline" size="sm" onClick={handleScreenshotClick}>
                     <ZoomIn className="mr-2 h-4 w-4" />
-                    Xem toàn màn hình
+                    {t('ExamSupervision.FullScreenView')}
                   </Button>
                 </div>
 
                 <div className="relative">
-                  <img
-                    src={examLogDetail?.screenshotPath || '/placeholder.svg'}
-                    alt="Screenshot evidence"
-                    className="mx-auto w-full max-w-2xl cursor-pointer rounded-lg border border-gray-200 shadow-sm transition-shadow hover:shadow-md"
+                  <button
+                    type="button"
                     onClick={handleScreenshotClick}
-                    crossOrigin="anonymous"
-                  />
+                    className="mx-auto block w-full max-w-2xl rounded-lg border border-gray-200 shadow-sm transition-shadow hover:shadow-md focus:outline-none"
+                  >
+                    <img
+                      src={examLogDetail?.screenshotPath}
+                      alt="Bằng chứng giám sát (ảnh chụp màn hình)"
+                      className="w-full rounded-lg object-contain"
+                      crossOrigin="anonymous"
+                    />
+                  </button>
+
                   <div className="absolute right-2 top-2">
-                    <Badge className="border-red-200 bg-red-100 text-red-800">Ảnh chụp</Badge>
+                    <Badge className="border-red-200 bg-red-100 text-red-800">
+                      {t('ExamSupervision.ScreenshotEvidence')}
+                    </Badge>
                   </div>
                 </div>
 
                 <div className="text-center text-xs text-gray-500">
-                  Nhấp vào ảnh để xem chi tiết • Thời gian chụp: {dateTime.full}
+                  {t('ExamSupervision.ClickToView')} • {t('ExamSupervision.CaptureTime')}:{' '}
+                  {dateTime.full}
                 </div>
               </div>
             </CardContent>
@@ -367,14 +401,18 @@ export default function ExamActivityLogDetail() {
                     <CardHeader>
                       <CardTitle className="flex items-center space-x-2">
                         <Monitor className="h-5 w-5" />
-                        <span>Thông tin tiến trình {index + 1}</span>
+                        <span>
+                          {t('ExamSupervision.ProcessInfo')} #{index + 1}
+                        </span>
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-4">
                           <div>
-                            <span className="mb-1 block text-sm text-gray-500">Tên tiến trình</span>
+                            <span className="mb-1 block text-sm text-gray-500">
+                              {t('ExamSupervision.ProcessName')}:
+                            </span>
                             <div className="flex items-center space-x-2">
                               <p className="font-medium text-gray-900">{item.ProcessName}</p>
                               <Badge variant="outline">PID: {item.ProcessId}</Badge>
@@ -382,7 +420,9 @@ export default function ExamActivityLogDetail() {
                           </div>
                         </div>
                         <div>
-                          <span className="mb-1 block text-sm text-gray-500">Đường dẫn đầy đủ</span>
+                          <span className="mb-1 block text-sm text-gray-500">
+                            {t('ExamSupervision.FullPath')}:
+                          </span>
                           <div className="rounded-lg bg-gray-100 p-3">
                             <p className="break-all font-mono text-xs text-gray-800">
                               {item.FilePath?.replace(/\\\\/g, '\\')}
@@ -401,14 +441,16 @@ export default function ExamActivityLogDetail() {
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
                     <Monitor className="h-5 w-5" />
-                    <span>Thông tin tiến trình</span>
+                    <span>{t('ExamSupervision.ProcessInfo')}</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 gap-6">
                     <div className="space-y-4">
                       <div>
-                        <span className="mb-1 block text-sm text-gray-500">Tên tiến trình</span>
+                        <span className="mb-1 block text-sm text-gray-500">
+                          {t('ExamSupervision.ProcessName')}:
+                        </span>
                         <div className="flex items-center space-x-2">
                           <p className="font-medium text-gray-900">{parsedMetadata.ProcessName}</p>
                           <Badge variant="outline">PID: {parsedMetadata.ProcessId}</Badge>
@@ -416,7 +458,9 @@ export default function ExamActivityLogDetail() {
                       </div>
                     </div>
                     <div>
-                      <span className="mb-1 block text-sm text-gray-500">Đường dẫn đầy đủ</span>
+                      <span className="mb-1 block text-sm text-gray-500">
+                        {t('ExamSupervision.FullPath')}:
+                      </span>
                       <div className="rounded-lg bg-gray-100 p-3">
                         <p className="break-all font-mono text-xs text-gray-800">
                           {parsedMetadata.FilePath?.replace(/\\\\/g, '\\')}
@@ -437,11 +481,11 @@ export default function ExamActivityLogDetail() {
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center space-x-2">
                 <Settings className="h-5 w-5" />
-                <span>Dữ liệu thô</span>
+                <span>{t('ExamSupervision.Metadata')}</span>
               </CardTitle>
               <Button variant="outline" size="sm" onClick={() => setIsExpanded(!isExpanded)}>
                 <Eye className="mr-2 h-4 w-4" />
-                {isExpanded ? 'Thu gọn' : 'Xem chi tiết'}
+                {isExpanded ? t('ExamSupervision.Collapse') : t('ExamSupervision.Expand')}
               </Button>
             </div>
           </CardHeader>
@@ -450,7 +494,7 @@ export default function ExamActivityLogDetail() {
               <div className="space-y-4">
                 <div>
                   <span className="mb-2 block text-sm font-medium text-gray-700">
-                    Metadata JSON:
+                    {t('ExamSupervision.MetadataDetails')}:
                   </span>
                   <pre className="overflow-x-auto rounded-lg bg-gray-100 p-4 text-xs">
                     {Array.isArray(parsedMetadata)
@@ -459,7 +503,9 @@ export default function ExamActivityLogDetail() {
                   </pre>
                 </div>
                 <div>
-                  <span className="mb-2 block text-sm font-medium text-gray-700">Log Entry:</span>
+                  <span className="mb-2 block text-sm font-medium text-gray-700">
+                    {t('ExamSupervision.LogEntry')}:
+                  </span>
                   <pre className="overflow-x-auto rounded-lg bg-gray-100 p-4 text-xs">
                     {JSON.stringify(examLogDetail, null, 2)}
                   </pre>
@@ -470,15 +516,17 @@ export default function ExamActivityLogDetail() {
         </Card>
 
         {/* Actions */}
-        <div className="flex justify-center space-x-4">
+        {/* <div className="flex justify-center space-x-4">
           <Button variant="outline" className="bg-transparent px-8">
-            Đánh dấu đã xem
+            {t('ExamSupervision.MarkAsRead')}
           </Button>
-          <Button className="bg-red-600 px-8 hover:bg-red-700">Báo cáo vi phạm</Button>
+          <Button className="bg-red-600 px-8 hover:bg-red-700">
+            {t('ExamSupervision.ReportViolation')}
+          </Button>
           <Button variant="outline" className="bg-transparent px-8">
-            Liên hệ thí sinh
+            {t('ExamSupervision.ContactCandidate')}
           </Button>
-        </div>
+        </div> */}
       </div>
       {isScreenshotModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4">
@@ -489,10 +537,10 @@ export default function ExamActivityLogDetail() {
               className="absolute -top-12 right-0 text-white hover:text-gray-300"
               onClick={closeScreenshotModal}
             >
-              <span className="text-lg">✕</span> Đóng
+              <span className="text-lg">✕</span> {t('Close')}
             </Button>
             <img
-              src={examLogDetail?.screenshotPath || '/placeholder.svg'}
+              src={examLogDetail?.screenshotPath}
               alt="Screenshot evidence - Full size"
               className="max-h-full max-w-full rounded-lg object-contain"
               crossOrigin="anonymous"
@@ -502,7 +550,7 @@ export default function ExamActivityLogDetail() {
                 <strong>Screenshot:</strong> {examLogDetail?.description}
               </p>
               <p className="mt-1 text-xs text-gray-300">
-                Thời gian: {dateTime.full} • ID: {examLogDetail?.examLogId}
+                {t('ExamSupervision.Time')}: {dateTime.full} • ID: {examLogDetail?.examLogId}
               </p>
             </div>
           </div>

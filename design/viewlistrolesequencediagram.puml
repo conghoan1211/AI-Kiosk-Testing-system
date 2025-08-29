@@ -1,63 +1,101 @@
 @startuml
-
-title View List Role Sequence Diagram
+title View List Role Sequence Diagram 
 
 actor "User" as Client
-boundary "c:AuthorizeController" as Controller
-control "s:AuthorizeService" as Service
+boundary ":NavigationUI" as UI <<boundary>>
+control "AuthorizeController" as Controller <<controller>>
+participant ":AuthorizeService" as Service <<service>>
+
+entity "RoleRepository" as RoleRepo <<repository>>
+entity "RolePermissionRepository" as RolePermRepo <<repository>>
+entity "PermissionRepository" as PermissionRepo <<repository>>
+entity "PermissionCategoryRepository" as PermissionCategoryRepo <<repository>>
+
 database "Database" as DB
 
 == View List Role ==
 
-Client -> Controller: GET /get-all-roles-permissions (RoleSearchVM)
+Client -> UI: Request view roles
+activate UI
+UI -> Controller: GET /get-all-roles-permissions (RoleSearchVM)
 activate Controller
 
 alt User not authenticated
-    Controller -> Controller: Log unauthorized access attempt
-    Controller --> Client: 401 Unauthorized { success: false, message: "User not authenticated." }
-    deactivate Controller
+  Controller --> UI: 401 Unauthorized
+  deactivate Controller
+  UI --> Client: Show unauthorized
+  deactivate UI
 else User authenticated
-    Controller -> Service: GetAllRolesPermissions(search)
-    activate Service
+  Controller -> Service: GetAllRolesPermissions(search)
+  activate Service
 
-    Service -> DB: Check user role and permissions (UserId, RoleId)
-    activate DB
-    alt User is not allowed
-        DB --> Service: Not found or invalid role
-        deactivate DB
-        Service -> Service: Log authorization failure
-        Service --> Controller: ("You do not have permission to view roles and permissions.", null)
-        deactivate Service
-        Controller --> Client: 403 Forbidden { success: false, message }
-        deactivate Controller
-    else User is allowed
-        DB --> Service: User role confirmed
-        deactivate DB
+  '--- (Optional) quick auth check ---
+  Service -> DB: SELECT 1 FROM UserRoles WHERE UserId=@uid AND CanViewRoles=1;
+  DB --> Service: row | null
+  alt Not allowed
+    Service --> Controller: "You do not have permission..."
+    deactivate Service
+    Controller --> UI: 403 Forbidden
+    deactivate Controller
+    UI --> Client: Show forbidden
+    deactivate UI
+  else Allowed
+    '--- Count & page roles via RoleRepository ---
+    Service -> RoleRepo: CountRoles(search)
+    activate RoleRepo
+    RoleRepo -> DB: SELECT COUNT(*) AS Total FROM Roles WHERE (@roleId IS NULL OR RoleId=@roleId) AND (@q IS NULL OR RoleName LIKE '%'||@q||'%');
+    DB --> RoleRepo: Total
+    RoleRepo --> Service: Total
+    deactivate RoleRepo
 
-        Service -> DB: Query Roles (include RolePermissions, Permission, Category)
-        activate DB
-        DB --> Service: IQueryable<Role>
-        deactivate DB
-        Service -> Service: Apply filters (RoleId, TextSearch)
-        Service -> Service: Count total, calculate totalPage
-        Service -> DB: Get paged Roles
-        activate DB
-        DB --> Service: List<Role>
-        deactivate DB
-        Service -> Service: Map to List<RoleWithPermissionsVM>
-        alt No roles found
-            Service --> Controller: ("No roles found.", null)
-            deactivate Service
-            Controller --> Client: 400 BadRequest { success: false, message }
-            deactivate Controller
-        else Roles found
-            Service -> Service: Wrap in SearchResult (Result, TotalPage, PageSize, CurrentPage, Total)
-            Service --> Controller: ("", SearchResult)
-            deactivate Service
-            Controller --> Client: 200 OK { success: true, message, data }
-            deactivate Controller
-        end alt
+    Service -> RoleRepo: GetRoles(search)
+    activate RoleRepo
+    RoleRepo -> DB: SELECT RoleId, RoleName FROM Roles WHERE (@roleId IS NULL OR RoleId=@roleId) AND (@q IS NULL OR RoleName LIKE '%'||@q||'%') ORDER BY RoleName ASC LIMIT @PageSize OFFSET @Offset;
+    DB --> RoleRepo: rows (roles)
+    RoleRepo --> Service: roles
+    deactivate RoleRepo
+
+    alt No roles found
+      Service --> Controller: "No roles found."
+      deactivate Service
+      Controller --> UI: 400 BadRequest
+      deactivate Controller
+      UI --> Client: Show no roles
+      deactivate UI
+    else Roles found
+      '--- Load role-permissions ---
+      Service -> RolePermRepo: GetRolePermissions(roleIds)
+      activate RolePermRepo
+      RolePermRepo -> DB: SELECT RoleId, PermissionId FROM RolePermissions WHERE RoleId IN (@roleIds);
+      DB --> RolePermRepo: rows (role-perms)
+      RolePermRepo --> Service: role-perms
+      deactivate RolePermRepo
+
+      '--- Load permissions (ids from role-perms) ---
+      Service -> PermissionRepo: GetPermissionsByIds(permissionIds)
+      activate PermissionRepo
+      PermissionRepo -> DB: SELECT PermissionId, CategoryId FROM Permissions WHERE PermissionId IN (@permissionIds);
+      DB --> PermissionRepo: rows (perms)
+      PermissionRepo --> Service: perms
+      deactivate PermissionRepo
+
+      '--- Load categories (ids from perms) ---
+      Service -> PermissionCategoryRepo: GetCategoriesById(categoryIds)
+      activate PermissionCategoryRepo
+      PermissionCategoryRepo -> DB: SELECT CategoryId, CategoryName FROM PermissionCategories WHERE CategoryId IN (@categoryIds);
+      DB --> PermissionCategoryRepo: rows (categories)
+      PermissionCategoryRepo --> Service: categories
+      deactivate PermissionCategoryRepo
+
+      '--- Map & return ---
+      Service -> Service: Map -> List<RoleWithPermissionsVM>
+      Service --> Controller: SearchResult { Result, TotalPage, PageSize, CurrentPage, Total }
+      deactivate Service
+      Controller --> UI: 200 OK { success: true, data }
+      deactivate Controller
+      UI --> Client: Display roles list
+      deactivate UI
     end alt
+  end alt
 end alt
-
-@enduml 
+@enduml

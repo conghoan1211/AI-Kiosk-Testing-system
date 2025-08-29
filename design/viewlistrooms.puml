@@ -1,7 +1,5 @@
 @startuml
-' Class Diagram for View List Rooms Feature
-
-title View List Rooms Class Diagram
+'View List Rooms Class Diagram
 
 hide empty members
 skinparam packageStyle rectangle
@@ -13,7 +11,6 @@ skinparam classFontName Arial
 skinparam noteFontSize 11
 skinparam noteFontName Arial
 
-' Increase spacing and sizing
 skinparam class {
     BackgroundColor LightBlue
     BorderColor DarkBlue
@@ -27,151 +24,98 @@ skinparam package {
     FontSize 14
     FontStyle bold
 }
-
 skinparam interface {
     BackgroundColor LightGreen
     BorderColor DarkGreen
     FontSize 12
 }
 
-skinparam enum {
-    BackgroundColor LightCyan
-    BorderColor DarkCyan
-    FontSize 12
-}
+title View List Rooms Class Diagram
 
 package "Controllers" {
     class RoomController <<Controller>> {
         - _roomService: IRoomService
-        + GetAllRooms(search: SearchRoomVM): Task<IActionResult>
+        + GetAllRooms(search: SearchRoomVM)
     }
 }
 
 package "Services" {
     interface IRoomService <<Interface>> {
-        + GetAllRooms(search: SearchRoomVM): Task<(string, SearchResult?)>
+        + GetAllRooms(search: SearchRoomVM)
     }
     class RoomService <<Service>> {
-        - _context: DbContext
-        + GetAllRooms(search: SearchRoomVM): Task<(string, SearchResult?)>
+        - _unitOfWork: IUnitOfWork
+        + GetAllRooms(search: SearchRoomVM)
     }
 }
 
-package "Models" {
+package "Repositories" {
+    interface IRoomRepository {
+        + GetRooms(search: SearchRoomVM)
+        + GetRoomById(roomId: string)
+        + CountRooms(search: SearchRoomVM)
+    }
+    interface IClassRepository {
+        + GetClassById(classId: string)
+    }
+    interface ISubjectRepository {
+        + GetSubjectById(subjectId: string)
+    }
+    interface IUserRepository {
+        + GetUserById(userId: string)
+    }
+}
+
+package "Models & DTOs" {
     class SearchRoomVM <<DTO>> {
-        + ClassId: string?
-        + SubjectId: string?
-        + IsActive: bool?
-        + PageSize: int
-        + CurrentPage: int
-        + TextSearch: string
-    }
-    class SearchRequestVM <<DTO>> {
-        + PageSize: int
-        + CurrentPage: int
-        + TextSearch: string
-    }
-    class RoomVM <<DTO>> {
-        + RoomId: string
-        + RoomCode: string
-        + Capacity: int
-        + RoomDescription: string
-        + IsRoomActive: bool
-        + RoomCreatedAt: DateTime
-        + RoomUpdatedAt: DateTime
-        + ClassId: string
-        + ClassCode: string
-        + IsClassActive: bool
-        + ClassCreatedBy: string
-        + ClassStartDate: DateTime?
-        + ClassEndDate: DateTime?
-        + SubjectId: string
-        + SubjectName: string
-        + SubjectCode: string
-        + SubjectContent: string
-        + SubjectDescription: string
-        + SubjectStatus: bool
-        + TotalUsers: int
-        + RoomTeachers: List<string>
+        + ClassId
+        + SubjectId
+        + IsActive
+        + PageSize
+        + CurrentPage
+        + TextSearch
     }
     class SearchResult <<DTO>> {
-        + Result: object?
-        + TotalPage: int
-        + PageSize: int
-        + CurrentPage: int
-        + Total: int
+        + Result
+        + TotalPage
+        + PageSize
+        + CurrentPage
+        + Total
     }
-}
-
-package "Entities" {
-    class Room {
-        + RoomId: string
-        + RoomCode: string
-        + Capacity: int
-        + Description: string
-        + IsActive: bool
-        + CreatedAt: DateTime
-        + UpdatedAt: DateTime
-        + ClassId: string
-        + SubjectId: string
-        + Class: Class
-        + Subject: Subject
-        + RoomUsers: List<RoomUser>
-    }
-    class Class {
-        + ClassId: string
-        + ClassCode: string
-        + IsActive: bool
-        + CreatedBy: string
-        + StartDate: DateTime?
-        + EndDate: DateTime?
-    }
-    class Subject {
-        + SubjectId: string
-        + SubjectName: string
-        + SubjectCode: string
-        + SubjectContent: string
-        + SubjectDescription: string
-        + Status: bool
-    }
-    class RoomUser {
-        + RoomUserId: string
-        + RoomId: string
-        + UserId: string
-        + RoleId: int
-        + Status: int
-        + User: User
-    }
-    class User {
-        + UserId: string
-        + Email: string
-    }
-}
-
-package "Enums" {
-    enum ActiveStatus {
-        Inactive
-        Active
-    }
-    enum RoleEnum {
-        Lecture
+    class RoomVM <<DTO>> {
+        + RoomId
+        + RoomCode
+        + Capacity
+        + RoomDescription
+        + IsRoomActive
+        + RoomCreatedAt
+        + RoomUpdatedAt
+        + ClassId
+        + ClassCode
+        + IsClassActive
+        + ClassCreatedBy
+        + ClassStartDate
+        + ClassEndDate
+        + SubjectId
+        + SubjectName
+        + SubjectCode
+        + SubjectContent
+        + SubjectDescription
+        + SubjectStatus
+        + TotalUsers
+        + RoomTeachers
     }
 }
 
 ' Relationships
 RoomController ..> IRoomService : <<uses>>
-IRoomService <|.. RoomService
 RoomController ..> SearchRoomVM : <<uses>>
-RoomService ..> Room : <<uses>>
-RoomService ..> RoomVM : <<maps to>>
-SearchRoomVM --|> SearchRequestVM
-Room o-- Class : <<has>>
-Room o-- Subject : <<has>>
-Room o-- RoomUser : <<has>>
-RoomUser o-- User : <<has>>
-RoomUser ..> RoleEnum : <<uses>>
-Room ..> ActiveStatus : <<uses>>
-RoomVM --> Room : <<maps from>>
-SearchResult o-- RoomVM : <<has>>
+IRoomService <|.. RoomService : <<implements>>
+RoomService ..> IRoomRepository : <<uses>>
+RoomService ..> IClassRepository : <<uses>>
+RoomService ..> ISubjectRepository : <<uses>>
+RoomService ..> IUserRepository : <<uses>>
+RoomService ..> SearchResult : <<returns>>
+SearchResult o-- RoomVM : <<contains>>
 
-@enduml 
+@enduml

@@ -3,7 +3,7 @@ import { ClassList, IClassRequest, ResponseGetListClass } from './interfaces/cla
 import httpService from '@/services/httpService';
 import { CLASS_URL } from '@/consts/apiUrl';
 
-class classService {
+class ClassService {
   getAllClasses(filter: IClassRequest, config: AxiosRequestConfig): Promise<ResponseGetListClass> {
     // Xây dựng các tham số cơ bản
     const params = new URLSearchParams({
@@ -40,4 +40,4 @@ class classService {
   }
 }
 
-export default new classService();
+export default new ClassService();

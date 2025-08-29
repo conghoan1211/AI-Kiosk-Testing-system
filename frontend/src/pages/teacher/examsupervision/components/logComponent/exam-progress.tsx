@@ -11,7 +11,7 @@ interface ExamProgressProps {
   };
 }
 
-export function ExamProgress({ progress }: ExamProgressProps) {
+export function ExamProgress({ progress }: Readonly<ExamProgressProps>) {
   return (
     <Card>
       <CardHeader>

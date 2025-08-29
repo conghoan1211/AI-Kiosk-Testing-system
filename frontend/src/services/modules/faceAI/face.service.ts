@@ -1,6 +1,6 @@
 import httpService from '@/services/httpService';
 
-class faceService {
+class FaceService {
   verifyFace(image: FormData) {
     return httpService.post(`https://api.2handshop.id.vn/verify-face`, image);
   }
@@ -10,4 +10,4 @@ class faceService {
   }
 }
 
-export default new faceService();
+export default new FaceService();

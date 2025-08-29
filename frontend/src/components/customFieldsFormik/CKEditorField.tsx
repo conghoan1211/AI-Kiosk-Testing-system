@@ -10,7 +10,7 @@ const CKEditorField: React.FC<{ name: string; label: string }> = ({ name, label 
       <label className="block text-sm font-medium text-gray-700">{label}</label>
       <CKEditor
         editor={ClassicEditor as any}
-        data={field.value || ''}
+        data={field.value ?? ''}
         onChange={(_event, editor) => {
           const data = editor.getData();
           helpers.setValue(data);

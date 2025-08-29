@@ -21,7 +21,21 @@ export interface IQuestionForm {
   tags: string;
   description: string;
 }
-
+export interface IQuestionFormEdit {
+  questionBankId: string;
+  content: string;
+  type: number;
+  difficultLevel: number;
+  point: number;
+  options: string[];
+  correctAnswer: string;
+  explanation: string;
+  objectFile: string;
+  tags: string;
+  description: string;
+  questionId: string;
+  createUserId: string;
+}
 export interface IQuestion {
   success: boolean;
   message: string;
@@ -50,10 +64,11 @@ export interface QuestionList {
   options: string[];
   correctAnswer: string;
   explanation: string;
-  objectFile: string;
+  objectFile: string | null;
   status: number;
   creatorId: string;
 }
+
 export interface Response<T> {
   data: T;
 }

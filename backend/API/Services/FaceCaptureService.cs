@@ -1,9 +1,13 @@
 ﻿using API.Commons;
 using API.Helper;
+using API.Hubs;
 using API.Models;
 using API.Services.Interfaces;
+using API.Utilities;
 using API.ViewModels;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using System.IO.Compression;
 
 namespace API.Services
@@ -12,10 +16,78 @@ namespace API.Services
     {
         private readonly Sep490Context _context;
         private readonly IAmazonS3Service _s3Service;
-        public FaceCaptureService(Sep490Context context, IAmazonS3Service s3Service)
+        private readonly IHubContext<ExamHub> _examHub;
+        private readonly HttpClient _httpClient;
+        public FaceCaptureService(Sep490Context context, IAmazonS3Service s3Service, IHubContext<ExamHub> examHub, HttpClient httpClient)
         {
             _context = context;
             _s3Service = s3Service;
+            _examHub = examHub;
+            _httpClient = httpClient;
+        }
+
+        #region Prompt   
+        private readonly string InitialSystemPrompt = @"
+                    Bạn là một chuyên gia phân tích cảm xúc.  
+                    Dữ liệu dưới đây là danh sách các lần chụp khuôn mặt của một học sinh trong kỳ thi online.  
+                    Mỗi lần có các trường: captureId, imageUrl, description, logType, emotions, dominantEmotion, avgArousal, avgValence, inferredState, region, result, status, isDetected, errorMessage, createdAt, updatedAt.
+
+                    Trong đó:
+                    - Trường 'emotions' là JSON chứa các tỉ lệ phần trăm (%) của các cảm xúc: angry, disgust, fear, happy, neutral, sad, surprise.
+
+                    Yêu cầu:
+                    1. Hãy phân tích toàn bộ danh sách dữ liệu đầu vào gồm tất cả các trường thông tin.  
+                    2. Trả về kết quả ở dạng JSON (làm tròn đến 2 chữ số thập phân) với cấu trúc:
+                    [
+                      {
+                        ""Angry"": <trung bình angry>,
+                        ""Disgust"": <trung bình disgust>,
+                        ""Fear"": <trung bình fear>,
+                        ""Happy"": <trung bình happy>,
+                        ""Neutral"": <trung bình neutral>,
+                        ""Sad"": <trung bình sad>,
+                        ""Surprise"": <trung bình surprise>,
+                        ""Message"": ""Nhận xét tổng quan chi tiết từ 4-6 câu bằng tiếng Anh, Nếu có errorMessage → thêm phân tích và mô tả vấn đề""
+                      }
+                    ]
+
+                    Chỉ trả về đúng JSON như trên, không kèm giải thích.
+                    Dữ liệu:
+                    ";
+        #endregion
+
+        public async Task<(string, List<AIResponseFaceCaptureVM>?)> AnalyzeFaceCapture(string studentExamId)
+        {
+            var listFaceCapture = await _context.FaceCaptures.Include(x => x.StudentExam)
+                .Where(x => x.StudentExamId == studentExamId && x.StudentExam.Status != (int)StudentExamStatus.InProgress)
+                .AsNoTracking().ToListAsync();
+            if (listFaceCapture == null || listFaceCapture.Count == 0)
+                return ("The student's exam is not finished yet.", null);
+
+            var prompt = InitialSystemPrompt + "\n\n" + JsonConvert.SerializeObject(listFaceCapture);
+
+            var processList = await _context.ExamLogs.Where(x=> x.ActionType != "ProcessList" && x.StudentExamId == studentExamId).Select(x=> x.MetaData).ToListAsync();
+            if (processList != null && processList.Any())
+            {
+                prompt += $@"
+                Lưu ý bổ sung:
+                Ngoài dữ liệu cảm xúc, hệ thống còn ghi nhận được các tiến trình lạ mở trong khi thi: 
+                {JsonConvert.SerializeObject(processList)}.  
+
+                Yêu cầu: Trong trường 'Message' của JSON trả về, hãy thêm cảnh báo ngắn gọn bằng tiếng Anh rằng có những tên tiến trình bất thường này được phát hiện trong quá trình thi.";
+            }
+            try
+            {
+                var aiResponse = await GeminiApiHelper.CallGeminiApiAsync<List<AIResponseFaceCaptureVM>>(_httpClient, prompt);
+                if (aiResponse == null || aiResponse.Count == 0)
+                    return ("No valid response received from AI.", null);
+
+                return ("", aiResponse);
+            }
+            catch (Exception ex)
+            {
+                return ($"Error calling AI API: {ex.Message}", null);
+            }
         }
 
         public async Task<(string, SearchResult?)> GetList(FaceCaptureSearchVM input)
@@ -142,6 +214,9 @@ namespace API.Services
 
             await _context.FaceCaptures.AddAsync(capture);
             await _context.SaveChangesAsync();
+
+            // Notify the exam hub about the new capture
+            await _examHub.Clients.Group(studentExam.StudentExamId).SendAsync(ExamHub.ADD_NEW_FACECAPTURE, capture);
             return "";
         }
 

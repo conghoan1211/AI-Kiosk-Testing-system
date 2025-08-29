@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { errorHandler } from '@/helpers/errors';
 import { showError } from '@/helpers/toast';
-import httpService from '@/services/httpService';
 import { ExamDetail, ResponseGetDetailExam } from '../interfaces/manageExam.interface';
 import manageExamService from '../manageExam.service';
 
@@ -30,7 +29,6 @@ const useGetExamDetail = (
   const [isLoading, setLoading] = useState(false);
   const [isRefetching, setRefetching] = useState(false);
   const [error, setError] = useState<unknown>(null);
-  const token = httpService.getTokenStorage();
 
   //! Function
   const fetch: () => Promise<ResponseGetDetailExam> | undefined = useCallback(() => {
@@ -41,7 +39,6 @@ const useGetExamDetail = (
     return new Promise((resolve, reject) => {
       (async () => {
         try {
-          httpService.attachTokenToHeader(token);
           const response = await manageExamService.getExamDetail(id as string);
           resolve(response);
         } catch (error) {
@@ -50,7 +47,7 @@ const useGetExamDetail = (
         }
       })();
     });
-  }, [id, isTrigger, token]);
+  }, [id, isTrigger]);
 
   const checkConditionPass = useCallback(
     (response: ResponseGetDetailExam) => {

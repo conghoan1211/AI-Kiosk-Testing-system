@@ -1,6 +1,5 @@
 import cachedKeys from '@/consts/cachedKeys';
 import { showError } from '@/helpers/toast';
-import httpService from '@/services/httpService';
 import { useSave } from '@/stores/useStores';
 import { isArray } from 'lodash';
 import cloneDeep from 'lodash/cloneDeep';
@@ -14,7 +13,7 @@ import questionService from '../question.service';
 
 const parseRequest = (filters: IQuestionRequest) => {
   return cloneDeep({
-    pageSize: filters?.pageSize || 5,
+    pageSize: filters?.pageSize || 6,
     currentPage: filters?.currentPage || 1,
     textSearch: filters?.textSearch || '',
     IsMyQuestion: filters?.IsMyQuestion !== undefined ? filters.IsMyQuestion : undefined,
@@ -33,11 +32,11 @@ const useGetListQuestion = (
     saveData?: boolean;
     isLoadmore?: boolean;
   } = {
-      isTrigger: true,
-      refetchKey: '',
-      saveData: true,
-      isLoadmore: false,
-    },
+    isTrigger: true,
+    refetchKey: '',
+    saveData: true,
+    isLoadmore: false,
+  },
 ) => {
   const { isTrigger = true, refetchKey = '', saveData = true, isLoadmore = false } = options;
   const signal = useRef(new AbortController());
@@ -49,7 +48,6 @@ const useGetListQuestion = (
   const [hasMore, setHasMore] = useState(false);
   const [totalPage, setTotalPage] = useState<number>(1);
   const [total, setTotal] = useState<number>(0);
-  const token = httpService.getTokenStorage();
   const [loadingMore, setLoadingMore] = useState(false);
 
   const fetch = useCallback(() => {
@@ -61,7 +59,6 @@ const useGetListQuestion = (
       (async () => {
         try {
           const nextFilters = parseRequest(filters);
-          httpService.attachTokenToHeader(token);
           const response = await requestAPI(nextFilters, {
             signal: signal.current.signal,
           });
@@ -72,7 +69,7 @@ const useGetListQuestion = (
         }
       })();
     });
-  }, [filters, isTrigger, token]);
+  }, [filters, isTrigger]);
 
   const checkConditionPass = useCallback(
     (response: ResponseGetListQuestion) => {

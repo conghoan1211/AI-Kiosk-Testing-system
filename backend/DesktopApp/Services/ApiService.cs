@@ -126,7 +126,7 @@ namespace DesktopApp.Services
                 BlockedApps = partial.BlockedApps ?? new List<string>(),
                 ProtectedUrl = partial.ProtectedUrl,
 
-                WhitelistApps = whitelist,
+                WhitelistApps = partial.WhiteListApps ?? whitelist,
                 MaxDurationMinutes = 60,
                 EnableFullscreen = true,
                 DisableTouchpad = true,

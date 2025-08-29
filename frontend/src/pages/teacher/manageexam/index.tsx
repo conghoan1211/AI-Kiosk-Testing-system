@@ -28,16 +28,18 @@ import ExamHeader from '../examsupervision/components/ExamHeader';
 import { getManageExamColumns } from './components/ExamTableColumns';
 import DialogAssignOtpExamTeacher from './dialogs/DialogAssignOtp';
 import DialogExamDetail from './dialogs/DialogExamDetail';
+import { useTranslation } from 'react-i18next';
 
 const ManageExamLecture = () => {
   //!State
+  const { t } = useTranslation('shared');
   const navigate = useNavigate();
   const defaultData = useGet('dataExamTeacher');
   const totalExamTeacherCount = useGet('totalExamTeacherCount');
   const totalPageExamTeacherCount = useGet('totalPageExamTeacherCount');
   const cachesFilterExamTeacher = useGet('cachesFilterExamTeacher');
   const forceRefetch = useGet('forceRefetchExamTeacher');
-  const [isTrigger, setTrigger] = useState(Boolean(!defaultData) || forceRefetch);
+  const [isTrigger, setIsTrigger] = useState(Boolean(!defaultData) ?? forceRefetch);
   const save = useSave();
   const [examId, setExamId] = useState<string | null>(null);
   const [
@@ -84,11 +86,11 @@ const ManageExamLecture = () => {
   }, []);
 
   const { filters, setFilters } = useFiltersHandler({
-    pageSize: cachesFilterExamTeacher?.pageSize || 50,
-    currentPage: cachesFilterExamTeacher?.currentPage || 1,
+    pageSize: cachesFilterExamTeacher?.pageSize ?? 50,
+    currentPage: cachesFilterExamTeacher?.currentPage ?? 1,
     textSearch: '',
-    status: cachesFilterExamTeacher?.status || undefined,
-    isMyQuestion: cachesFilterExamTeacher?.isMyQuestion || undefined,
+    status: cachesFilterExamTeacher?.status ?? undefined,
+    isMyQuestion: cachesFilterExamTeacher?.isMyQuestion ?? undefined,
   });
 
   const stableFilters = useMemo(() => filters as IManageExamRequest, [filters]);
@@ -105,7 +107,7 @@ const ManageExamLecture = () => {
 
   useEffect(() => {
     if (forceRefetch) {
-      setTrigger(true);
+      setIsTrigger(true);
       refetch();
       save(cachedKeys.forceRefetchExamTeacher, false);
     }
@@ -123,7 +125,7 @@ const ManageExamLecture = () => {
   );
 
   const statItems = useMemo(() => {
-    const totalExams = dataMain?.length || 0;
+    const totalExams = dataMain?.length ?? 0;
     const totalDrafts = dataMain?.filter(
       (exam: any) => exam.status === ActiveStatusExamTeacher.Draft,
     ).length;
@@ -136,31 +138,31 @@ const ManageExamLecture = () => {
 
     return [
       {
-        title: 'Tổng đề thi',
+        title: t('ExamManagement.TotalExam'),
         value: totalExams,
         icon: <AlbumIcon className="h-6 w-6 text-blue-500" />,
         bgColor: 'bg-blue-50',
       },
       {
-        title: 'Đang hoạt động',
+        title: t('ExamManagement.Published'),
         value: totalPublished,
         icon: <AlbumIcon className="h-6 w-6 text-yellow-500" />,
         bgColor: 'bg-yellow-50',
       },
       {
-        title: 'Đã hoàn thành',
+        title: t('ExamManagement.Finished'),
         value: totalFinished,
         icon: <AlbumIcon className="h-6 w-6 text-red-500" />,
         bgColor: 'bg-red-50',
       },
       {
-        title: 'Bản nháp',
+        title: t('ExamManagement.Draft'),
         value: totalDrafts,
         icon: <AlbumIcon className="h-6 w-6 text-gray-500" />,
         bgColor: 'bg-gray-50',
       },
     ];
-  }, [dataMain]);
+  }, [dataMain, t]);
 
   const handleToggleDetailExam = useCallback(
     (data: ManageExamList) => {
@@ -213,7 +215,7 @@ const ManageExamLecture = () => {
 
   const handleChangePageSize = useCallback(
     (size: number) => {
-      setTrigger(true);
+      setIsTrigger(true);
       setFilters((prev) => {
         const newParams = { ...prev, currentPage: 1, pageSize: size };
         save(cachedKeys.cachesFilterExamTeacher, newParams);
@@ -238,9 +240,9 @@ const ManageExamLecture = () => {
 
   const handleSearch = useCallback(
     (value: IValueFormPageHeader) => {
-      setTrigger(true);
+      setIsTrigger(true);
       setFilters((prev) => {
-        const newParams = { ...prev, textSearch: value.textSearch || '', currentPage: 1 };
+        const newParams = { ...prev, textSearch: value.textSearch ?? '', currentPage: 1 };
         save(cachedKeys.cachesFilterExamTeacher, newParams);
         return newParams;
       });
@@ -252,7 +254,7 @@ const ManageExamLecture = () => {
     async (values: IAssignOtpToExam) => {
       try {
         if (!examId) {
-          showError('Vui lòng chọn bài thi để gán mã OTP.');
+          showError(t('ExamManagement.SelectExamError'));
           return;
         }
         const response = await manageExamService.assignOtpToExam({
@@ -266,58 +268,64 @@ const ManageExamLecture = () => {
         httpService.saveOtpExpiredStorage(examId, newOtpData.expiredAt);
         showSuccess('Gán mã OTP thành công!');
         toggleDialogAssignOtpToExamTeacher();
-        setTrigger(true);
+        setIsTrigger(true);
       } catch (error) {
         showError(error);
       }
     },
-    [examId, toggleDialogAssignOtpToExamTeacher, setTrigger],
+    [examId, toggleDialogAssignOtpToExamTeacher, setIsTrigger, t],
   );
 
   //!Render
   return (
-    <PageWrapper name="Quản lý đề thi" className="bg-white dark:bg-gray-900">
+    <PageWrapper name={t('ExamManagement.Title')} className="bg-white dark:bg-gray-900">
       <div className="space-y-6">
         <ExamHeader
-          title="Quản lý đề thi"
-          subtitle="Tạo, chỉnh sửa và quản lý các đề thi của bạn"
+          title={t('ExamManagement.Title')}
+          subtitle={t('ExamManagement.Subtitle')}
           icon={<AlbumIcon className="h-8 w-8 text-white" />}
           className="border-b border-white/20 bg-gradient-to-r from-blue-600 to-green-700 px-6 py-6 shadow-lg"
         />
         <UserStats statItems={statItems} className="lg:grid-cols-4" />
         <GenericFilters
           className="md:grid-cols-3 lg:grid-cols-5"
-          searchPlaceholder="Tìm kiếm ứng dụng..."
+          searchPlaceholder={t('ExamManagement.SearchPlaceholder')}
           onSearch={handleSearch}
           filters={[
             {
               key: 'status',
-              placeholder: 'Trạng thái',
+              placeholder: t('ExamManagement.StatusPlaceholder'),
               options: [
-                { value: undefined, label: 'Tất cả' },
-                { value: ActiveStatusExamTeacher.Published, label: 'Đang hoạt động' },
-                { value: ActiveStatusExamTeacher.Draft, label: 'Nháp' },
-                { value: ActiveStatusExamTeacher.Finished, label: 'Đã hoàn thành' },
+                { value: undefined, label: t('ExamManagement.AllStatus') },
+                {
+                  value: ActiveStatusExamTeacher.Published,
+                  label: t('ExamManagement.PublishedStatus'),
+                },
+                { value: ActiveStatusExamTeacher.Draft, label: t('ExamManagement.DraftStatus') },
+                {
+                  value: ActiveStatusExamTeacher.Finished,
+                  label: t('ExamManagement.FinishedStatus'),
+                },
               ],
             },
             {
               key: 'isMyQuestion',
-              placeholder: 'Lọc đề theo người tạo',
+              placeholder: t('ExamManagement.CreatorFilterPlaceholder'),
               options: [
-                { value: undefined, label: 'Tất cả' },
-                { value: true, label: 'Đề của tôi' },
-                { value: false, label: 'Không phải đề của tôi' },
+                { value: undefined, label: t('ExamManagement.AllQuestions') },
+                { value: true, label: t('ExamManagement.MyQuestion') },
+                { value: false, label: t('ExamManagement.NotMyQuestion') },
               ],
             },
           ]}
           onFilterChange={(
             newFilters: Record<string, string | number | boolean | null | undefined>,
           ) => {
-            setTrigger(true);
+            setIsTrigger(true);
             setFilters((prev) => {
               const updatedFilters = {
                 ...prev,
-                status: Number(newFilters.status) || undefined,
+                status: Number(newFilters.status) ?? undefined,
                 isMyQuestion:
                   newFilters.isMyQuestion === 'true'
                     ? true
@@ -332,16 +340,15 @@ const ManageExamLecture = () => {
           onAddNew={() => {
             roleId === 4 ? navigate(BaseUrl.AdminAddNewExam) : navigate(BaseUrl.AddNewExamLecture);
           }}
-          addNewButtonText="Thêm đề thi mới"
+          addNewButtonText={t('ExamManagement.AddNewExamButton')}
         />
         <MemoizedTablePaging
-          id="manage-exam-lecture"
           columns={columns}
-          data={dataMain || []}
-          currentPage={filters?.currentPage || 1}
-          currentSize={filters?.pageSize || 50}
-          totalPage={totalPageExamTeacherCount || 1}
-          total={totalExamTeacherCount || 0}
+          data={dataMain ?? []}
+          currentPage={filters?.currentPage ?? 1}
+          currentSize={filters?.pageSize ?? 50}
+          totalPage={totalPageExamTeacherCount ?? 1}
+          total={totalExamTeacherCount ?? 0}
           loading={loading}
           handleChangePage={handleChangePage}
           handleChangeSize={handleChangePageSize}
@@ -360,7 +367,7 @@ const ManageExamLecture = () => {
           <DialogExamDetail
             isOpen={openDialogViewExamDetail}
             toggle={toggleDialogViewExamDetail}
-            examId={examId || ''}
+            examId={examId ?? ''}
           />
         )}
       </div>

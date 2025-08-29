@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { errorHandler } from '@/helpers/errors';
 import { showError } from '@/helpers/toast';
-import httpService from '@/services/httpService';
 import { ExamDetail, ExamDetailResponse } from '../interfaces/studentexam.interface';
 import studentexamService from '../studentexam.service';
 
@@ -30,7 +29,6 @@ const useGetDetailExam = (
   const [isLoading, setLoading] = useState(false);
   const [isRefetching, setRefetching] = useState(false);
   const [error, setError] = useState<unknown>(null);
-  const token = httpService.getTokenStorage();
 
   //! Function
   const fetch: () => Promise<ExamDetailResponse> | undefined = useCallback(() => {
@@ -41,7 +39,6 @@ const useGetDetailExam = (
     return new Promise((resolve, reject) => {
       (async () => {
         try {
-          httpService.attachTokenToHeader(token);
           const response = await studentexamService.examDetailById(id as string);
           resolve(response);
         } catch (error) {
@@ -50,17 +47,14 @@ const useGetDetailExam = (
         }
       })();
     });
-  }, [id, isTrigger, token]);
+  }, [id, isTrigger]);
 
-  const checkConditionPass = useCallback(
-    (response: ExamDetailResponse) => {
-      //* Check condition of response here to set data
-      if (!isEmpty(response?.data?.data)) {
-        setData(response.data?.data);
-      }
-    },
-    [],
-  );
+  const checkConditionPass = useCallback((response: ExamDetailResponse) => {
+    //* Check condition of response here to set data
+    if (!isEmpty(response?.data?.data)) {
+      setData(response.data?.data);
+    }
+  }, []);
 
   //* Refetch implicity (without changing loading state)
   const refetch = useCallback(async () => {

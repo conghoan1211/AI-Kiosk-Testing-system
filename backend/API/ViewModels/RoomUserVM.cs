@@ -73,6 +73,7 @@ namespace API.ViewModels
         public string? UserCode { get; set; }
         public string? FullName { get; set; }
         public string? Major { get; set; }
+        public int RoleId { get; set; } 
     }
 
     public class ToggleActiveRoomUserVM

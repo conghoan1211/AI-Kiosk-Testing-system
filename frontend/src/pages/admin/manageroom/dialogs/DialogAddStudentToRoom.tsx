@@ -6,11 +6,12 @@ import { Input } from '@/components/ui/input';
 import Timer from '@/helpers/timer';
 import { showError } from '@/helpers/toast';
 import useFiltersHandler from '@/hooks/useFiltersHandler';
-import useGetListUser from '@/services/modules/user/hooks/useGetListUser';
-import { UserList } from '@/services/modules/user/interfaces/user.interface';
+import useGetListUserInRoom from '@/services/modules/user/hooks/useGetListUserInRoom';
+import { AllRoomUser } from '@/services/modules/userinroom/interfaces/userinroom.interface';
 import { Form, Formik } from 'formik';
 import { Loader2, Search, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import * as Yup from 'yup';
 
 export interface StudentInRoomFormValues {
@@ -21,29 +22,27 @@ interface DialogAddStudentInRoomProps {
   isOpen: boolean;
   toggle: () => void;
   onSubmit: (values: StudentInRoomFormValues) => Promise<void>;
-  maxSelectable?: number;
+  roomId: string;
 }
-
-const validationSchema = Yup.object({
-  studentList: Yup.array().min(1, 'Vui lòng chọn ít nhất 1 học sinh'),
-});
 
 const timer = new Timer();
 
 const DialogAddStudentInRoom = (props: DialogAddStudentInRoomProps) => {
-  const { isOpen, toggle, onSubmit } = props;
+  const { t } = useTranslation('shared');
+  const { isOpen, toggle, onSubmit, roomId } = props;
   const [searchValue, setSearchValue] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [initialFetchDone, setInitialFetchDone] = useState(false);
-  const [allStudents, setAllStudents] = useState<UserList[]>([]);
+  const [allStudents, setAllStudents] = useState<AllRoomUser[]>([]);
 
   const { filters, setFilters } = useFiltersHandler({
-    pageSize: 10,
-    currentPage: 1,
-    textSearch: '',
+    RoomId: roomId ?? '',
+    PageSize: 10,
+    CurrentPage: 1,
+    TextSearch: '',
   });
 
-  const { data, loading, hasMore, refetch, totalPage } = useGetListUser(filters, {
+  const { data, loading, hasMore, refetch, totalPage } = useGetListUserInRoom(roomId, filters, {
     isTrigger: isOpen,
     isLoadmore: true,
   });
@@ -55,7 +54,7 @@ const DialogAddStudentInRoom = (props: DialogAddStudentInRoomProps) => {
   useEffect(() => {
     if (isOpen && !initialFetchDone) {
       setAllStudents([]);
-      setFilters({ pageSize: 10, currentPage: 1, textSearch: '' });
+      setFilters({ PageSize: 10, CurrentPage: 1, TextSearch: '', RoomId: roomId ?? '' });
       refetch();
       setInitialFetchDone(true);
     } else if (!isOpen) {
@@ -63,16 +62,17 @@ const DialogAddStudentInRoom = (props: DialogAddStudentInRoomProps) => {
       setSearchValue('');
       setAllStudents([]);
       setFilters({
-        pageSize: 10,
-        currentPage: 1,
-        textSearch: '',
+        RoomId: roomId ?? '',
+        PageSize: 10,
+        CurrentPage: 1,
+        TextSearch: '',
       });
     }
-  }, [isOpen, refetch, initialFetchDone, setFilters]);
+  }, [isOpen, refetch, initialFetchDone, setFilters, roomId]);
 
   useEffect(() => {
     if (data?.length) {
-      if (filters.currentPage === 1) {
+      if (filters.CurrentPage === 1) {
         setAllStudents(data);
       } else {
         setAllStudents((prev) => [
@@ -83,20 +83,20 @@ const DialogAddStudentInRoom = (props: DialogAddStudentInRoomProps) => {
         ]);
       }
     }
-  }, [data, filters.currentPage]);
+  }, [data, filters.CurrentPage]);
 
   const prevFiltersRef = useRef(filters);
   useEffect(() => {
     if (
       isOpen &&
       !loading &&
-      (filters.currentPage !== prevFiltersRef.current.currentPage ||
-        filters.textSearch !== prevFiltersRef.current.textSearch ||
-        filters.pageSize !== prevFiltersRef.current.pageSize)
+      (filters.CurrentPage !== prevFiltersRef.current.CurrentPage ||
+        filters.TextSearch !== prevFiltersRef.current.TextSearch ||
+        filters.PageSize !== prevFiltersRef.current.PageSize)
     ) {
       if (
-        filters.textSearch !== prevFiltersRef.current.textSearch ||
-        filters.pageSize !== prevFiltersRef.current.pageSize
+        filters.TextSearch !== prevFiltersRef.current.TextSearch ||
+        filters.PageSize !== prevFiltersRef.current.PageSize
       ) {
         setAllStudents([]); // Reset allStudents on search or pageSize change
       }
@@ -104,9 +104,9 @@ const DialogAddStudentInRoom = (props: DialogAddStudentInRoomProps) => {
     }
     prevFiltersRef.current = filters;
   }, [
-    filters.currentPage,
-    filters.textSearch,
-    filters.pageSize,
+    filters.CurrentPage,
+    filters.TextSearch,
+    filters.PageSize,
     isOpen,
     refetch,
     loading,
@@ -119,8 +119,8 @@ const DialogAddStudentInRoom = (props: DialogAddStudentInRoomProps) => {
       timer.debounce(() => {
         setFilters((prev) => ({
           ...prev,
-          currentPage: 1,
-          textSearch: value,
+          CurrentPage: 1,
+          TextSearch: value,
         }));
       }, 500);
     },
@@ -131,21 +131,26 @@ const DialogAddStudentInRoom = (props: DialogAddStudentInRoomProps) => {
     setSearchValue('');
     setAllStudents([]);
     setFilters({
-      pageSize: 10,
-      currentPage: 1,
-      textSearch: '',
+      RoomId: roomId ?? '',
+      PageSize: 10,
+      CurrentPage: 1,
+      TextSearch: '',
     });
     toggle();
   };
 
   const handleLoadMore = () => {
-    if (!loading && hasMore && filters.currentPage < totalPage) {
+    if (!loading && hasMore && filters.CurrentPage < totalPage) {
       setFilters((prev) => ({
         ...prev,
-        currentPage: prev.currentPage + 1,
+        CurrentPage: prev.CurrentPage + 1,
       }));
     }
   };
+
+  const validationSchema = Yup.object({
+    studentList: Yup.array().min(1, t('ExamRoomManagement.RequiredStudentList')),
+  });
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -170,7 +175,7 @@ const DialogAddStudentInRoom = (props: DialogAddStudentInRoomProps) => {
               {/* Header */}
               <div className="flex items-center justify-between p-6 pb-4">
                 <DialogTitle className="text-xl font-semibold text-gray-900">
-                  Thêm học sinh vào phòng
+                  {t('ExamRoomManagement.AddStudentToRoom')}
                 </DialogTitle>
                 <Button
                   variant="ghost"
@@ -191,7 +196,7 @@ const DialogAddStudentInRoom = (props: DialogAddStudentInRoomProps) => {
               <div className="px-6 py-4">
                 <div className="mb-4">
                   <label className="text-sm font-medium text-gray-700">
-                    Chọn học sinh <span className="text-red-500">*</span>
+                    {t('ExamRoomManagement.SelectStudent')} <span className="text-red-500">*</span>
                   </label>
                 </div>
 
@@ -199,7 +204,7 @@ const DialogAddStudentInRoom = (props: DialogAddStudentInRoomProps) => {
                 <div className="relative mb-4">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
                   <Input
-                    placeholder="Tìm kiếm học sinh..."
+                    placeholder={t('ExamRoomManagement.SearchStudentPlaceholder')}
                     value={searchValue}
                     onChange={(e) => handleSearch(e.target.value)}
                     className="pl-10"
@@ -212,7 +217,9 @@ const DialogAddStudentInRoom = (props: DialogAddStudentInRoomProps) => {
                     {loading && !allStudents?.length ? (
                       <div className="flex items-center justify-center py-8">
                         <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
-                        <span className="ml-2 text-gray-500">Đang tải...</span>
+                        <span className="ml-2 text-gray-500">
+                          {t('ExamRoomManagement.Loading')}
+                        </span>
                       </div>
                     ) : allStudents?.length ? (
                       <>
@@ -246,7 +253,7 @@ const DialogAddStudentInRoom = (props: DialogAddStudentInRoomProps) => {
                                   variant="secondary"
                                   className="bg-orange-100 text-orange-700 hover:bg-orange-100"
                                 >
-                                  {student.userCode || 'SV001'}
+                                  {student.userCode ?? 'SV001'}
                                 </Badge>
                                 <span className="flex-1 font-medium text-gray-900">
                                   {student.fullName}
@@ -255,7 +262,7 @@ const DialogAddStudentInRoom = (props: DialogAddStudentInRoomProps) => {
                                   variant="secondary"
                                   className="bg-green-100 text-green-700 hover:bg-green-100"
                                 >
-                                  {student.major || 'CNTT01'}
+                                  {student.major ?? 'CNTT01'}
                                 </Badge>
                               </div>
                             </div>
@@ -265,16 +272,16 @@ const DialogAddStudentInRoom = (props: DialogAddStudentInRoomProps) => {
                           <div className="flex justify-center pt-4">
                             <Button
                               onClick={handleLoadMore}
-                              disabled={loading || !hasMore}
+                              disabled={loading ?? !hasMore}
                               className="bg-blue-600 px-6 hover:bg-blue-700"
                             >
                               {loading ? (
                                 <>
                                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                  Đang tải...
+                                  {t('ExamRoomManagement.Loading')}
                                 </>
                               ) : (
-                                'Tải thêm'
+                                t('ExamRoomManagement.LoadMore')
                               )}
                             </Button>
                           </div>
@@ -282,7 +289,9 @@ const DialogAddStudentInRoom = (props: DialogAddStudentInRoomProps) => {
                       </>
                     ) : (
                       <div className="flex items-center justify-center py-8">
-                        <span className="text-gray-500">Không tìm thấy học sinh</span>
+                        <span className="text-gray-500">
+                          {t('ExamRoomManagement.NoStudentsFound')}
+                        </span>
                       </div>
                     )}
                   </div>
@@ -295,8 +304,14 @@ const DialogAddStudentInRoom = (props: DialogAddStudentInRoomProps) => {
 
                 {/* Footer Info */}
                 <div className="mt-4 flex items-center justify-between text-sm text-gray-500">
-                  <span>Đã chọn: {values.studentList.length} học sinh</span>
-                  <span>Có thể chọn: {allStudents?.length} học sinh</span>
+                  <span>
+                    {t('ExamRoomManagement.SelectedStudents')}: {values.studentList.length}{' '}
+                    {t('ExamRoomManagement.Students')}
+                  </span>
+                  <span>
+                    {t('ExamRoomManagement.AvailableStudents')}: {allStudents?.length}{' '}
+                    {t('ExamRoomManagement.Students')}
+                  </span>
                 </div>
               </div>
 
@@ -323,10 +338,13 @@ const DialogAddStudentInRoom = (props: DialogAddStudentInRoomProps) => {
                   {isSubmitting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Đang thêm...
+                      {t('ExamRoomManagement.Submitting')}
                     </>
                   ) : (
-                    `Thêm ${values.studentList.length} học sinh`
+                    <>
+                      {t('ExamRoomManagement.Adding')} {values.studentList.length}{' '}
+                      {t('ExamRoomManagement.Students')}
+                    </>
                   )}
                 </Button>
               </div>

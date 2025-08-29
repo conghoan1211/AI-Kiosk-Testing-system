@@ -78,26 +78,26 @@ const useFaceDetection = (cameraStatus: string, cameraRef: React.MutableRefObjec
       );
 
       const formData = new FormData();
-      formData.append('StudentExamId', httpService.getStudentIdStorage() || '');
+      formData.append('StudentExamId', httpService.getStudentIdStorage() ?? '');
       formData.append('ImageCapture', file);
       formData.append('Description', 'Auto-captured during question navigation');
       formData.append(
         'CaptureId',
         `capture-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
       );
-      formData.append('AvgArousal', emotionData?.avg_arousal?.toString() || '0');
-      formData.append('AvgValence', emotionData?.avg_valence?.toString() || '0');
-      formData.append('DominantEmotion', emotionData?.dominant_emotion || '');
+      formData.append('AvgArousal', emotionData?.avg_arousal?.toString() ?? '0');
+      formData.append('AvgValence', emotionData?.avg_valence?.toString() ?? '0');
+      formData.append('DominantEmotion', emotionData?.dominant_emotion ?? '');
       formData.append(
         'Emotions',
         emotionData?.emotions ? JSON.stringify(emotionData.emotions) : '{}',
       );
-      formData.append('InferredState', emotionData?.inferred_state || inferredState || '');
+      formData.append('InferredState', emotionData?.inferred_state ?? inferredState ?? '');
       formData.append('Region', emotionData?.region ? JSON.stringify(emotionData.region) : '{}');
-      formData.append('Result', emotionData?.result || '');
-      formData.append('Status', emotionData?.status || '');
+      formData.append('Result', emotionData?.result ?? '');
+      formData.append('Status', emotionData?.status ?? '');
       formData.append('IsDetected', emotionData?.region ? 'true' : 'false');
-      formData.append('ErrorMessage', errorMsg || '');
+      formData.append('ErrorMessage', errorMsg ?? '');
 
       return formData;
     } catch (error) {
@@ -131,10 +131,12 @@ const useFaceDetection = (cameraStatus: string, cameraRef: React.MutableRefObjec
           setMultipleFaceDetected(analyzeResponse.data as MutipleFaceResponse);
           setEmotionData(null);
           setInferredState(null);
+          setErrorMsg(null);
         } else {
           const data = analyzeResponse.data as AnalyzeFaceResponse;
           setEmotionData(data);
           setMultipleFaceDetected(null);
+          setErrorMsg(null);
           setInferredState(inferState(data.avg_valence, data.avg_arousal));
         }
       } catch (error) {
@@ -142,10 +144,9 @@ const useFaceDetection = (cameraStatus: string, cameraRef: React.MutableRefObjec
           (error &&
             typeof error === 'object' &&
             'response' in error &&
-            (error as any).response?.data?.message) ||
+            (error as any).response?.data?.message) ??
             'An error occurred while capturing the screenshot',
         );
-        showError(error);
         setEmotionData(null);
         setMultipleFaceDetected(null);
         setInferredState(null);
@@ -175,7 +176,7 @@ const useFaceDetection = (cameraStatus: string, cameraRef: React.MutableRefObjec
     return () => clearInterval(screenshotInterval);
   }, [cameraStatus, cameraRef, captureImageAndCreateFormData]);
 
-  return { emotionData, multipleFaceDetected, inferredState };
+  return { emotionData, multipleFaceDetected, inferredState, errorMsg };
 };
 
 export default useFaceDetection;

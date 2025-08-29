@@ -4,6 +4,7 @@ import { AlertTriangle, CameraIcon } from 'lucide-react';
 import React, { useRef } from 'react';
 import { Camera } from 'react-camera-pro';
 import { AnalyzeFaceResponse } from '../hooks/useFaceDetection';
+import { useTranslation } from 'react-i18next';
 
 interface CameraMonitorProps {
   cameraStatus: 'checking' | 'success' | 'error';
@@ -14,6 +15,7 @@ interface CameraMonitorProps {
 
 const CameraMonitor: React.FC<CameraMonitorProps> = React.memo(
   ({ cameraStatus, cameraRef, cameraKey, emotionData }) => {
+    const { t } = useTranslation('shared');
     const videoContainerRef = useRef<HTMLDivElement>(null);
 
     const getBoundingBoxStyles = () => {
@@ -43,7 +45,7 @@ const CameraMonitor: React.FC<CameraMonitorProps> = React.memo(
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center text-sm">
             <CameraIcon className="mr-2 h-4 w-4" />
-            Giám sát Camera
+            {t('ExamList.CameraMonitorTitle')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -53,13 +55,12 @@ const CameraMonitor: React.FC<CameraMonitorProps> = React.memo(
                 key={cameraKey}
                 ref={cameraRef}
                 facingMode="user"
-                aspectRatio={16 / 9}
+                aspectRatio={15 / 9}
                 errorMessages={{
-                  noCameraAccessible: 'Không thể truy cập camera',
-                  permissionDenied:
-                    'Quyền camera bị từ chối. Vui lòng cấp quyền trong cài đặt trình duyệt.',
-                  switchCamera: 'Không thể chuyển camera',
-                  canvas: 'Lỗi canvas',
+                  noCameraAccessible: t('ExamList.NoCameraAccessible'),
+                  permissionDenied: t('ExamList.PermissionDenied'),
+                  switchCamera: t('ExamList.SwitchCamera'),
+                  canvas: t('ExamList.Canvas'),
                 }}
               />
               {emotionData && cameraStatus === 'success' && <div style={getBoundingBoxStyles()} />}
@@ -90,14 +91,14 @@ const CameraMonitor: React.FC<CameraMonitorProps> = React.memo(
                   {cameraStatus === 'checking' ? (
                     <div className="flex flex-col items-center space-y-2 text-sm">
                       <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-200 border-t-blue-600"></div>
-                      <span>Đang kết nối camera...</span>
+                      <span>{t('ExamList.CameraConnecting')}</span>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center space-y-2 text-sm text-red-600">
                       <AlertTriangle className="h-4 w-4" />
-                      <span>Camera không khả dụng</span>
+                      <span>{t('ExamList.CameraNotAvailable')}</span>
                       <p className="text-xs text-gray-500">
-                        Vui lòng cấp quyền hoặc kiểm tra thiết bị.
+                        {t('ExamList.CameraNotAvailableDescription')}
                       </p>
                       <Button
                         onClick={() => window.location.reload()}
@@ -113,13 +114,13 @@ const CameraMonitor: React.FC<CameraMonitorProps> = React.memo(
           </div>
           <div className="mt-2 text-center">
             {cameraStatus === 'success' && (
-              <p className="text-xs text-green-600">Camera đang hoạt động</p>
+              <p className="text-xs text-green-600">{t('ExamList.CameraIsActive')}</p>
             )}
             {cameraStatus === 'error' && (
-              <p className="text-xs text-red-600">Vui lòng kiểm tra camera</p>
+              <p className="text-xs text-red-600">{t('ExamList.CheckCamera')}</p>
             )}
             {cameraStatus === 'checking' && (
-              <p className="text-xs text-yellow-600">Đang kiểm tra camera...</p>
+              <p className="text-xs text-yellow-600">{t('ExamList.CheckingCamera')}</p>
             )}
           </div>
         </CardContent>

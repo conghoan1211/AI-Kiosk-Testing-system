@@ -54,7 +54,7 @@ export const getManageExamColumns = ({
   refreshExamList,
 }: GetColumnsParams) => [
   {
-    label: 'Tiêu đề',
+    label: 'Title',
     accessor: 'title',
     sortable: false,
     Cell: (row: ManageExamList) => (
@@ -71,7 +71,7 @@ export const getManageExamColumns = ({
     ),
   },
   {
-    label: 'Phòng thi',
+    label: 'Room',
     accessor: 'roomName',
     sortable: false,
     Cell: (row: ManageExamList) => (
@@ -82,33 +82,33 @@ export const getManageExamColumns = ({
     ),
   },
   {
-    label: 'Câu hỏi',
+    label: 'Questions',
     accessor: 'totalQuestions',
     sortable: false,
     Cell: (row: ManageExamList) => (
       <div className="flex items-center space-x-2">
         <HelpCircle className="h-4 w-4 text-orange-400" />
         <Badge variant="secondary" className="border-orange-200 bg-orange-50 text-orange-700">
-          {row.totalQuestions} câu
+          {row.totalQuestions} questions
         </Badge>
       </div>
     ),
   },
   {
-    label: 'Thời gian',
+    label: 'Duration',
     accessor: 'duration',
     sortable: false,
     Cell: (row: ManageExamList) => (
       <div className="flex items-center space-x-2">
         <Clock className="h-4 w-4 text-purple-400" />
         <Badge variant="outline" className="border-purple-200 text-purple-700">
-          {row.duration} phút
+          {row.duration} minutes
         </Badge>
       </div>
     ),
   },
   {
-    label: 'Bắt đầu',
+    label: 'Start Time',
     accessor: 'startTime',
     sortable: false,
     Cell: (row: ManageExamList) => {
@@ -131,7 +131,7 @@ export const getManageExamColumns = ({
     },
   },
   {
-    label: 'Kết thúc',
+    label: 'End Time',
     accessor: 'endTime',
     sortable: false,
     Cell: (row: ManageExamList) => {
@@ -154,7 +154,7 @@ export const getManageExamColumns = ({
     },
   },
   {
-    label: 'Trạng thái',
+    label: 'Status',
     accessor: 'status',
     sortable: false,
     Cell: (row: ManageExamList) => {
@@ -250,13 +250,13 @@ export const getManageExamColumns = ({
           }}
         >
           <Eye className="mr-1 h-4 w-4" />
-          Xem chi tiết
+          View Detail
         </Button>
       </div>
     ),
   },
   {
-    label: 'Tạo OTP',
+    label: 'OTP',
     accessor: 'otp',
     sortable: false,
     Cell: (row: ManageExamList) => {
@@ -285,7 +285,7 @@ export const getManageExamColumns = ({
               }}
             >
               <Key className="mr-1 h-4 w-4" />
-              Tạo OTP
+              Assign OTP
             </Button>
           )}
         </div>
@@ -293,7 +293,7 @@ export const getManageExamColumns = ({
     },
   },
   {
-    label: 'Xem OTP',
+    label: 'View OTP',
     accessor: 'viewOtp',
     sortable: false,
     Cell: (row: ManageExamList) => {
@@ -315,7 +315,7 @@ export const getManageExamColumns = ({
               }}
             >
               <Eye className="mr-1 h-4 w-4" />
-              Xem OTP
+              View OTP
             </Button>
           )}
         </div>
@@ -323,7 +323,7 @@ export const getManageExamColumns = ({
     },
   },
   {
-    label: 'Thao tác',
+    label: 'Actions',
     accessor: 'actions',
     width: 80,
     sortable: false,
@@ -336,7 +336,7 @@ export const getManageExamColumns = ({
               className="h-7 w-7 rounded p-0 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
             >
               <MoreHorizontal className="h-3.5 w-3.5 text-gray-600 dark:text-gray-400" />
-              <span className="sr-only">Mở menu thao tác</span>
+              <span className="sr-only">Open actions menu</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-40">
@@ -347,7 +347,7 @@ export const getManageExamColumns = ({
               }}
             >
               <Eye className="mr-2 h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-              <span>Phân công giám thị</span>
+              <span>Assign Exam</span>
             </DropdownMenuItem>
             {row?.status === ActiveStatusExamStudent.Draft && (
               <DropdownMenuItem
@@ -361,7 +361,7 @@ export const getManageExamColumns = ({
                 }}
               >
                 <Edit className="mr-2 h-3.5 w-3.5 text-amber-500" />
-                <span>Chỉnh sửa</span>
+                <span>Edit</span>
               </DropdownMenuItem>
             )}
             {/* New DropdownMenuItem for Changing Status */}
@@ -381,7 +381,7 @@ export const getManageExamColumns = ({
                 }}
               >
                 <ToggleLeft className="mr-2 h-3.5 w-3.5 text-green-600 dark:text-green-400" />
-                <span>Xuất bản</span>
+                <span>Publish</span>
               </DropdownMenuItem>
             )}
             {row?.status === ActiveStatusExamStudent.Draft && (
@@ -400,7 +400,7 @@ export const getManageExamColumns = ({
                 }}
               >
                 <ToggleLeft className="mr-2 h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
-                <span>Kết thúc</span>
+                <span>Finish</span>
               </DropdownMenuItem>
             )}
           </DropdownMenuContent>

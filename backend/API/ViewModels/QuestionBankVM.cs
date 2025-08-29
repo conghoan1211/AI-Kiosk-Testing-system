@@ -74,7 +74,7 @@ namespace API.ViewModels
         public int MultipleChoiceCount { get; set; }
         public int EssayCount { get; set; }
         public int Status { get; set; }
-        public double AverageDifficulty { get; set; }
+        //public double AverageDifficulty { get; set; }
         public List<QuestionVM> Questions { get; set; }= new();
     }
 

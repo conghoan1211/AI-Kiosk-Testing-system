@@ -1,22 +1,21 @@
-import cachedKeys from "@/consts/cachedKeys";
-import { showError } from "@/helpers/toast";
-import httpService from "@/services/httpService";
-import { useSave } from "@/stores/useStores";
-import { flatten, isArray, isEmpty } from "lodash";
-import cloneDeep from "lodash/cloneDeep";
-import { useCallback, useEffect, useRef, useState } from "react";
+import cachedKeys from '@/consts/cachedKeys';
+import { showError } from '@/helpers/toast';
+import { useSave } from '@/stores/useStores';
+import { flatten, isArray, isEmpty } from 'lodash';
+import cloneDeep from 'lodash/cloneDeep';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   IPermissionRequest,
   PermissionList,
   ResponseGetListPermission,
-} from "../interfaces/role.interface";
-import roleService from "../role.Service";
+} from '../interfaces/role.interface';
+import roleService from '../role.Service';
 
 const parseRequest = (filters: IPermissionRequest) => {
   return cloneDeep({
     pageSize: filters?.pageSize || 50,
     currentPage: filters?.currentPage || 1,
-    textSearch: filters?.textSearch || "",
+    textSearch: filters?.textSearch || '',
   });
 };
 
@@ -31,13 +30,13 @@ const useGetAllRolePermission = (
     isLoadmore?: boolean;
   } = {
     isTrigger: true,
-    refetchKey: "",
+    refetchKey: '',
     saveData: true,
     isLoadmore: false,
   },
 ) => {
   //! State
-  const { isTrigger = true, refetchKey = "", saveData = true } = options;
+  const { isTrigger = true, refetchKey = '', saveData = true } = options;
   const signal = useRef(new AbortController());
   const save = useSave();
   const [data, setData] = useState<PermissionList[]>([]);
@@ -48,49 +47,37 @@ const useGetAllRolePermission = (
   const [hasMore, setHasMore] = useState(false);
   const [totalPage, setTotalPage] = useState<number>(1);
   const [total, setTotal] = useState<number>(0);
-  const token = httpService.getTokenStorage();
 
   //! Function
-  const fetch: () => Promise<ResponseGetListPermission> | undefined =
-    useCallback(() => {
-      if (!isTrigger) {
-        return;
-      }
+  const fetch: () => Promise<ResponseGetListPermission> | undefined = useCallback(() => {
+    if (!isTrigger) {
+      return;
+    }
 
-      return new Promise((resolve, reject) => {
-        (async () => {
-          try {
-            const nextFilters = parseRequest(filters);
-            httpService.attachTokenToHeader(token);
-            const response = await requestAPI(nextFilters);
+    return new Promise((resolve, reject) => {
+      (async () => {
+        try {
+          const nextFilters = parseRequest(filters);
+          const response = await requestAPI(nextFilters);
 
-            resolve(response);
-          } catch (err) {
-            setError(err);
-            reject(err);
-          }
-        })();
-      });
-    }, [filters, isTrigger, token]);
+          resolve(response);
+        } catch (err) {
+          setError(err);
+          reject(err);
+        }
+      })();
+    });
+  }, [filters, isTrigger]);
 
   const checkConditionPass = useCallback(
-    (
-      response: ResponseGetListPermission,
-      options: { isLoadmore?: boolean } = {},
-    ) => {
+    (response: ResponseGetListPermission, options: { isLoadmore?: boolean } = {}) => {
       const { isLoadmore } = options;
 
       if (saveData) {
         setTotalPage(response?.data?.data?.totalPage || 1);
         setTotal(response?.data?.data?.pageSize || 0);
-        save(
-          cachedKeys.totalPagePermissionCount,
-          response?.data?.data.totalPage || 1,
-        );
-        save(
-          cachedKeys.totalPermissionCount,
-          response?.data?.data?.pageSize || 0,
-        );
+        save(cachedKeys.totalPagePermissionCount, response?.data?.data.totalPage || 1);
+        save(cachedKeys.totalPermissionCount, response?.data?.data?.pageSize || 0);
         save(cachedKeys.dataPermission, response?.data?.data?.result || []);
       }
 
@@ -136,10 +123,8 @@ const useGetAllRolePermission = (
 
       const responses = await Promise.allSettled(listRequest);
       const allData = responses.map((el) => {
-        if (el.status === "fulfilled") {
-          return isArray(el?.value?.data?.data?.result)
-            ? el?.value?.data?.data?.result
-            : [];
+        if (el.status === 'fulfilled') {
+          return isArray(el?.value?.data?.data?.result) ? el?.value?.data?.data?.result : [];
         }
         return [];
       });

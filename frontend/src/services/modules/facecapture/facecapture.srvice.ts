@@ -3,7 +3,7 @@ import httpService from '@/services/httpService';
 import { IFaceCaptureRequest } from './interfaces/facecapture.interface';
 import { AxiosRequestConfig } from 'axios';
 
-class faceCaptureService {
+class FaceCaptureService {
   addFaceCapture(data: FormData) {
     return httpService.post(`${FACE_CAPTURE_URL}/add`, data);
   }
@@ -20,6 +20,10 @@ class faceCaptureService {
       responseType: 'blob',
     });
   }
+
+  viewStatistic(studentExamId: string) {
+    return httpService.post(`${FACE_CAPTURE_URL}/analyze-face-capture/${studentExamId}`, {});
+  }
 }
 
-export default new faceCaptureService();
+export default new FaceCaptureService();

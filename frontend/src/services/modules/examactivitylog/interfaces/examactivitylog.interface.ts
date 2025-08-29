@@ -1,7 +1,7 @@
 export interface IExamActivityLogRequest {
     studentExamId?: string;
-    pageSize?: number | null;
-    currentPage?: number | null;
+    pageSize: number;
+    currentPage: number;
     textSearch?: string;
 }
 

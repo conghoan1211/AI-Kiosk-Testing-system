@@ -1,10 +1,10 @@
-import { MAJOR_URL } from "@/consts/apiUrl";
-import httpService from "@/services/httpService";
+import { MAJOR_URL } from '@/consts/apiUrl';
+import httpService from '@/services/httpService';
 
-class majorService {
+class MajorService {
   getMajorList() {
     return httpService.get(`${MAJOR_URL}`);
   }
 }
 
-export default new majorService();
+export default new MajorService();

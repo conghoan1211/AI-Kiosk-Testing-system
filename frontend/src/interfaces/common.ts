@@ -1,6 +1,5 @@
-import { FieldInputProps, FormikProps } from "formik";
-import { AxiosResponse } from "axios";
-import { FormikHelpers } from "formik";
+import { AxiosResponse } from 'axios';
+import { FieldInputProps, FormikHelpers, FormikProps } from 'formik';
 
 export interface AdditionalFormikProps {
   field: FieldInputProps<any>;
@@ -23,13 +22,7 @@ export interface ResponseGenerator<T = any> {
   statusText?: string;
 }
 
-export type TypeAlign =
-  | "left"
-  | "right"
-  | "inherit"
-  | "center"
-  | "justify"
-  | undefined;
+export type TypeAlign = 'left' | 'right' | 'inherit' | 'center' | 'justify' | undefined;
 
 export interface SelectOption {
   label: string;
@@ -48,8 +41,8 @@ export interface ResponseCommon<T> {
 export type PromiseResponseBase<T> = Promise<AxiosResponse<T>>;
 
 export enum Order {
-  desc = "desc",
-  asc = "asc",
+  desc = 'desc',
+  asc = 'asc',
 }
 export type OrderType = Order.desc | Order.asc;
 
@@ -63,10 +56,7 @@ export interface CommonFilters {
 export interface DialogI<T> {
   isOpen: boolean;
   toggle: () => void;
-  onSubmit?: (
-    values: T,
-    formikHelpers: FormikHelpers<T>,
-  ) => void | Promise<any>;
+  onSubmit?: (values: T, formikHelpers: FormikHelpers<T>) => void | Promise<any>;
 }
 
 export interface RequestPagingCommon {
@@ -92,9 +82,7 @@ export interface User {
   amr: string[];
 }
 
-export type SetOptionsValue = React.Dispatch<
-  React.SetStateAction<SelectOption[]>
->;
+export type SetOptionsValue = React.Dispatch<React.SetStateAction<SelectOption[]>>;
 export type SetBooleanState = React.Dispatch<React.SetStateAction<boolean>>;
 
 export interface TimeValue {

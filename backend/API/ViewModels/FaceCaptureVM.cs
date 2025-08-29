@@ -27,8 +27,8 @@ namespace API.ViewModels
             public float AvgValence { get; set; } = 0;
             public string? InferredState { get; set; }
             public string? Region { get; set; }
-            public string? Result { get; set; } = null!; // Result of the face detection, e.g., "Detected", "Not Detected"
-            public string? Status { get; set; } = null!;
+            public string? Result { get; set; } = null; // Result of the face detection, e.g., "Detected", "Not Detected"
+            public string? Status { get; set; } = null;
             public bool IsDetected { get; set; } = false;  
             public string? ErrorMessage { get; set; } = null;
             public DateTime CreatedAt { get; set; }
@@ -53,9 +53,9 @@ namespace API.ViewModels
         public float AvgArousal { get; set; } = 0;
         public float AvgValence { get; set; } = 0;
         public string? InferredState { get; set; }  
-        public string? Region { get; set;} 
-        public string? Result { get; set; } = null!; // Result of the face detection, e.g., "Detected", "Not Detected"
-        public string? Status { get; set; } = null!;
+        public string? Region { get; set;}
+        public string? Result { get; set; } = null;
+        public string? Status { get; set; } = null;
         public bool IsDetected { get; set; } = false; 
         public string? ErrorMessage { get; set; } = null;
     }
@@ -67,5 +67,17 @@ namespace API.ViewModels
 
         [FromQuery(Name = "LogType")]
         public LogType? LogType { get; set; }
+    }
+
+    public class AIResponseFaceCaptureVM
+    {
+        public float Angry { get; set; }
+        public float Disgust{ get; set; }
+        public float Fear { get; set; }
+        public float Happy { get; set; }
+        public float Neutral { get; set; }
+        public float Sad { get; set; }
+        public float Surprise { get; set; }
+        public string? Message { get; set; } 
     }
 }

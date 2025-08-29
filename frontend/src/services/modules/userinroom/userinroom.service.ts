@@ -8,7 +8,7 @@ interface IStuentActiveDeactiveRequest {
   studentId: string[];
   status: 0 | 1;
 }
-class userInRoomService {
+class UserInRoomService {
   getUserInRoom(
     filter: IUserInRoomRequest,
     config: AxiosRequestConfig,
@@ -78,6 +78,17 @@ class userInRoomService {
   changeActiveStudent(data: IStuentActiveDeactiveRequest) {
     return httpService.post(`${USER_IN_ROOM_URL}/change-active-student`, data);
   }
+
+  getAllRoomUsers(
+    roomId: string,
+    filters?: IUserInRoomRequest,
+    config?: AxiosRequestConfig,
+  ): Promise<ResponseUserInRoom> {
+    return httpService.get(
+      `${USER_IN_ROOM_URL}/GetAllRoomUsers?RoomId=${roomId}&PageSize=${filters?.PageSize}&CurrentPage=${filters?.CurrentPage}&TextSearch=${filters?.TextSearch}`,
+      config,
+    );
+  }
 }
 
-export default new userInRoomService();
+export default new UserInRoomService();

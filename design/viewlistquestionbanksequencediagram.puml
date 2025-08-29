@@ -1,71 +1,102 @@
 @startuml
-
 title View List Question Bank Sequence Diagram
 
 actor "User" as Client
-boundary "c:QuestionBankController" as Controller
-control "s:QuestionBankService" as Service
+boundary ":NavigationUI" as UI <<boundary>>
+control "QuestionBankController" as Controller <<controller>>
+participant ":QuestionBankService" as Service <<service>>
+control "UnitOfWork" as UoW <<unitOfWork>>
+
+entity "QuestionBankRepository" as QbRepo <<repository>>
+entity "QuestionRepository" as QRepo <<repository>>
+entity "SubjectRepository" as SubjRepo <<repository>>
+entity "UserRepository" as UserRepo <<repository>>
+
 database "Database" as DB
 
 == View List Question Bank ==
 
-Client -> Controller: GET /get-list (QuestionBankFilterVM)
+Client -> UI: Request view question banks
+activate UI
+UI -> Controller: GET /get-list (QuestionBankFilterVM)
 activate Controller
 
 alt User not authenticated
-    Controller -> Controller: Log unauthorized access attempt
-    Controller --> Client: 401 Unauthorized { message: "User not authenticated" }
-    deactivate Controller
+  Controller --> UI: 401 Unauthorized { message: "User not authenticated" }
+  deactivate Controller
+  UI --> Client: Show unauthorized message
+  deactivate UI
 else User authenticated
-    Controller -> Service: GetList(input, usertoken)
-    activate Service
+  Controller -> Service: GetList(input, userToken)
+  activate Service
 
-    Service -> DB: Check user role and permissions (UserId, RoleId)
-    activate DB
-    alt User is not authorized
-        DB --> Service: Not found or invalid role
-        deactivate DB
-        Service -> Service: Log authorization failure
-        Service --> Controller: ("You do not have permission to access question banks.", null)
-        deactivate Service
-        Controller --> Client: 403 Forbidden { success: false, message }
-        deactivate Controller
-    else User is authorized
-        DB --> Service: User role confirmed
-        deactivate DB
+  '--- Quick authorization check ---
+  Service -> UserRepo: CanViewQuestionBanks(userId)
+  activate UserRepo
+  UserRepo -> DB: [SQL: check user role/permission]
+  DB --> UserRepo: row | null
+  UserRepo --> Service: allowed? (bool)
+  deactivate UserRepo
 
-        Service -> DB: Query QuestionBanks (include Subject, CreatedByUser)
-        activate DB
-        DB --> Service: IQueryable<QuestionBank>
-        deactivate DB
+  alt User is not authorized
+    Service --> Controller: "You do not have permission to access question banks."
+    deactivate Service
+    Controller --> UI: 403 Forbidden { success: false, message }
+    deactivate Controller
+    UI --> Client: Show forbidden message
+    deactivate UI
+  else User is authorized
+    '--- Count total (for paging) ---
+    Service -> QbRepo: Count(search)
+    activate QbRepo
+    QbRepo -> DB: [SQL: COUNT(*) FROM QuestionBanks WHERE <filters>]
+    DB --> QbRepo: Total
+    QbRepo --> Service: Total
+    deactivate QbRepo
 
-        Service -> Service: Apply filters (TextSearch, Status, IsMyQuestion)
-        Service -> Service: Count total, calculate totalPage
-        Service -> Service: Get QuestionBankIds for paging
-        Service -> DB: Get question counts by type (QuestionBankId)
-        activate DB
-        DB --> Service: List<QuestionCounts>
-        deactivate DB
+    '--- Get paged QuestionBanks (id + basic info) ---
+    Service -> QbRepo: GetQuestionBanks(search)
+    activate QbRepo
+    QbRepo -> DB: [SQL: SELECT basic fields FROM QuestionBanks WHERE <filters> ORDER BY CreatedAt DESC LIMIT/OFFSET]
+    DB --> QbRepo: rows (qbs)
+    QbRepo --> Service: qbs
+    deactivate QbRepo
 
-        Service -> Service: Calculate statistics (TotalQuestionBanks, TotalQuestionsQB, TotalSubjects, TotalSharedQB)
-        Service -> DB: Get paged QuestionBankListVMs
-        activate DB
-        DB --> Service: List<QuestionBankListVM>
-        deactivate DB
+    alt No question banks found
+      Service --> Controller: "No found any question bank"
+      deactivate Service
+      Controller --> UI: 400 BadRequest { success: false, message }
+      deactivate Controller
+      UI --> Client: Show no question banks found
+      deactivate UI
+    else Question banks found
+      '--- Load subjects for returned banks (optional) ---
+      Service -> SubjRepo: GetByIds(subjectIds)
+      activate SubjRepo
+      SubjRepo -> DB: [SQL: SELECT SubjectId, SubjectName WHERE SubjectId IN (...)]
+      DB --> SubjRepo: rows (subjects)
+      SubjRepo --> Service: subjects
+      deactivate SubjRepo
 
-        alt No question banks found
-            Service --> Controller: ("No found any question bank", null)
-            deactivate Service
-            Controller --> Client: 400 BadRequest { success: false, message }
-            deactivate Controller
-        else Question banks found
-            Service -> Service: Wrap in QuestionBankListResponse
-            Service --> Controller: ("", QuestionBankListResponse)
-            deactivate Service
-            Controller --> Client: 200 OK { success: true, message, data }
-            deactivate Controller
-        end alt
-    end
-end
+      '--- Question counts per bank (by type) ---
+      Service -> QRepo: CountQuestionsByBankIds(bankIds)
+      activate QRepo
+      QRepo -> DB: [SQL: SELECT QuestionBankId, COUNT(*), SUM(by type) GROUP BY QuestionBankId]
+      DB --> QRepo: rows (counts)
+      QRepo --> Service: counts
+      deactivate QRepo
 
-@enduml 
+      '--- Map to QuestionBankListVM and build response ---
+      Service -> Service: Map(qbs, subjects, counts) -> List<QuestionBankListVM>
+      Service -> Service: Compute stats (TotalPage, CurrentPage, PageSize, Total)
+      Service --> Controller: QuestionBankListResponse { Result, TotalPage, PageSize, CurrentPage, Total }
+      deactivate Service
+
+      Controller --> UI: 200 OK { success: true, message, data }
+      deactivate Controller
+      UI --> Client: Display question banks list
+      deactivate UI
+    end alt
+  end alt
+end alt
+@enduml

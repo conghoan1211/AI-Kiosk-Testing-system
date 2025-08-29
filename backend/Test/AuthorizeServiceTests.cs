@@ -33,7 +33,7 @@ namespace API.Tests
         [Fact]
         public async Task GetAllPermissions_NoPermission_ReturnsNoPermission()
         {
-            var search = new SearchPermissionVM { CurrentPage = 1, PageSize = 10, TextSearch = "" };
+            var search = new SearchPermissionVM { CurrentPage = 2, PageSize = 10, TextSearch = "" };
             var (msg, result) = await _service.GetAllPermissions(search);
             Assert.Contains("No permission found", msg);
             Assert.Null(result);

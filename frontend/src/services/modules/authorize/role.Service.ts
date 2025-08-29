@@ -1,4 +1,4 @@
-import { AUTHORIZE_URL } from '@/consts/apiUrl';
+import { AUTH_URL, AUTHORIZE_URL } from '@/consts/apiUrl';
 import httpService from '@/services/httpService';
 import { IPermissionRequest } from './interfaces/role.interface';
 import { IPermissionsRequest, ResponseGetListPermissions } from './interfaces/permission.interface';
@@ -8,13 +8,16 @@ import {
   FormDataPermissions,
   FormDataRoles,
 } from '@/pages/admin/manageuser/components/add-new-role-tab';
+import { IUserResetPass } from '../user/interfaces/user.interface';
+import { ChangePasswordForm } from '@/pages/user/dialogs/DialogChangePassword';
+import { ForgetPasswordForm } from '@/pages/admin/adminlogin/dialogs/DialogForgetPassword';
 
 interface IRemovePermissionFromRole {
   roleId: number;
   permissions: string[];
 }
 
-class authorizeService {
+class AuthorizeService {
   getListRoles() {
     return httpService.get(`${AUTHORIZE_URL}/get-all-roles`);
   }
@@ -72,6 +75,18 @@ class authorizeService {
       data,
     });
   }
+
+  resetPassword(body: IUserResetPass) {
+    return httpService.post(`${AUTH_URL}/ResetPassword`, body);
+  }
+
+  changePassword(value: ChangePasswordForm) {
+    return httpService.post(`${AUTH_URL}/ChangePassword`, value);
+  }
+
+  forgetPassword(value: ForgetPasswordForm) {
+    return httpService.post(`${AUTH_URL}/ForgetPassword`, value);
+  }
 }
 
-export default new authorizeService();
+export default new AuthorizeService();

@@ -1,10 +1,10 @@
 import { USER_URL } from '@/consts/apiUrl';
 import httpService from '@/services/httpService';
-import { IUserRequest, ResponseGetListUser } from './interfaces/user.interface';
 import { AxiosRequestConfig } from 'axios';
-import { FormDataUser } from '@/pages/admin/manageuser/validate/validationSchema';
+import { IUserRequest, ResponseGetListUser } from './interfaces/user.interface';
+import { UserData } from '@/pages/admin/manageuser/dialogs/DialogPreCheckImportUser';
 
-class userService {
+class UserService {
   getUserList(filter: IUserRequest, config?: AxiosRequestConfig): Promise<ResponseGetListUser> {
     return httpService.get(
       `${USER_URL}/get-list?pageSize=${filter.pageSize}&currentPage=${filter.currentPage}&textSearch=${filter.textSearch}&roleId=${filter.roleId || ''}&status=${filter.status || ''}&campusId=${filter.campusId || ''}&sortType=${filter.sortType || ''}`,
@@ -12,11 +12,11 @@ class userService {
     );
   }
 
-  createUser(body: FormDataUser) {
+  createUser(body: FormData) {
     return httpService.post(`${USER_URL}/create`, body);
   }
 
-  updateUser(body: FormDataUser) {
+  updateUser(body: FormData) {
     return httpService.post(`${USER_URL}/update`, body);
   }
 
@@ -26,6 +26,10 @@ class userService {
 
   importUser(file: FormData) {
     return httpService.post(`${USER_URL}/check-import-data`, file, {});
+  }
+
+  addAfterImportUser(file: UserData) {
+    return httpService.post(`${USER_URL}/add-list-user`, file, {});
   }
 
   async exportUser(): Promise<void> {
@@ -75,4 +79,4 @@ class userService {
   }
 }
 
-export default new userService();
+export default new UserService();

@@ -1,12 +1,11 @@
-import { useSave } from "@/stores/useStores";
-import { isEmpty } from "lodash";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useSave } from '@/stores/useStores';
+import { isEmpty } from 'lodash';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { errorHandler } from "@/helpers/errors";
-import { showError } from "@/helpers/toast";
-import httpService from "@/services/httpService";
-import { ResponseRoomDetail, RoomDetail } from "../interfaces/room.interface";
-import roomService from "../room.service";
+import { errorHandler } from '@/helpers/errors';
+import { showError } from '@/helpers/toast';
+import { ResponseRoomDetail, RoomDetail } from '../interfaces/room.interface';
+import roomService from '../room.service';
 
 /**
  * Please check:
@@ -18,47 +17,44 @@ const useGetDetailRoom = (
   id: string | undefined,
   options: { isTrigger?: boolean; cachedKey?: string } = {
     isTrigger: true,
-    cachedKey: "",
+    cachedKey: '',
   },
 ) => {
   //! State
   const signal = useRef(new AbortController());
-  const { isTrigger = true, cachedKey = "" } = options;
+  const { isTrigger = true, cachedKey = '' } = options;
 
   const save = useSave();
   const [data, setData] = useState<RoomDetail>();
   const [isLoading, setLoading] = useState(false);
   const [isRefetching, setRefetching] = useState(false);
   const [error, setError] = useState<unknown>(null);
-  const token = httpService.getTokenStorage();
 
   //! Function
-  const fetch: () => Promise<ResponseRoomDetail> | undefined =
-    useCallback(() => {
-      if (!isTrigger) {
-        return;
-      }
+  const fetch: () => Promise<ResponseRoomDetail> | undefined = useCallback(() => {
+    if (!isTrigger) {
+      return;
+    }
 
-      return new Promise((resolve, reject) => {
-        (async () => {
-          try {
-            httpService.attachTokenToHeader(token);
-            const response = await roomService.getDetailRoom(id as string);
-            resolve(response);
-          } catch (error) {
-            setError(error);
-            reject(error);
-          }
-        })();
-      });
-    }, [id, isTrigger, token]);
+    return new Promise((resolve, reject) => {
+      (async () => {
+        try {
+          const response = await roomService.getDetailRoom(id as string);
+          resolve(response);
+        } catch (error) {
+          setError(error);
+          reject(error);
+        }
+      })();
+    });
+  }, [id, isTrigger]);
 
   const checkConditionPass = useCallback(
     (response: ResponseRoomDetail) => {
       //* Check condition of response here to set data
       if (!isEmpty(response?.data?.data)) {
         setData(response.data?.data);
-        save("detailUser", response.data?.data);
+        save('detailUser', response.data?.data);
       }
     },
     [save],

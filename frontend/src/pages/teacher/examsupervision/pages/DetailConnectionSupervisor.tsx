@@ -10,14 +10,17 @@ import useFiltersHandler from '@/hooks/useFiltersHandler';
 import useToggleDialog from '@/hooks/useToggleDialog';
 import { GenericFilters } from '@/pages/admin/manageuser/components/generic-filters';
 import { UserStats } from '@/pages/admin/manageuser/components/user-stats';
+import { useSignalR } from '@/providers/SignalRContextProvider';
 import facecaptureService from '@/services/modules/facecapture/facecapture.srvice';
 import useGetListFaceCapture from '@/services/modules/facecapture/hooks/useGetListFaceCapture';
 import type {
   Capture,
   IFaceCaptureRequest,
 } from '@/services/modules/facecapture/interfaces/facecapture.interface';
+import { debounce } from 'lodash';
 import { Activity, Camera, Clock, Download, ZoomIn } from 'lucide-react';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import ExamHeader from '../components/ExamHeader';
 import DialogDownLoadImg from '../dialogs/DialogDownLoadImg';
@@ -56,39 +59,98 @@ const ProgressBar = ({ value, label, color }: { value: number; label: string; co
 };
 
 const emotionColors: Record<string, string> = {
-  angry: '#ef4444', // Red
-  disgust: '#a3e635', // Lime
-  fear: '#8b5cf6', // Violet
-  happy: '#22c55e', // Green
-  neutral: '#3b82f6', // Blue
-  sad: '#6b7280', // Gray
-  surprise: '#f59e0b', // Amber
+  angry: '#ef4444',
+  disgust: '#a3e635',
+  fear: '#8b5cf6',
+  happy: '#22c55e',
+  neutral: '#3b82f6',
+  sad: '#6b7280',
+  surprise: '#f59e0b',
 };
 
-const DetailConnectionSupervisor = () => {
+const DetailConnectionSupervisor: React.FC = () => {
+  const { t } = useTranslation('shared');
   const { examId, studentExamId } = useParams<{ examId?: string; studentExamId?: string }>();
   const [selectedPhoto, setSelectedPhoto] = useState<PhotoItem | null>(null);
   const [openDialogDownLoadImg, toggleDialogDownLoadImg, shouldRenderDialogDownLoadImg] =
     useToggleDialog();
-
-  // State for image zoom dialog
   const [showZoomDialog, setShowZoomDialog] = useState(false);
   const [zoomImageUrl, setZoomImageUrl] = useState<string | null>(null);
+  const { signalRService } = useSignalR();
+  const debouncedRefetchRef = useRef<ReturnType<typeof debounce> | null>(null);
 
   const { filters, setFilters } = useFiltersHandler({
-    PageSize: 50,
+    PageSize: 15,
     CurrentPage: 1,
     TextSearch: '',
-    StudentExamId: studentExamId || '',
-    ExamId: examId || '',
+    StudentExamId: studentExamId ?? '',
+    ExamId: examId ?? '',
     LogType: '',
   });
 
+  const [currentPage, setCurrentPage] = useState(filters.CurrentPage ?? 1);
+
   const stableFilters = useMemo(() => filters as IFaceCaptureRequest, [filters]);
-  const { data: dataFaceCapture } = useGetListFaceCapture(stableFilters, {
+  const {
+    data: dataFaceCapture,
+    refetch: refetchFaceCapture,
+    totalPage,
+  } = useGetListFaceCapture(stableFilters, {
     isTrigger: true,
     saveData: false,
   });
+
+  const debouncedRefetch = useMemo(() => debounce(refetchFaceCapture, 1000), [refetchFaceCapture]);
+
+  // Initialize SignalR connection
+  useEffect(() => {
+    if (!signalRService || !examId || !studentExamId) {
+      console.warn('Missing dependencies:', { signalRService, examId, studentExamId });
+      return;
+    }
+
+    debouncedRefetchRef.current = debouncedRefetch;
+
+    const initSignalR = async () => {
+      try {
+        // Ensure connection is started
+        await signalRService.start();
+
+        // Register AddNewFaceCapture handler
+        signalRService.on('AddNewFaceCapture', (capture: Capture) => {
+          if (capture.imageUrl && debouncedRefetchRef.current) {
+            debouncedRefetchRef.current();
+          }
+        });
+
+        // Handle reconnection
+        signalRService.connection.onreconnected(() => {
+          signalRService
+            .invoke('JoinExamGroup', examId, studentExamId)
+            .catch((error) => console.error('Failed to rejoin exam group:', error));
+        });
+
+        // Join exam group
+        await signalRService.invoke('JoinExamGroup', examId, studentExamId);
+      } catch (error) {
+        console.error('Failed to initialize SignalR:', error);
+      }
+    };
+
+    initSignalR();
+
+    return () => {
+      if (debouncedRefetchRef.current) {
+        debouncedRefetchRef.current.cancel();
+      }
+      if (signalRService) {
+        signalRService.off('AddNewFaceCapture');
+        signalRService
+          .invoke('LeaveExamGroup', examId, studentExamId)
+          .catch((error) => console.error('Failed to leave exam group:', error));
+      }
+    };
+  }, [examId, studentExamId, signalRService, debouncedRefetch]);
 
   const dataMain = useMemo(() => {
     if (!Array.isArray(dataFaceCapture)) {
@@ -97,13 +159,13 @@ const DetailConnectionSupervisor = () => {
     return dataFaceCapture.map((item: Capture) => {
       let emotionsObj: Record<string, number> = {};
       try {
-        emotionsObj = JSON.parse(item.emotions || '{}');
+        emotionsObj = JSON.parse(item.emotions ?? '{}');
       } catch (e) {
         console.warn(`Failed to parse emotions for capture ${item.captureId}:`, e);
       }
 
       let status: PhotoItem['status'];
-      if (item.isDetected === false) {
+      if (item.isDetected === false || item.errorMessage) {
         status = 'no-face';
       } else if (item.logType === 0) {
         status = 'normal';
@@ -120,14 +182,14 @@ const DetailConnectionSupervisor = () => {
         timestamp: convertUTCToVietnamTime(item.createdAt, DateTimeFormat.DayMonthYear),
         status: status,
         mode: 'Auto',
-        imageUrl: item.imageUrl || '',
+        imageUrl: item.imageUrl ?? '',
         emotions: emotionsObj,
         dominantEmotion: item.dominantEmotion,
         avgArousal: item.avgArousal,
         avgValence: item.avgValence,
         inferredState: item.inferredState,
         isDetected: item.isDetected,
-        errorMessage: item.errorMessage || null,
+        errorMessage: item.errorMessage ?? null,
       };
     }) as PhotoItem[];
   }, [dataFaceCapture]);
@@ -138,25 +200,25 @@ const DetailConnectionSupervisor = () => {
     const warning = dataMain.filter((item) => item.isDetected === false).length;
     return [
       {
-        title: 'Tổng ảnh đã chụp',
+        title: t('ExamSupervision.TotalCapturedPhotos'),
         value: total,
         icon: <Camera className="h-6 w-6 text-emerald-600" />,
         bgColor: 'bg-gradient-to-br from-emerald-50 to-emerald-100',
       },
       {
-        title: 'Bình thường',
+        title: t('ExamSupervision.Normal'),
         value: normal,
         icon: <Camera className="h-6 w-6 text-blue-600" />,
         bgColor: 'bg-gradient-to-br from-blue-50 to-blue-100',
       },
       {
-        title: 'Cảnh báo',
+        title: t('ExamSupervision.Warning'),
         value: warning,
         icon: <Camera className="h-6 w-6 text-purple-600" />,
         bgColor: 'bg-gradient-to-br from-purple-50 to-purple-100',
       },
     ];
-  }, [dataMain]);
+  }, [dataMain, t]);
 
   const getStatusColor = (status: PhotoItem['status']) => {
     switch (status) {
@@ -173,22 +235,27 @@ const DetailConnectionSupervisor = () => {
     }
   };
 
-  const getStatusText = (status: PhotoItem['status']) => {
+  const getStatusText = (status: PhotoItem['status'], errorMessage?: string | null) => {
+    const maxLength = 24; // Maximum length for errorMessage
+    const truncatedMessage =
+      errorMessage && errorMessage.length > maxLength
+        ? `${errorMessage.substring(0, maxLength)}...`
+        : errorMessage;
+
     switch (status) {
       case 'normal':
-        return 'Bình thường';
+        return t('ExamSupervision.Normal');
       case 'warning':
-        return 'Cảnh báo';
+        return t('ExamSupervision.Warning');
       case 'violation':
-        return 'Vi phạm';
+        return t('ExamSupervision.Violation');
       case 'no-face':
-        return 'Không phát hiện khuôn mặt';
+        return truncatedMessage ? `${truncatedMessage}` : t('ExamSupervision.NoFace');
       default:
-        return 'Không xác định';
+        return t('ExamSupervision.Unknown');
     }
   };
 
-  //!Functions
   const handlePhotoClick = (photo: PhotoItem) => {
     setSelectedPhoto(photo);
   };
@@ -207,7 +274,7 @@ const DetailConnectionSupervisor = () => {
 
   const handleDownloadImg = async () => {
     try {
-      const response = await facecaptureService.downloadFaceCapture(studentExamId || '');
+      const response = await facecaptureService.downloadFaceCapture(studentExamId ?? '');
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
@@ -223,29 +290,36 @@ const DetailConnectionSupervisor = () => {
     }
   };
 
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPage && newPage !== currentPage) {
+      setCurrentPage(newPage);
+      setFilters((prev: any) => ({ ...prev, CurrentPage: newPage }));
+    }
+  };
+
   const content = (
-    <div className="space-y-6 p-4 sm:p-6 lg:p-8">
+    <div className="space-y-6">
       <ExamHeader
-        title="Thư viện giám sát"
-        subtitle="Theo dõi và quản lý các ảnh chụp trong quá trình giám sát thi"
+        title={t('ExamSupervision.PhotoLibrary')}
+        subtitle={t('ExamSupervision.MonitoringAndManagingCapturedPhotos')}
         className="rounded-lg border-b border-white/20 bg-gradient-to-r from-pink-600 to-blue-700 px-6 py-6 shadow-lg"
         icon={<Camera className="h-8 w-8 text-white" />}
       />
       <UserStats statItems={statItems} className="mt-2 grid-cols-1 md:grid-cols-2 lg:grid-cols-3" />
       <GenericFilters
         className="md:grid-cols-3"
-        searchPlaceholder="Tìm kiếm vi phạm..."
+        searchPlaceholder={t('ExamSupervision.SearchViolation')}
         onSearch={() => {}}
         filters={[
           {
             key: 'logType',
-            placeholder: 'Chọn loại vi phạm',
+            placeholder: t('ExamSupervision.SelectViolationType'),
             options: [
-              { value: null, label: 'Tất cả' },
-              { value: '0', label: 'Thông thường' },
-              { value: '1', label: 'Cảnh báo' },
-              { value: '2', label: 'Vi phạm' },
-              { value: '3', label: 'Quan trọng' },
+              { value: null, label: t('ExamSupervision.AllStatus') },
+              { value: '0', label: t('ExamSupervision.Normal') },
+              { value: '1', label: t('ExamSupervision.Warning') },
+              { value: '2', label: t('ExamSupervision.Violation') },
+              { value: '3', label: t('ExamSupervision.Critical') },
             ],
           },
         ]}
@@ -255,7 +329,7 @@ const DetailConnectionSupervisor = () => {
           setFilters((prev: any) => {
             const updatedFilters = {
               ...prev,
-              LogType: newFilters.logType || '',
+              LogType: newFilters.logType ?? '',
             };
             return updatedFilters;
           });
@@ -267,7 +341,7 @@ const DetailConnectionSupervisor = () => {
             <CardHeader className="flex flex-row items-center justify-between pb-4">
               <CardTitle className="flex items-center gap-2 text-xl font-semibold text-gray-800">
                 <Camera className="h-6 w-6 text-blue-600" />
-                Thư viện ảnh chụp ({dataMain.length})
+                {t('ExamSupervision.PhotoLibrary')} ({dataMain.length})
               </CardTitle>
               <Button
                 variant="ghost"
@@ -277,14 +351,17 @@ const DetailConnectionSupervisor = () => {
                 disabled={!studentExamId}
               >
                 <Download className="h-5 w-5" />
-                <span className="ml-2 text-sm font-medium">Tải xuống tất cả</span>
+                <span className="ml-2 text-sm font-medium">
+                  {t('ExamSupervision.DownloadAllPhotos')}
+                </span>
               </Button>
             </CardHeader>
             {dataMain.length > 0 ? (
               <CardContent className="p-4">
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                   {dataMain.map((photo) => (
-                    <div
+                    <button
+                      type="button"
                       key={photo.id}
                       className="group relative cursor-pointer overflow-hidden rounded-lg shadow-sm transition-all duration-200 hover:shadow-lg"
                       onClick={() => handlePhotoClick(photo)}
@@ -292,10 +369,7 @@ const DetailConnectionSupervisor = () => {
                       <div className="aspect-video overflow-hidden rounded-lg border-2 border-gray-200 bg-gray-100 transition-colors group-hover:border-blue-400">
                         {photo.imageUrl ? (
                           <img
-                            src={
-                              photo.imageUrl ||
-                              '/placeholder.svg?height=200&width=300&text=No Image'
-                            }
+                            src={photo.imageUrl}
                             alt="Capture"
                             className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
                           />
@@ -308,7 +382,7 @@ const DetailConnectionSupervisor = () => {
                           <Badge
                             className={`${getStatusColor(photo.status)} border px-3 py-1 text-xs font-medium`}
                           >
-                            {getStatusText(photo.status)}
+                            {getStatusText(photo.status, photo.errorMessage)}
                           </Badge>
                         </div>
                         <div className="absolute right-2 top-2 flex gap-2">
@@ -339,14 +413,42 @@ const DetailConnectionSupervisor = () => {
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
               </CardContent>
             ) : (
               <CardContent className="py-8 text-center text-gray-500">
-                Không có ảnh nào được chụp.
+                <p className="text-lg">{t('ExamSupervision.NoPhotosFound')}</p>
               </CardContent>
+            )}
+
+            {totalPage >= 1 && (
+              <div className="mb-4 mt-4 flex justify-center gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                {Array.from({ length: totalPage }, (_, i) => i + 1).map((page) => (
+                  <Button
+                    key={page}
+                    variant={currentPage === page ? 'default' : 'outline'}
+                    onClick={() => handlePageChange(page)}
+                  >
+                    {page}
+                  </Button>
+                ))}
+                <Button
+                  variant="outline"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPage}
+                >
+                  Next
+                </Button>
+              </div>
             )}
           </Card>
         </div>
@@ -355,20 +457,24 @@ const DetailConnectionSupervisor = () => {
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-xl font-semibold text-gray-800">
                 <Activity className="h-6 w-6 text-purple-600" />
-                Phân tích chi tiết
+                {t('ExamSupervision.DetailedAnalysis')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-5 p-4">
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-600">Thời gian</label>
+                <label className="mb-1 block text-sm font-medium text-gray-600">
+                  {t('ExamSupervision.Time')}
+                </label>
                 <p className="text-lg font-semibold text-gray-900">
-                  {selectedPhoto?.timestamp || 'N/A'}
+                  {selectedPhoto?.timestamp ?? 'N/A'}
                 </p>
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-600">Loại chụp</label>
+                <label className="mb-1 block text-sm font-medium text-gray-600">
+                  {t('ExamSupervision.CaptureType')}
+                </label>
                 <p className="text-lg font-semibold text-gray-900">
-                  {selectedPhoto?.mode || 'N/A'}
+                  {selectedPhoto?.mode ?? 'N/A'}
                 </p>
               </div>
               {selectedPhoto?.dominantEmotion && (
@@ -384,7 +490,7 @@ const DetailConnectionSupervisor = () => {
               {selectedPhoto?.avgArousal !== undefined && (
                 <div>
                   <label className="mb-1 block text-sm font-medium text-gray-600">
-                    Mức độ kích thích trung bình
+                    {t('ExamSupervision.AverageArousal')}
                   </label>
                   <p className="text-lg font-semibold text-gray-900">
                     {selectedPhoto.avgArousal.toFixed(2)}
@@ -394,7 +500,7 @@ const DetailConnectionSupervisor = () => {
               {selectedPhoto?.avgValence !== undefined && (
                 <div>
                   <label className="mb-1 block text-sm font-medium text-gray-600">
-                    Mức độ tích cực trung bình
+                    {t('ExamSupervision.AverageValence')}
                   </label>
                   <p className="text-lg font-semibold text-gray-900">
                     {selectedPhoto.avgValence.toFixed(2)}
@@ -404,7 +510,7 @@ const DetailConnectionSupervisor = () => {
               {selectedPhoto?.inferredState && (
                 <div>
                   <label className="mb-1 block text-sm font-medium text-gray-600">
-                    Trạng thái suy luận
+                    {t('ExamSupervision.InferredState')}
                   </label>
                   <p className="text-lg font-semibold text-gray-900">
                     {selectedPhoto.inferredState}
@@ -414,31 +520,33 @@ const DetailConnectionSupervisor = () => {
               {selectedPhoto?.isDetected !== undefined && (
                 <div>
                   <label className="mb-1 block text-sm font-medium text-gray-600">
-                    Phát hiện khuôn mặt
+                    {t('ExamSupervision.FaceDetected')}
                   </label>
                   <p className="text-lg font-semibold text-gray-900">
-                    {selectedPhoto.isDetected ? 'Có' : 'Không'}
+                    {selectedPhoto.isDetected ? t('Yes') : t('No')}
                   </p>
                 </div>
               )}
               {selectedPhoto?.errorMessage && (
                 <div>
                   <label className="mb-1 block text-sm font-medium text-gray-600">
-                    Thông báo lỗi
+                    {t('ExamSupervision.ErrorMessage')}
                   </label>
                   <p className="text-lg font-semibold text-red-600">{selectedPhoto.errorMessage}</p>
                 </div>
               )}
               {selectedPhoto && Object.keys(selectedPhoto.emotions).length > 0 && (
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-600">Cảm xúc</label>
+                  <label className="mb-2 block text-sm font-medium text-gray-600">
+                    {t('ExamSupervision.EmotionAnalysis')}
+                  </label>
                   <div className="space-y-3">
                     {Object.entries(selectedPhoto.emotions).map(([emotion, value]) => (
                       <ProgressBar
                         key={emotion}
                         label={emotion.charAt(0).toUpperCase() + emotion.slice(1)}
                         value={value}
-                        color={emotionColors[emotion] || '#6b7280'}
+                        color={emotionColors[emotion] ?? '#6b7280'}
                       />
                     ))}
                   </div>
@@ -456,22 +564,16 @@ const DetailConnectionSupervisor = () => {
           selectedPhoto={selectedPhoto}
         />
       )}
-
-      {/* Image Zoom Dialog */}
       <Dialog open={showZoomDialog} onOpenChange={setShowZoomDialog}>
         <DialogContent className="max-h-[90vh] max-w-[90vw] overflow-hidden p-0">
           {zoomImageUrl && (
-            <img
-              src={zoomImageUrl || '/placeholder.svg'}
-              alt="Zoomed Capture"
-              className="h-full w-full object-contain"
-            />
+            <img src={zoomImageUrl} alt="Zoomed Capture" className="h-full w-full object-contain" />
           )}
         </DialogContent>
       </Dialog>
     </div>
   );
-  //!Render
+
   return <PageWrapper name="Chi tiết kết nối giám thị">{content}</PageWrapper>;
 };
 

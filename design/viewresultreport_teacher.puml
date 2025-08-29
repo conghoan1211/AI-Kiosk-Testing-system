@@ -1,7 +1,5 @@
 @startuml
-' Class Diagram for View Result Report (Teacher) Feature
-
-title View Result Report Class Diagram
+' Simplified View Result Report (Teacher) Class Diagram (giống dạng View List Role)
 
 hide empty members
 skinparam packageStyle rectangle
@@ -13,7 +11,6 @@ skinparam classFontName Arial
 skinparam noteFontSize 11
 skinparam noteFontName Arial
 
-' Increase spacing and sizing
 skinparam class {
     BackgroundColor LightBlue
     BorderColor DarkBlue
@@ -27,18 +24,13 @@ skinparam package {
     FontSize 14
     FontStyle bold
 }
-
 skinparam interface {
     BackgroundColor LightGreen
     BorderColor DarkGreen
     FontSize 12
 }
 
-skinparam enum {
-    BackgroundColor LightCyan
-    BorderColor DarkCyan
-    FontSize 12
-}
+title View Result Report Class Diagram
 
 package "Controllers" {
     class ExamController <<Controller>> {
@@ -52,12 +44,21 @@ package "Services" {
         + ViewResultReport(examId: string): Task<(string, List<ResultReportVM>?)>
     }
     class ExamService <<Service>> {
-        - _context: DbContext
+        - _unitOfWork: IUnitOfWork
         + ViewResultReport(examId: string): Task<(string, List<ResultReportVM>?)>
     }
 }
 
-package "Models" {
+package "Repositories" {
+    interface IStudentExamRepository {
+        + GetByExamId(examId: string)
+    }
+    interface IStudentRepository {
+        + GetById(studentId: string)
+    }
+}
+
+package "Models & DTOs" {
     class ResultReportVM <<DTO>> {
         + StudentId: string
         + StudentName: string
@@ -67,29 +68,12 @@ package "Models" {
     }
 }
 
-package "Entities" {
-    class StudentExam {
-        + StudentExamId: string
-        + StudentId: string
-        + ExamId: string
-        + Score: decimal
-        + Status: int
-        + SubmitTime: DateTime
-        + Student: Student
-    }
-    class Student {
-        + StudentId: string
-        + StudentName: string
-    }
-}
-
 ' Relationships
 ExamController ..> IExamService : <<uses>>
-IExamService <|.. ExamService
 ExamController ..> ResultReportVM : <<uses>>
-ExamService ..> StudentExam : <<uses>>
-ExamService ..> ResultReportVM : <<maps to>>
-StudentExam o-- Student : <<has>>
-ResultReportVM --> StudentExam : <<maps from>>
+IExamService <|.. ExamService : <<implements>>
+ExamService ..> IStudentExamRepository : <<uses>>
+ExamService ..> IStudentRepository : <<uses>>
+ExamService ..> ResultReportVM : <<returns>>
 
-@enduml 
+@enduml

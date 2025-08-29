@@ -4,8 +4,8 @@ export interface IFeedbackForm {
 }
 
 export interface IFeedbackRequest {
-    dateFrom: Date | null,
-    dateTo: Date | null,
+    dateFrom: Date | undefined,
+    dateTo: Date | undefined,
     pageSize: number,
     currentPage: number,
     textSearch: string

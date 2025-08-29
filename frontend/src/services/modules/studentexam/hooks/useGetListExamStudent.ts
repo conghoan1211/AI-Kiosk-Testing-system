@@ -1,12 +1,11 @@
+import cachedKeys from '@/consts/cachedKeys';
 import { showError } from '@/helpers/toast';
-import httpService from '@/services/httpService';
 import { useSave } from '@/stores/useStores';
 import { isArray } from 'lodash';
 import cloneDeep from 'lodash/cloneDeep';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { StudentExamList, StudentExamResponse } from '../interfaces/studentexam.interface';
 import studentexamService from '../studentexam.service';
-import { StudentExamList } from '../interfaces/studentexam.interface';
-import cachedKeys from '@/consts/cachedKeys';
 
 const useGetListExamStudent = (
   options: {
@@ -22,15 +21,13 @@ const useGetListExamStudent = (
   },
 ) => {
   //! State
-  const { isTrigger = true, refetchKey = '', saveData = true, isLoadmore = false } = options;
+  const { isTrigger = true, refetchKey = '', saveData = true } = options;
   const signal = useRef(new AbortController());
   const save = useSave();
   const [data, setData] = useState<StudentExamList[]>([]);
   const [loading, setLoading] = useState(false);
   const [refetching, setRefetching] = useState(false);
   const [error, setError] = useState<unknown>(null);
-  const token = httpService.getTokenStorage();
-  const [loadingMore, setLoadingMore] = useState(false);
 
   const requestAPI = studentexamService.getListExams;
 
@@ -43,7 +40,6 @@ const useGetListExamStudent = (
     return new Promise((resolve, reject) => {
       (async () => {
         try {
-          httpService.attachTokenToHeader(token);
           const response = await requestAPI({ signal: signal.current.signal });
           resolve(response);
         } catch (error) {
@@ -52,10 +48,10 @@ const useGetListExamStudent = (
         }
       })();
     });
-  }, [isTrigger, token, requestAPI]);
+  }, [isTrigger, requestAPI]);
 
   const checkConditionPass = useCallback(
-    (response: any, options: { isLoadmore?: boolean } = {}) => {
+    (response: StudentExamResponse, options: { isLoadmore?: boolean } = {}) => {
       const { isLoadmore } = options;
 
       if (saveData) {
@@ -87,7 +83,7 @@ const useGetListExamStudent = (
       setRefetching(true);
       const response = await fetch();
       if (response) {
-        checkConditionPass(response);
+        checkConditionPass(response as StudentExamResponse);
       }
       setRefetching(false);
     } catch (error: any) {
@@ -111,33 +107,18 @@ const useGetListExamStudent = (
         setLoading(true);
         const response = await fetch();
         if (response) {
-          checkConditionPass(response);
+          checkConditionPass(response as StudentExamResponse);
         }
       } catch (error) {
+        setData([]);
         showError(error);
       } finally {
         setLoading(false);
       }
     };
 
-    const fetchMore = async () => {
-      try {
-        setLoadingMore(true);
-        const response = await fetch();
-        if (response) {
-          checkConditionPass(response, { isLoadmore: true });
-        }
-      } catch (error) {
-        showError(error);
-      } finally {
-        setLoadingMore(false);
-      }
-    };
-
-    if (!isLoadmore) {
+    if (isTrigger) {
       fetchAPI();
-    } else {
-      fetchMore();
     }
 
     return () => {
@@ -145,7 +126,7 @@ const useGetListExamStudent = (
         signal.current.abort();
       }
     };
-  }, [isTrigger, fetch, checkConditionPass, isLoadmore]);
+  }, [isTrigger, fetch, checkConditionPass]);
 
   //! Render
   return {
@@ -155,7 +136,6 @@ const useGetListExamStudent = (
     refetch,
     refetching,
     setData,
-    loadingMore,
   };
 };
 

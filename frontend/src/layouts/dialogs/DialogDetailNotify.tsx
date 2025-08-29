@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { DateTimeFormat } from '@/consts/dates';
-import { convertUTCToVietnamTime } from '@/helpers/common';
+import { convertUTCToVietnamTime, formatTimeAgo } from '@/helpers/common';
 import type { DialogI } from '@/interfaces/common';
 import useGetAlertDetail from '@/services/modules/alert/hooks/useGetDetailAlert';
 import { Form, Formik } from 'formik';
@@ -40,21 +40,6 @@ const DialogDetailNotify = (props: DialogProps) => {
   const { data: dataAlertDetail, isLoading } = useGetAlertDetail(alertId, {
     isTrigger: isOpen,
   });
-
-  const formatTimeAgo = (date: Date) => {
-    const now = new Date();
-    const diffInMinutes = Math.floor((now.getTime() - new Date(date).getTime()) / (1000 * 60));
-
-    if (diffInMinutes < 60) {
-      return `${diffInMinutes} phút trước`;
-    } else if (diffInMinutes < 1440) {
-      const hours = Math.floor(diffInMinutes / 60);
-      return `${hours} giờ trước`;
-    } else {
-      const days = Math.floor(diffInMinutes / 1440);
-      return `${days} ngày trước`;
-    }
-  };
 
   if (isLoading) {
     return (
@@ -93,8 +78,10 @@ const DialogDetailNotify = (props: DialogProps) => {
                         </span>
                       </div>
 
+                      <Separator />
+
                       <DialogDescription className="text-base font-medium text-gray-900">
-                        {dataAlertDetail?.message || 'Báo cáo vi phạm thành công'}
+                        {dataAlertDetail?.message ?? 'Báo cáo vi phạm thành công'}
                       </DialogDescription>
 
                       <p className="text-sm text-gray-600">
@@ -123,15 +110,13 @@ const DialogDetailNotify = (props: DialogProps) => {
                         <User className="h-4 w-4 text-gray-500" />
                         <div className="flex items-center gap-2">
                           <Avatar className="h-6 w-6">
-                            <AvatarImage
-                              src={dataAlertDetail?.createdAvatar || '/placeholder.svg'}
-                            />
+                            <AvatarImage src={dataAlertDetail?.createdAvatar} />
                             <AvatarFallback className="text-xs">
                               {dataAlertDetail?.createdName?.charAt(0)}
                             </AvatarFallback>
                           </Avatar>
                           <span className="text-sm">
-                            Người: {dataAlertDetail?.createdName || 'Giáo viên chủ nhiệm'}
+                            Người: {dataAlertDetail?.createdName ?? 'Giáo viên chủ nhiệm'}
                           </span>
                         </div>
                       </div>
@@ -139,40 +124,22 @@ const DialogDetailNotify = (props: DialogProps) => {
 
                     <Separator />
 
-                    {/* Related Data Section */}
-                    <div className="space-y-3">
-                      <h3 className="flex items-center gap-2 font-medium text-gray-900">
-                        <span className="h-4 w-4">📄</span>
-                        Dữ liệu liên quan
-                      </h3>
-                      <div className="rounded-lg bg-gray-50 p-4">
-                        <pre className="whitespace-pre-wrap font-mono text-sm text-gray-700">
-                          {`{
-  "studentId": "${dataAlertDetail?.id || 'HS001'}",
-  "studentName": "${dataAlertDetail?.studentName || 'Nguyễn Văn A'}",
-  "reporterId": "${dataAlertDetail?.createdUserCode || 'GV001'}",
-  "reporterName": "${dataAlertDetail?.createdName || 'Cô Trần Thị B'}",
-}`}
-                        </pre>
-                      </div>
-                    </div>
-
                     {/* Student Info Card */}
                     <div className="space-y-2 rounded-lg bg-blue-50 p-4">
                       <h4 className="font-medium text-blue-900">Thông tin học sinh</h4>
                       <div className="flex items-center gap-3">
                         <Avatar className="h-10 w-10">
-                          <AvatarImage src={dataAlertDetail?.studentAvatar || '/placeholder.svg'} />
+                          <AvatarImage src={dataAlertDetail?.studentAvatar} />
                           <AvatarFallback>
-                            {dataAlertDetail?.studentName?.charAt(0) || 'N'}
+                            {dataAlertDetail?.studentName?.charAt(0) ?? 'N'}
                           </AvatarFallback>
                         </Avatar>
                         <div>
                           <p className="font-medium text-blue-900">
-                            {dataAlertDetail?.studentName || 'Nguyễn Văn A'}
+                            {dataAlertDetail?.studentName ?? 'Nguyễn Văn A'}
                           </p>
                           <p className="text-sm text-blue-700">
-                            Mã HS: {dataAlertDetail?.studentUserCode || 'HS001'}
+                            Mã HS: {dataAlertDetail?.studentUserCode ?? 'HS001'}
                           </p>
                         </div>
                       </div>

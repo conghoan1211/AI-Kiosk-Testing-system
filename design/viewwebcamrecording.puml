@@ -1,5 +1,5 @@
 @startuml
-' Class Diagram for View Webcam Recording Feature
+' Class Diagram for View Webcam Recording Feature (giống dạng View List Role)
 
 title View Webcam Recording Class Diagram
 
@@ -13,7 +13,6 @@ skinparam classFontName Arial
 skinparam noteFontSize 11
 skinparam noteFontName Arial
 
-' Increase spacing and sizing
 skinparam class {
     BackgroundColor LightBlue
     BorderColor DarkBlue
@@ -52,8 +51,21 @@ package "Services" {
         + GetList(input: FaceCaptureSearchVM): Task<(string, SearchResult?)>
     }
     class FaceCaptureService <<Service>> {
-        - _context: DbContext
+        - _unitOfWork: IUnitOfWork
         + GetList(input: FaceCaptureSearchVM): Task<(string, SearchResult?)>
+    }
+}
+
+package "Repositories" {
+    interface IFaceCaptureRepository {
+        + GetByStudentExamId(studentExamId: string)
+        + GetByExamId(examId: string)
+    }
+    interface IStudentExamRepository {
+        + GetById(studentExamId: string)
+    }
+    interface IUserRepository {
+        + GetById(userId: string)
     }
 }
 
@@ -95,61 +107,30 @@ package "Models & DTOs" {
     }
 }
 
-package "Entities" {
-    class FaceCapture {
-        + CaptureId: string
-        + StudentExamId: string
-        + ImageUrl: string
-        + Description: string
-        + IsDetected: bool
-        + LogType: int
-        + Emotions: string
-        + DominantEmotion: string
-        + CreatedAt: DateTime
-        + UpdatedAt: DateTime
-    }
-    class StudentExam {
-        + StudentExamId: string
-        + StudentId: string
-        + ExamId: string
-        + User: User
-    }
-    class User {
-        + UserId: string
-        + UserCode: string
-        + FullName: string
-    }
-}
-
 package "Enums" {
     enum LogType {
-        + Login
-        + Logout
-        + StartExam
-        + SubmitExam
-        + Warning
+        Login
+        Logout
+        StartExam
+        SubmitExam
+        Warning
     }
 }
 
 ' Relationships
 FaceCaptureController ..> IFaceCaptureService : <<uses>>
 FaceCaptureController ..> FaceCaptureSearchVM : <<uses>>
-FaceCaptureController ..> SearchResult : <<uses>>
-
 IFaceCaptureService <|.. FaceCaptureService
-FaceCaptureService ..> FaceCapture : <<uses>>
-FaceCaptureService ..> StudentExam : <<uses>>
-FaceCaptureService ..> User : <<uses>>
+FaceCaptureService ..> IFaceCaptureRepository : <<uses>>
+FaceCaptureService ..> IStudentExamRepository : <<uses>>
+FaceCaptureService ..> IUserRepository : <<uses>>
 FaceCaptureService ..> FaceCaptureSearchVM : <<uses>>
-FaceCaptureService ..> SearchResult : <<uses>>
-FaceCaptureService ..> FaceCaptureVM : <<uses>>
-FaceCaptureService ..> CaptureImages : <<uses>>
-
+FaceCaptureService ..> SearchResult : <<returns>>
+FaceCaptureService ..> FaceCaptureVM : <<maps to>>
+FaceCaptureService ..> CaptureImages : <<maps to>>
 FaceCaptureSearchVM --|> SearchRequestVM : <<inherits>>
 FaceCaptureSearchVM ..> LogType : <<uses>>
-
-FaceCapture --> StudentExam : <<belongs to>>
-StudentExam o-- User : <<has>>
 FaceCaptureVM o-- CaptureImages : <<contains>>
+SearchResult o-- FaceCaptureVM : <<contains>>
 
-@enduml 
+@enduml

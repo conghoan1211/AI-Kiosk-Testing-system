@@ -41,6 +41,14 @@ namespace DesktopApp.Models
         public string? Emotions { get; set; }
         public string? DominantEmotion { get; set; }
         public LogType LogType { get; set; } = LogType.Info;
+
+        public float AvgArousal { get; set; } = 0;
+        public float AvgValence { get; set; } = 0;
+        public string? InferredState { get; set; }
+        public string? Region { get; set; }
+        public string? Result { get; set; } = null;
+        public string? Status { get; set; } = null;
+        public string? ErrorMessage { get; set; } = null;
     }
 
 }

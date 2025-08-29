@@ -12,4 +12,5 @@ export enum DateTimeFormat {
   VNFormat = 'DD/MM/YYYY',
   MinuteFormat = 'mm:ss',
   HourMinuteFormat = 'HH:mm',
+  HourMinuteSecondFormat = 'HH:mm:ss',
 }

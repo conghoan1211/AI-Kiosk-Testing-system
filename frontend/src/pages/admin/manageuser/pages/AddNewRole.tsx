@@ -4,9 +4,11 @@ import { useState } from 'react';
 import AddNewRoleTab, { FormDataRoles } from '../components/add-new-role-tab';
 import PreviewTab from '../components/preview-tab';
 import PageWrapper from '@/components/PageWrapper/PageWrapper';
+import { useTranslation } from 'react-i18next';
 
 const AddNewRole = () => {
   //!State
+  const { t } = useTranslation('shared');
   const [activeTab, setActiveTab] = useState('generalInfo');
   const [formData, setFormData] = useState<FormDataRoles | null>(null);
 
@@ -18,12 +20,12 @@ const AddNewRole = () => {
 
   //!Render
   return (
-    <PageWrapper name='Thêm vai trò mới' className="bg-white dark:bg-gray-900">
+    <PageWrapper name={t('UserManagement.AddNewRole')} className="bg-white dark:bg-gray-900">
       <div className="space-y-6 p-4">
         <Tabs defaultValue="generalInfo" value={activeTab} onValueChange={setActiveTab}>
           <TabsList variant="default" fullWidth className="w-full">
             <TabsTrigger variant="gradient" value="generalInfo" icon={<Info size={16} />}>
-              Thông tin cơ bản
+              {t('UserManagement.GeneralInfo')}
             </TabsTrigger>
             <TabsTrigger
               variant="gradient"
@@ -31,7 +33,7 @@ const AddNewRole = () => {
               icon={<Eye size={16} />}
               disabled={!formData}
             >
-              Xem trước
+              {t('UserManagement.Preview')}
             </TabsTrigger>
           </TabsList>
 

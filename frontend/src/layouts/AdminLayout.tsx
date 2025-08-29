@@ -9,29 +9,25 @@ import {
   Album,
   BookOpen,
   ClipboardList,
-  FileQuestion,
-  FileText,
-  HelpCircle,
   Home,
   Keyboard,
-  LockIcon,
   Landmark,
+  LockIcon,
   LogOut,
   Menu,
   MessagesSquare,
-  Settings,
+  ShieldAlert,
   Tv,
   User,
   User2Icon,
   Users,
 } from 'lucide-react';
 import type React from 'react';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import NavigationBar from './components/NavigationBar';
 import SideBar from './components/SideBar';
-
 interface AdminLayoutProps {
   children: React.ReactNode;
 }
@@ -54,83 +50,68 @@ const AdminLayout = (props: AdminLayoutProps) => {
   const user: UserInfo = userData ? (userData as UserInfo) : ({} as UserInfo);
 
   // Menu items with enhanced structure
-  const teacherMenuItems = useMemo(
-    () => [
-      {
-        title: 'Quản lý quyền',
-        href: BaseUrl.AdminPermission,
-        icon: LockIcon,
-      },
-      {
-        title: 'Quản lý người dùng',
-        href: BaseUrl.AdminManageUsers,
-        icon: User2Icon,
-      },
-      {
-        title: 'Quản lý môn học',
-        href: BaseUrl.AdminManageSubject,
-        icon: BookOpen,
-      },
-      {
-        title: 'Ngân hàng câu hỏi',
-        href: BaseUrl.AdminBankQuestion,
-        icon: FileQuestion,
-        subItems: [
-          {
-            title: 'Tổng quan',
-            href: BaseUrl.AdminBankQuestion,
-            icon: Landmark,
-          },
-          {
-            title: 'Quản lý câu hỏi',
-            href: BaseUrl.AdminManageQuestion,
-            icon: FileText,
-          },
-        ],
-      },
-      {
-        title: 'Quản lý lớp học',
-        href: BaseUrl.AdminManageClass,
-        icon: Users,
-      },
-      {
-        title: 'Quản lý phòng thi',
-        href: BaseUrl.AdminManageRoom,
-        icon: Home,
-      },
-      {
-        title: 'Quản lý ứng dụng bị cấm',
-        href: BaseUrl.AdminProhibited,
-        icon: HelpCircle,
-      },
-      {
-        title: 'Quản lý phím tắt',
-        href: BaseUrl.AdminKeyboardShortcut,
-        icon: Keyboard,
-      },
-      {
-        title: 'Hoạt động người dùng',
-        href: BaseUrl.AdminUserActivityLog,
-        icon: ClipboardList,
-      },
-      {
-        title: 'Giám sát thi',
-        href: BaseUrl.AdminSupervision,
-        icon: Tv,
-      },
-      {
-        title: 'Quản lý đề thi',
-        href: BaseUrl.AdminManageExam,
-        icon: Album,
-      },
-      {
-        title: 'Ý kiến đóng góp',
-        href: BaseUrl.ViewFeedback,
-        icon: MessagesSquare,
-      },
-    ],
-    [],
-  );
+  const teacherMenuItems = [
+    {
+      title: t('SideBar.PermissionManagement'),
+      href: BaseUrl.AdminPermission,
+      icon: LockIcon,
+    },
+    {
+      title: t('SideBar.UserManagement'),
+      href: BaseUrl.AdminManageUsers,
+      icon: User2Icon,
+    },
+    {
+      title: t('SideBar.SubjectManagement'),
+      href: BaseUrl.AdminManageSubject,
+      icon: BookOpen,
+    },
+    {
+      title: t('BankQuestion.ManageBankQuestion'),
+      href: BaseUrl.AdminBankQuestion,
+      icon: Landmark,
+    },
+    {
+      title: t('SideBar.ClassManagement'),
+      href: BaseUrl.AdminManageClass,
+      icon: Users,
+    },
+    {
+      title: t('SideBar.ExamRoomManagement'),
+      href: BaseUrl.AdminManageRoom,
+      icon: Home,
+    },
+    {
+      title: t('SideBar.ProhibitedManagement'),
+      href: BaseUrl.AdminProhibited,
+      icon: ShieldAlert,
+    },
+    {
+      title: t('SideBar.KeyboardShortcutManagement'),
+      href: BaseUrl.AdminKeyboardShortcut,
+      icon: Keyboard,
+    },
+    {
+      title: t('SideBar.UserActivityLog'),
+      href: BaseUrl.AdminUserActivityLog,
+      icon: ClipboardList,
+    },
+    {
+      title: t('SideBar.ExamSupervision'),
+      href: BaseUrl.AdminSupervision,
+      icon: Tv,
+    },
+    {
+      title: t('SideBar.ExamManagement'),
+      href: BaseUrl.AdminManageExam,
+      icon: Album,
+    },
+    {
+      title: t('SideBar.Feedback'),
+      href: BaseUrl.ViewFeedback,
+      icon: MessagesSquare,
+    },
+  ];
 
   const navBarItems = [
     {
@@ -139,11 +120,6 @@ const AdminLayout = (props: AdminLayoutProps) => {
       action: () => {
         navigate(`${BaseUrl.AdminProfile}`);
       },
-    },
-    {
-      label: t('Navigation.Settings'),
-      icon: <Settings className="mr-2 h-4 w-4" />,
-      action: () => {},
     },
     {
       label: t('Logout'),
@@ -178,7 +154,6 @@ const AdminLayout = (props: AdminLayoutProps) => {
         onToggle={toggleSidebar}
         teacherMenuItems={enhancedTeacherMenuItems}
         user={user}
-        currentPath={pathname} // Pass current path to sidebar
       />
 
       {/* Main Content */}

@@ -5,6 +5,7 @@ import {
   Edit,
   Eye,
   GraduationCap,
+  KeyRound,
   Mail,
   MapPin,
   MoreHorizontal,
@@ -24,21 +25,37 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { PASSWORD_AFTER_RESET } from '@/consts/common';
 
 interface UserList {
   userId: string;
   fullName: string;
-  userCode?: string;
-  roleId?: number[];
-  position?: string;
-  major?: string;
-  department?: string;
-  specialization?: string;
-  email?: string;
-  campus?: string;
-  phone?: string;
+  userCode: any;
+  phone: string;
+  email: string;
+  avatarUrl: string;
+  sex: any;
+  isActive: boolean;
+  createAt: string;
+  updateAt: any;
+  createUser: string;
+  updateUser: any;
   status: number;
-  avatar?: string;
+  lastLogin: string;
+  lastLoginIp: string;
+  dob: string;
+  address: any;
+  campusId?: string;
+  departmentId: any;
+  positionId: any;
+  majorId: any;
+  specializationId: any;
+  roleId: any[];
+  position: string;
+  major: string;
+  campus: string;
+  department: string;
+  specialization: string;
 }
 
 interface ColumnProps {
@@ -46,27 +63,28 @@ interface ColumnProps {
   BaseUrl: { AdminAddNewUser: string };
   onViewUser?: (user: UserList) => void;
   onDeactivateUser?: (userId: string) => Promise<void>;
+  onResetPassword: (userId: string, newPass: string) => Promise<void>;
 }
 
 export const getRoleInfo = (roleId: number) => {
   const roleMap = {
     1: {
-      name: 'Sinh viên',
+      name: 'Student',
       color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400',
       icon: GraduationCap,
     },
     2: {
-      name: 'Giảng viên',
+      name: 'Lecturer',
       color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400',
       icon: BookOpen,
     },
     3: {
-      name: 'Người giám sát',
+      name: 'Supervisor',
       color: 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400',
       icon: Users,
     },
     4: {
-      name: 'Quản trị viên',
+      name: 'Admin',
       color: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400',
       icon: Crown,
     },
@@ -95,16 +113,17 @@ export const createUserColumns = ({
   BaseUrl,
   onViewUser,
   onDeactivateUser,
+  onResetPassword,
 }: ColumnProps) => [
   {
-    label: 'Người dùng',
+    label: 'User',
     accessor: 'fullName',
     width: 180,
     sortable: false,
     Cell: (row: UserList) => (
       <div className="flex items-center space-x-2 py-1">
         <Avatar className="h-8 w-8">
-          <AvatarImage src={row.avatar || ''} alt={row.fullName} />
+          <AvatarImage src={row.avatarUrl || ''} alt={row.fullName} />
           <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-purple-600 text-xs font-semibold text-white">
             {getInitials(row.fullName)}
           </AvatarFallback>
@@ -121,7 +140,7 @@ export const createUserColumns = ({
     ),
   },
   {
-    label: 'Vai trò & Công việc',
+    label: 'Role & Work',
     accessor: 'roleAndWork',
     width: 200,
     sortable: false,
@@ -162,7 +181,7 @@ export const createUserColumns = ({
                   ) : (
                     <Badge variant="outline" className="text-xs text-gray-500">
                       <User className="mr-1 h-2.5 w-2.5" />
-                      Chưa có
+                      N/A
                     </Badge>
                   )}
                   {workInfo.length > 0 && (
@@ -190,14 +209,14 @@ export const createUserColumns = ({
     },
   },
   {
-    label: 'Liên hệ',
+    label: 'Contact',
     accessor: 'contact',
     width: 160,
     sortable: false,
     Cell: (row: UserList) => {
       const contactInfo = [
         row.email && `Email: ${row.email}`,
-        row.phone && `Điện thoại: ${row.phone}`,
+        row.phone && `Phone: ${row.phone}`,
       ].filter(Boolean);
 
       return (
@@ -250,7 +269,7 @@ export const createUserColumns = ({
     ),
   },
   {
-    label: 'Trạng thái',
+    label: 'Status',
     accessor: 'status',
     width: 100,
     sortable: false,
@@ -273,7 +292,7 @@ export const createUserColumns = ({
     ),
   },
   {
-    label: 'Thao tác',
+    label: 'Actions',
     accessor: 'actions',
     width: 80,
     sortable: false,
@@ -286,7 +305,7 @@ export const createUserColumns = ({
               className="h-7 w-7 rounded p-0 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
             >
               <MoreHorizontal className="h-3.5 w-3.5 text-gray-600 dark:text-gray-400" />
-              <span className="sr-only">Mở menu thao tác</span>
+              <span className="sr-only">Open actions menu</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-40">
@@ -296,7 +315,7 @@ export const createUserColumns = ({
                 className="cursor-pointer text-xs hover:bg-gray-50 dark:hover:bg-gray-800"
               >
                 <Eye className="mr-2 h-3.5 w-3.5 text-blue-500" />
-                <span>Xem chi tiết</span>
+                <span>View Details</span>
               </DropdownMenuItem>
             )}
             <DropdownMenuItem
@@ -304,7 +323,14 @@ export const createUserColumns = ({
               className="cursor-pointer text-xs hover:bg-gray-50 dark:hover:bg-gray-800"
             >
               <Edit className="mr-2 h-3.5 w-3.5 text-amber-500" />
-              <span>Chỉnh sửa</span>
+              <span>Edit</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => onResetPassword(row.userId, PASSWORD_AFTER_RESET)}
+              className="cursor-pointer text-xs hover:bg-gray-50 dark:hover:bg-gray-800"
+            >
+              <KeyRound className="mr-2 h-3.5 w-3.5 text-amber-500" />
+              <span>Reset Password</span>
             </DropdownMenuItem>
             {onDeactivateUser && (
               <>
@@ -322,7 +348,7 @@ export const createUserColumns = ({
                   ) : (
                     <User className="mr-2 h-3.5 w-3.5" />
                   )}
-                  <span>{row?.status === 1 ? 'Vô hiệu hóa' : 'Kích hoạt lại'}</span>
+                  <span>{row?.status === 1 ? 'Deactivate' : 'Reactivate'}</span>
                 </DropdownMenuItem>
               </>
             )}

@@ -62,6 +62,7 @@ namespace API.Models
         [StringLength(36)]
         [ForeignKey(nameof(Updater))]
         public string? UpdateUser { get; set; }
+        public bool VerifyCamera { get; set; }
 
         public virtual Room? Room { get; set; }
         public virtual User? Creator { get; set; }

@@ -17,6 +17,8 @@ namespace API.ViewModels
         public List<string> QuestionIds { get; set; }
         public string Title { get; set; }
         public string Description { get; set; }
+        [Required]
+        [Range(1, 2880, ErrorMessage = "Duration must be between 1 and 2880 minutes (48 hours).")]
         public int Duration { get; set; }
         public DateTime StartTime { get; set; }
         public DateTime EndTime { get; set; }
@@ -26,6 +28,7 @@ namespace API.ViewModels
         [Required]
         public int ExamType { get; set; }
         public string? GuideLines { get; set; }
+        public bool VerifyCamera { get; set; } = true; // true: Verify camera, false: Do not verify camera
     }
 
     public class ExamListRequest : SearchRequestVM
@@ -73,6 +76,8 @@ namespace API.ViewModels
         public int ExamType { get; set; }
         public string? GuideLines { get; set; }
         public int LiveStatus { get; set; } // 0: Inactive, 1: Upcoming, 2: Ongoing, 3: Completed
+
+        public bool verifyCamera { get; set; }
     }
 
     public class ExamDetail
@@ -94,7 +99,7 @@ namespace API.ViewModels
         public int ExamType { get; set; }
         public string? GuideLines { get; set; }
         public string? LiveStatus { get; set; }
-
+        public bool verifyCamera { get; set; }
         public List<SelectedQuestionDto> Questions { get; set; } = new();
     }
 
@@ -131,8 +136,8 @@ namespace API.ViewModels
         public string Title { get; set; } = null!;
         public string? Description { get; set; }
         public string RoomId { get; set; } = null!;
-        public int TotalQuestions { get; set; }
-        public decimal TotalPoints { get; set; }
+        //public int TotalQuestions { get; set; }
+        //public decimal TotalPoints { get; set; }
         public DateTime StartTime { get; set; }
         public DateTime EndTime { get; set; }
         public int Duration { get; set; }
@@ -140,7 +145,7 @@ namespace API.ViewModels
         public bool IsShowCorrectAnswer { get; set; }
         public int Status { get; set; }
         public string? GuideLines { get; set; }
-
+        public bool VerifyCamera { get; set; }
         public int ExamType { get; set; }               // 0: Essay, 1: MultipleChoice, ...
         public List<string> QuestionIds { get; set; } = new(); // Danh sách câu hỏi cần cập nhật
     }

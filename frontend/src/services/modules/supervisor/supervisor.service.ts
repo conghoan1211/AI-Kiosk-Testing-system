@@ -7,7 +7,7 @@ import {
   ISupervisorRequest,
 } from './interfaces/supervisor.interface';
 
-class supervisorService {
+class SupervisorService {
   getAllSupervisor(examId: string, config: AxiosRequestConfig) {
     return httpService.get(`${EXAM_SUPERVISOR_URL}/get-all?examId=${examId}`, config);
   }
@@ -35,4 +35,4 @@ class supervisorService {
   }
 }
 
-export default new supervisorService();
+export default new SupervisorService();

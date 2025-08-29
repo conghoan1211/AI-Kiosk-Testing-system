@@ -12,6 +12,7 @@ export interface IManageExamFormValue {
   status: number;
   examType: number;
   guideLines: string;
+  verifyCamera: boolean;
 }
 
 export interface IAssignOtpToExam {
@@ -92,6 +93,7 @@ export interface ExamDetail {
   guideLines: null;
   liveStatus: string;
   questions: Question[];
+  verifyCamera: boolean;
 }
 export interface Question {
   questionId: string;

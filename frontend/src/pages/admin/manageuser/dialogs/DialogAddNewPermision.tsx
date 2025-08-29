@@ -17,9 +17,9 @@ import useGetDetailPermission from '@/services/modules/authorize/hooks/useGetDet
 import { PermissionsList } from '@/services/modules/authorize/interfaces/permission.interface';
 import { Form, Formik } from 'formik';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Fragment } from 'react/jsx-runtime';
 import * as Yup from 'yup';
-
 export interface PermissionFormValues {
   id?: string;
   name?: string;
@@ -37,33 +37,31 @@ interface DialogAddNewPermisionProps extends DialogI<any> {
   editId?: string;
 }
 
-const validationSchema = Yup.object({
-  name: Yup.string().required('Tên quyền hạn là bắt buộc'),
-  action: Yup.string().required('Hành động là bắt buộc'),
-  resource: Yup.string()
-    .required('Tài nguyên là bắt buộc')
-    .matches(
-      /^[a-zA-Z0-9_\-/{}/?]+$/,
-      'Tài nguyên chỉ được chứa chữ, số, _, -, / và cặp dấu ngoặc nhọn {}',
-    ),
-  categoryID: Yup.string().required('Danh mục quyền hạn là bắt buộc'),
-  isActive: Yup.boolean().required('Trạng thái là bắt buộc'),
-});
-
 const DialogAddNewPermision = (props: DialogAddNewPermisionProps) => {
   //!State
+  const { t } = useTranslation('shared');
   const { isOpen, toggle, onSubmit, dataMain, editId } = props;
-  const { data: detailPermission } = useGetDetailPermission(editId || '');
+  const { data: detailPermission } = useGetDetailPermission(editId ?? '');
 
   const permission = Array.isArray(detailPermission) ? detailPermission[0] : detailPermission;
 
   const initialValues: PermissionFormValues = {
-    name: permission?.name || '',
-    action: permission?.action || '',
-    resource: permission?.resource || '',
-    categoryID: permission?.categoryID || '',
+    name: permission?.name ?? '',
+    action: permission?.action ?? '',
+    resource: permission?.resource ?? '',
+    categoryID: permission?.categoryID ?? '',
     isActive: permission?.isActive ?? true,
   };
+
+  const validationSchema = Yup.object({
+    name: Yup.string().required(t('UserManagement.PermissionNameRequired')),
+    action: Yup.string().required(t('UserManagement.ActionRequired')),
+    resource: Yup.string()
+      .required(t('UserManagement.ResourceRequired'))
+      .matches(/^[a-zA-Z0-9_\-/{}/?]+$/, t('UserManagement.ResourceFormatInvalid')),
+    categoryID: Yup.string().required(t('UserManagement.CategoryRequired')),
+    isActive: Yup.boolean().required(t('UserManagement.StatusRequired')),
+  });
 
   //!Functions
 
@@ -95,12 +93,14 @@ const DialogAddNewPermision = (props: DialogAddNewPermisionProps) => {
                   <Form className="space-y-4">
                     <div>
                       <DialogTitle className="text-xl font-medium">
-                        {editId ? 'Cập nhật quyền hạn' : 'Thêm quyền hạn mới'}
+                        {editId
+                          ? t('UserManagement.EditPermissionTitle')
+                          : t('UserManagement.AddPermissionTitle')}
                       </DialogTitle>
                       <DialogDescription className="mt-1 text-sm text-gray-500">
                         {editId
-                          ? 'Cập nhật thông tin quyền hạn hiện tại.'
-                          : 'Nhập thông tin để tạo quyền hạn mới.'}
+                          ? t('UserManagement.EditPermissionDescription')
+                          : t('UserManagement.AddPermissionDescription')}
                       </DialogDescription>
                     </div>
 
@@ -110,9 +110,9 @@ const DialogAddNewPermision = (props: DialogAddNewPermisionProps) => {
                           id="name"
                           component={InputField}
                           name="name"
-                          placeholder="VD: user.create"
+                          label={t('UserManagement.PermissionName')}
+                          placeholder={t('UserManagement.PermissionNamePlaceholder')}
                           value={values.name}
-                          label="Permission Name"
                           required
                         />
                       </div>
@@ -121,13 +121,13 @@ const DialogAddNewPermision = (props: DialogAddNewPermisionProps) => {
                         <FormikField
                           component={SelectField}
                           name="action"
-                          placeholder="VD: Tạo người dùng"
-                          label="Action"
+                          placeholder={t('UserManagement.ActionPlaceholder')}
+                          label={t('UserManagement.Action')}
                           options={[
-                            { value: 'create', label: 'Create' },
-                            { value: 'view', label: 'View' },
-                            { value: 'update', label: 'Update' },
-                            { value: 'delete', label: 'Delete' },
+                            { value: 'create', label: t('UserManagement.Create') },
+                            { value: 'view', label: t('UserManagement.View') },
+                            { value: 'update', label: t('UserManagement.Update') },
+                            { value: 'delete', label: t('UserManagement.Delete') },
                           ]}
                           required
                           shouldHideSearch
@@ -138,39 +138,27 @@ const DialogAddNewPermision = (props: DialogAddNewPermisionProps) => {
                         <FormikField
                           component={SelectField}
                           name="categoryID"
-                          placeholder="Choose a category"
+                          placeholder={t('UserManagement.CategoryPlaceholder')}
                           options={
                             dataMain?.map((item) => ({
                               value: item.categoryId,
                               label: item.description,
                             })) ?? []
                           }
-                          label="Category Permission"
+                          label={t('UserManagement.CategoryLabel')}
                           required
                           shouldHideSearch
                         />
                       </div>
-
-                      {/* <div className="space-y-2">
-                        <FastField
-                          component={Textarea}
-                          id="description"
-                          name="description"
-                          placeholder="Mô tả chi tiết về quyền hạn này..."
-                          label="Mô tả"
-                          value={values.description}
-                          required
-                        />
-                      </div> */}
 
                       <div className="space-y-2">
                         <FormikField
                           component={InputField}
                           id="resource"
                           name="resource"
-                          placeholder="VD: Nhập URL API hoặc tài nguyên liên quan"
+                          placeholder={t('UserManagement.ResourcePlaceholder')}
                           value={values.resource}
-                          label="Domain resource"
+                          label={t('UserManagement.ResourceLabel')}
                           required
                         />
                       </div>
@@ -179,12 +167,12 @@ const DialogAddNewPermision = (props: DialogAddNewPermisionProps) => {
                         <FormikField
                           component={SelectField}
                           name="isActive"
-                          placeholder="Choose a status"
+                          placeholder={t('UserManagement.StatusPlaceholder')}
                           options={[
-                            { value: true, label: 'Active' },
-                            { value: false, label: 'Inactive' },
+                            { value: true, label: t('UserManagement.Active') },
+                            { value: false, label: t('UserManagement.Inactive') },
                           ]}
-                          label="Status"
+                          label={t('UserManagement.StatusLabel')}
                           required
                           shouldHideSearch
                         />
@@ -194,11 +182,13 @@ const DialogAddNewPermision = (props: DialogAddNewPermisionProps) => {
                     <div className="flex justify-end gap-2 pt-4">
                       <DialogClose asChild>
                         <Button variant="outline" type="button">
-                          Hủy
+                          {t('Close')}
                         </Button>
                       </DialogClose>
                       <Button type="submit" isLoading={isSubmitting}>
-                        {editId ? 'Cập nhật' : 'Thêm mới'}
+                        {editId
+                          ? t('UserManagement.EditPermissionTitle')
+                          : t('UserManagement.AddPermissionTitle')}
                       </Button>
                     </div>
                   </Form>

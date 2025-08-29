@@ -2,12 +2,13 @@ import { QUESTION_URL } from '@/consts/apiUrl';
 import httpService from '@/services/httpService';
 import {
   IQuestionForm,
+  IQuestionFormEdit,
   IQuestionRequest,
   ResponseGetListQuestion,
 } from './interfaces/question.interface';
 import { AxiosRequestConfig } from 'axios';
 
-class questionService {
+class QuestionService {
   importQuestion(body: IQuestionForm[]) {
     return httpService.post(`${QUESTION_URL}/importQuestions`, body);
   }
@@ -39,10 +40,33 @@ class questionService {
   addQuestion(body: FormData) {
     return httpService.post(`${QUESTION_URL}/add`, body, {
       headers: {
-        'Content-Type': 'multipart/form-data', // Đảm bảo Content-Type đúng
+        'Content-Type': 'multipart/form-data',
       },
     });
   }
+
+  editQuestion(body: IQuestionFormEdit) {
+    return httpService.put(`${QUESTION_URL}/edit`, body);
+  }
+
+  toggleQuestion(questionId: string) {
+    return httpService.put(`${QUESTION_URL}/toggle`, { questionId });
+  }
+
+  formatFileImport(File: File, QuestionBankId: string) {
+    return httpService.post(
+      `${QUESTION_URL}/format-file-questions`,
+      {
+        File,
+        QuestionBankId,
+      },
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      },
+    );
+  }
 }
 
-export default new questionService();
+export default new QuestionService();

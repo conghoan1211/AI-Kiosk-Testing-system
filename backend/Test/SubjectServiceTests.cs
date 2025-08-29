@@ -25,6 +25,7 @@ namespace API.Tests
             _context = new Sep490Context(options);
             _mockMapper = new Mock<IMapper>();
             _mockLogger = new Mock<ILog>();
+            _mockLogger.Setup(l => l.WriteActivity(It.IsAny<AddUserLogVM>())).ReturnsAsync("");
             _service = new SubjectService(_context, _mockMapper.Object, _mockLogger.Object);
         }
 
@@ -35,6 +36,33 @@ namespace API.Tests
             var (message, result) = await _service.GetAllSubjects(search);
             Assert.Equal("No subjects found.", message);
             Assert.Null(result);
+        }
+
+        [Fact]
+        public async Task GetAllSubjects_SubjectsFound_ReturnsNoError()
+        {
+            var subject = new Subject { SubjectId = "1", SubjectCode = "SUB123", SubjectName = "Test Subject" };
+            _context.Subjects.Add(subject);
+            await _context.SaveChangesAsync();
+
+            var search = new SearchSubjectVM { CurrentPage = 1, PageSize = 10 };
+            var (message, result) = await _service.GetAllSubjects(search);
+            Assert.Equal("", message);
+            Assert.NotNull(result);
+        }
+
+
+        [Fact]
+        public async Task GetAllSubjects_SubjectsNotFoundPage2_ReturnsMessageError()
+        {
+            var subject = new Subject { SubjectId = "1", SubjectCode = "SUB123", SubjectName = "Test Subject" };
+            _context.Subjects.Add(subject);
+            await _context.SaveChangesAsync();
+
+            var search = new SearchSubjectVM { CurrentPage = 5, PageSize = 10 };
+            var (message, result) = await _service.GetAllSubjects(search);
+            Assert.Equal("", message);
+            Assert.NotNull(result);
         }
 
         [Fact]
@@ -65,6 +93,17 @@ namespace API.Tests
         {
             var message = await _service.ChangeActivateSubject("1", "token");
             Assert.Equal("Subject not found.", message);
+        }
+
+        [Fact]
+        public async Task ChangeActivateSubject_Found_ReturnsNoMessage()
+        {
+            var subject = new Subject { SubjectId = "1", SubjectCode = "SUB123", SubjectName = "Test Subject" };
+            _context.Subjects.Add(subject);
+            await _context.SaveChangesAsync();
+
+            var message = await _service.ChangeActivateSubject("1", "token");
+            Assert.Equal("", message);
         }
 
         [Fact]

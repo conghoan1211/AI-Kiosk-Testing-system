@@ -1,7 +1,5 @@
 @startuml
-' Class Diagram for View Detail Live Exam Feature
-
-title View Detail Live Exam Class Diagram
+' Simplified View Detail Live Exam Class Diagram
 
 hide empty members
 skinparam packageStyle rectangle
@@ -13,7 +11,6 @@ skinparam classFontName Arial
 skinparam noteFontSize 11
 skinparam noteFontName Arial
 
-' Increase spacing and sizing
 skinparam class {
     BackgroundColor LightBlue
     BorderColor DarkBlue
@@ -27,22 +24,17 @@ skinparam package {
     FontSize 14
     FontStyle bold
 }
-
 skinparam interface {
     BackgroundColor LightGreen
     BorderColor DarkGreen
     FontSize 12
 }
 
-skinparam enum {
-    BackgroundColor LightCyan
-    BorderColor DarkCyan
-    FontSize 12
-}
+title View Detail Live Exam Class Diagram
 
 package "Controllers" {
     class StudentExamController <<Controller>> {
-        - _iService: IStudentExamService
+        - _studentExamService: IStudentExamService
         + GetExamDetail(examId: string): Task<IActionResult>
     }
 }
@@ -52,12 +44,21 @@ package "Services" {
         + GetExamDetail(examId: string, usertoken: string): Task<(string, ExamDetailVM?)>
     }
     class StudentExamService <<Service>> {
-        - _context: DbContext
+        - _unitOfWork: IUnitOfWork
         + GetExamDetail(examId: string, usertoken: string): Task<(string, ExamDetailVM?)>
     }
 }
 
-package "Models" {
+package "Repositories" {
+    interface IExamRepository {
+        + GetExamById(examId: string)
+    }
+    interface IRoomRepository {
+        + GetRoomById(roomId: string)
+    }
+}
+
+package "Models & DTOs" {
     class ExamDetailVM <<DTO>> {
         + ExamId: string
         + Title: string
@@ -73,30 +74,13 @@ package "Models" {
     }
 }
 
-package "Entities" {
-    class Exam {
-        + ExamId: string
-        + Title: string
-        + StartTime: DateTime
-        + EndTime: DateTime
-        + Duration: int
-        + Status: int
-        + Room: Room
-    }
-    class Room {
-        + RoomId: string
-        + RoomName: string
-    }
-}
-
 ' Relationships
 StudentExamController ..> IStudentExamService : <<uses>>
-IStudentExamService <|.. StudentExamService
 StudentExamController ..> ExamDetailVM : <<uses>>
-StudentExamService ..> Exam : <<uses>>
-StudentExamService ..> ExamDetailVM : <<maps to>>
-Exam o-- Room : <<has>>
-ExamDetailVM o-- RoomVM : <<has>>
-Room --> RoomVM : <<maps to>>
+IStudentExamService <|.. StudentExamService : <<implements>>
+StudentExamService ..> IExamRepository : <<uses>>
+StudentExamService ..> IRoomRepository : <<uses>>
+StudentExamService ..> ExamDetailVM : <<returns>>
+ExamDetailVM o-- RoomVM : <<contains>>
 
-@enduml 
+@enduml

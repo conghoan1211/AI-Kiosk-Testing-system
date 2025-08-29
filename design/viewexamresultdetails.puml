@@ -1,7 +1,5 @@
 @startuml
-' Class Diagram for View Exam Result Details Feature
-
-title View Exam Result Details Class Diagram
+' Simplified View Exam Result Details Class Diagram (giống dạng View List Role)
 
 hide empty members
 skinparam packageStyle rectangle
@@ -13,7 +11,6 @@ skinparam classFontName Arial
 skinparam noteFontSize 11
 skinparam noteFontName Arial
 
-' Increase spacing and sizing
 skinparam class {
     BackgroundColor LightBlue
     BorderColor DarkBlue
@@ -27,18 +24,13 @@ skinparam package {
     FontSize 14
     FontStyle bold
 }
-
 skinparam interface {
     BackgroundColor LightGreen
     BorderColor DarkGreen
     FontSize 12
 }
 
-skinparam enum {
-    BackgroundColor LightCyan
-    BorderColor DarkCyan
-    FontSize 12
-}
+title View Exam Result Details Class Diagram
 
 package "Controllers" {
     class StudentExamController <<Controller>> {
@@ -57,7 +49,22 @@ package "Services" {
     }
 }
 
-package "Models" {
+package "Repositories" {
+    interface IStudentExamRepository {
+        + GetById(studentExamId: string)
+    }
+    interface IStudentAnswerRepository {
+        + GetByStudentExamId(studentExamId: string)
+    }
+    interface IQuestionRepository {
+        + GetByIds(questionIds: List<string>)
+    }
+    interface IExamRepository {
+        + GetById(examId: string)
+    }
+}
+
+package "Models & DTOs" {
     class StudentExamDetailVM <<DTO>> {
         + ExamTitle: string
         + Score: decimal
@@ -78,58 +85,15 @@ package "Models" {
     }
 }
 
-package "Entities" {
-    class StudentExam {
-        + StudentExamId: string
-        + StudentId: string
-        + ExamId: string
-        + Score: decimal?
-        + Status: int
-        + TotalQuestions: int?
-        + SubmitTime: DateTime?
-        + StartTime: DateTime?
-        + Exam: Exam
-    }
-    class Exam {
-        + ExamId: string
-        + Title: string
-        + IsShowResult: bool?
-    }
-    class StudentAnswer {
-        + StudentAnswerId: string
-        + StudentExamId: string
-        + QuestionId: string
-        + UserAnswer: string
-        + IsCorrect: bool?
-        + PointsEarned: decimal?
-        + TimeSpent: int?
-        + Question: Question
-    }
-    class Question {
-        + QuestionId: string
-        + Content: string
-        + CorrectAnswer: string
-    }
-}
-
-package "Enums" {
-    enum StudentExamStatus {
-        Submitted
-    }
-}
-
 ' Relationships
 StudentExamController ..> IStudentExamService : <<uses>>
-IStudentExamService <|.. StudentExamService
 StudentExamController ..> StudentExamDetailVM : <<uses>>
-StudentExamService ..> StudentExam : <<uses>>
-StudentExamService ..> StudentAnswer : <<uses>>
-StudentExamService ..> StudentExamDetailVM : <<maps to>>
-StudentExam o-- Exam : <<has>>
-StudentExam o-- StudentAnswer : <<has>>
-StudentExam ..> StudentExamStatus : <<uses>>
-StudentAnswer o-- Question : <<has>>
-StudentAnswer --> AnswerDetail : <<maps to>>
-StudentExamDetailVM o-- AnswerDetail : <<has>>
+IStudentExamService <|.. StudentExamService : <<implements>>
+StudentExamService ..> IStudentExamRepository : <<uses>>
+StudentExamService ..> IStudentAnswerRepository : <<uses>>
+StudentExamService ..> IQuestionRepository : <<uses>>
+StudentExamService ..> IExamRepository : <<uses>>
+StudentExamService ..> StudentExamDetailVM : <<returns>>
+StudentExamDetailVM o-- AnswerDetail : <<contains>>
 
-@enduml 
+@enduml

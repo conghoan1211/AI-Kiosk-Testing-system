@@ -1,9 +1,13 @@
 import { QUESTION_BANK_URL } from '@/consts/apiUrl';
 import httpService from '@/services/httpService';
 import { AxiosRequestConfig } from 'axios';
-import { IBankQuestionRequest, IShareBankQuestionForm } from './interfaces/bankquestion.interface';
+import {
+  IBankQuestionRequest,
+  IQuestionBankForm,
+  IShareBankQuestionForm,
+} from './interfaces/bankquestion.interface';
 
-class bankQuestionService {
+class BankQuestionService {
   getAllBankQuestions(filter: IBankQuestionRequest, config: AxiosRequestConfig) {
     const params = new URLSearchParams({
       pageSize: filter.pageSize?.toString() || '50',
@@ -30,5 +34,13 @@ class bankQuestionService {
     };
     return httpService.post(`${QUESTION_BANK_URL}/share`, transformedData);
   }
+
+  addQuestionBank(values: IQuestionBankForm) {
+    return httpService.post(`${QUESTION_BANK_URL}/add`, values);
+  }
+
+  toggleQuestionBank(questionBankId: string) {
+    return httpService.put(`${QUESTION_BANK_URL}/status/${questionBankId}`, {});
+  }
 }
-export default new bankQuestionService();
+export default new BankQuestionService();

@@ -135,12 +135,12 @@ const ExamResultTeacher = () => {
   const totalStudentExamResultCount = useGet('totalStudentExamResultCount');
   const totalPageStudentExamResultCount = useGet('totalPageStudentExamResultCount');
   const cachesFilterStudentExamResult = useGet('cachesFilterStudentExamResult');
-  const [isTrigger, setTrigger] = useState(Boolean(!dataStudentExamResult));
+  const [isTrigger, setIsTrigger] = useState(Boolean(!dataStudentExamResult));
 
   const { filters, setFilters } = useFiltersHandler<ITeacherExamRequest>({
-    pageSize: cachesFilterStudentExamResult?.pageSize || 50,
-    currentPage: cachesFilterStudentExamResult?.currentPage || 1,
-    textSearch: cachesFilterStudentExamResult?.textSearch || '',
+    pageSize: cachesFilterStudentExamResult?.pageSize ?? 50,
+    currentPage: cachesFilterStudentExamResult?.currentPage ?? 1,
+    textSearch: cachesFilterStudentExamResult?.textSearch ?? '',
     status:
       cachesFilterStudentExamResult?.status !== undefined
         ? cachesFilterStudentExamResult.status
@@ -332,7 +332,7 @@ const ExamResultTeacher = () => {
   //!Functions
   const handleChangePageSize = useCallback(
     (size: number) => {
-      setTrigger(true);
+      setIsTrigger(true);
       setFilters((prev) => {
         const newParams = { ...prev, currentPage: 1, pageSize: size };
         save(cachedKeys.cachesFilterStudentExamResult, newParams);
@@ -357,9 +357,9 @@ const ExamResultTeacher = () => {
 
   const handleSearch = useCallback(
     (value: IValueFormPageHeader) => {
-      setTrigger(true);
+      setIsTrigger(true);
       setFilters((prev) => {
-        const newParams = { ...prev, textSearch: value.textSearch || '', currentPage: 1 };
+        const newParams = { ...prev, textSearch: value.textSearch ?? '', currentPage: 1 };
         save(cachedKeys.cachesFilterStudentExamResult, newParams);
         return newParams;
       });
@@ -381,7 +381,7 @@ const ExamResultTeacher = () => {
           className="md:grid-cols-3 lg:grid-cols-5"
           searchPlaceholder="Tìm kiếm ứng dụng..."
           onSearch={handleSearch}
-          initialSearchQuery={filters?.textSearch || ''}
+          initialSearchQuery={filters?.textSearch ?? ''}
           filters={[
             {
               key: 'IsMyQuestion',
@@ -415,7 +415,7 @@ const ExamResultTeacher = () => {
           onFilterChange={(
             newFilters: Record<string, string | number | boolean | null | undefined>,
           ) => {
-            setTrigger(true);
+            setIsTrigger(true);
             setFilters((prev) => {
               const updatedFilters = {
                 ...prev,
@@ -428,13 +428,12 @@ const ExamResultTeacher = () => {
         />
         <div className="rounded-lg bg-white p-4 shadow-sm">
           <MemoizedTablePaging
-            id="manage-exam-lecture"
             columns={columns}
-            data={dataMain || []}
-            currentPage={filters?.currentPage || 1}
-            currentSize={filters?.pageSize || 50}
-            totalPage={totalPageStudentExamResultCount || 1}
-            total={totalStudentExamResultCount || 0}
+            data={dataMain ?? []}
+            currentPage={filters?.currentPage ?? 1}
+            currentSize={filters?.pageSize ?? 50}
+            totalPage={totalPageStudentExamResultCount ?? 1}
+            total={totalStudentExamResultCount ?? 0}
             loading={loading}
             handleChangePage={handleChangePage}
             handleChangeSize={handleChangePageSize}

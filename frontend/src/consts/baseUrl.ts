@@ -18,7 +18,6 @@ const BaseUrl = {
   SendFeedbackTeacher: '/lecturer/feedback',
   TeacherProfile: '/lecturer/profile',
   BankQuestion: '/lecturer/question-bank',
-  ManageQuestion: '/lecturer/question-bank/manage-question',
   AddQuestion: '/lecturer/question-bank/manage-question/add',
   ManageExam: '/lecturer/manage-exam',
   AddNewExamLecture: '/lecturer/manage-exam/add-new-exam',

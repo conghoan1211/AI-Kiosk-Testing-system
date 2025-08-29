@@ -1,64 +1,69 @@
-
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import useGetListBankQuestion from "@/services/modules/bankquestion/hooks/useGetAllBankQuestion";
-import { IBankQuestionRequest } from "@/services/modules/bankquestion/interfaces/bankquestion.interface";
-import { useState } from "react";
+} from '@/components/ui/select';
+import httpService from '@/services/httpService';
+import useGetListBankQuestion from '@/services/modules/bankquestion/hooks/useGetAllBankQuestion';
+import { IBankQuestionRequest } from '@/services/modules/bankquestion/interfaces/bankquestion.interface';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface QuestionBankSelectorProps {
   selectedBank: string;
   onBankChange: (bank: string) => void;
+  isBankDisabled: boolean;
+  setSelectedSubjectName: (name: string) => void;
 }
 
 export function QuestionBankSelector({
   selectedBank,
   onBankChange,
-}: QuestionBankSelectorProps) {
+  isBankDisabled,
+  setSelectedSubjectName,
+}: Readonly<QuestionBankSelectorProps>) {
+  const userId = httpService.getUserStorage()?.roleId[0];
+  const { t } = useTranslation('shared');
   const [filtersBankquestion] = useState<IBankQuestionRequest>({
     pageSize: 100,
     currentPage: 1,
     status: 1,
-    IsMyQuestion: true,
+    IsMyQuestion: userId === 2 ? true : undefined,
   });
   const { data } = useGetListBankQuestion(filtersBankquestion);
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg font-medium">
-          Chọn ngân hàng câu hỏi
-        </CardTitle>
-        <p className="text-sm text-gray-500">
-          Chọn ngân hàng để lưu câu hỏi mới
-        </p>
+        <CardTitle className="text-lg font-medium">{t('AddQuestion.SelectBankQuestion')}</CardTitle>
+        <p className="text-sm text-gray-500">{t('AddQuestion.SelectBankQuestionDescription')}</p>
       </CardHeader>
       <CardContent>
-        <Select value={selectedBank} onValueChange={onBankChange}>
+        <Select
+          value={selectedBank}
+          onValueChange={(value) => {
+            onBankChange(value);
+            const bank = data?.find((b) => b.questionBankId === value);
+            setSelectedSubjectName(bank?.subjectName ?? '');
+          }}
+          disabled={isBankDisabled}
+        >
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Chọn ngân hàng câu hỏi..." />
+            <SelectValue placeholder={t('AddQuestion.SelectBankQuestion')} />
           </SelectTrigger>
           <SelectContent>
             {data?.map((bank) => (
               <SelectItem key={bank?.questionBankId} value={bank?.questionBankId}>
-                {bank?.title} ({bank?.totalQuestions} câu hỏi)
+                {bank?.title} ({bank?.totalQuestions} {t('AddQuestion.Questions')})
               </SelectItem>
             ))}
-            {/* <SelectItem value="math-basic">Toán học cơ bản</SelectItem>
-            <SelectItem value="physics">Vật lý</SelectItem>
-            <SelectItem value="chemistry">Hóa học</SelectItem>
-            <SelectItem value="literature">Ngữ văn</SelectItem> */}
           </SelectContent>
         </Select>
         {!selectedBank && (
-          <p className="mt-2 text-sm text-red-500">
-            Vui lòng chọn ngân hàng câu hỏi
-          </p>
+          <p className="mt-2 text-sm text-red-500">{t('AddQuestion.RequireSelectQSBank')}</p>
         )}
       </CardContent>
     </Card>

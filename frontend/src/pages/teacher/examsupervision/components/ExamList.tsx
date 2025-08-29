@@ -5,12 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MonitorList } from '@/services/modules/monitor/interfaces/monitor.interface';
 import { Form, Formik } from 'formik';
-import { debounce } from 'lodash'; // Import debounce from lodash
+import { debounce } from 'lodash';
 import { Monitor } from 'lucide-react';
 import { useMemo } from 'react';
 import * as Yup from 'yup';
 import ExamCard from './ExamCard';
 import SelectFilterSubject from './SelectFilterSubject';
+import { useTranslation } from 'react-i18next';
 
 interface ExamListProps {
   dataMain: MonitorList[];
@@ -38,6 +39,7 @@ const ExamList = ({
   setFilters,
 }: ExamListProps) => {
   //!State
+  const { t } = useTranslation('shared');
   const uniqueDataMain = useMemo(() => {
     const seen = new Set();
     return dataMain.filter((exam) => {
@@ -122,8 +124,8 @@ const ExamList = ({
       <CardHeader className="bg-gradient-to-r from-gray-50 to-blue-50/50">
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-xl text-gray-800">Danh sách kỳ thi</CardTitle>
-            <p className="mt-1 text-sm text-gray-600">Các kỳ thi được phân công giám sát</p>
+            <CardTitle className="text-xl text-gray-800">{t('ExamSupervision.Title')}</CardTitle>
+            <p className="mt-1 text-sm text-gray-600">{t('ExamSupervision.Description')}</p>
           </div>
           <div className="min-w-96">
             <Formik<{ subject: string; search: string }>
@@ -139,15 +141,15 @@ const ExamList = ({
                         <FormikField
                           component={InputField}
                           name="search"
-                          placeholder="Tìm kiếm kỳ thi..."
+                          placeholder={t('ExamSupervision.SearchExams')}
                           onChange={() => submitForm()}
                         />
                       </div>
                       <div className="flex-1">
                         <SelectFilterSubject
                           name="subject"
-                          defaultValue=""
-                          defaultSubject={{ label: 'Tất cả môn học', value: '' }}
+                          defaultValue="All Subjects"
+                          defaultSubject={{ label: t('ExamSupervision.AllSubjects'), value: '' }}
                           onChange={() => submitForm()}
                         />
                       </div>
@@ -163,13 +165,16 @@ const ExamList = ({
         <Tabs defaultValue="ongoing" className="w-full">
           <TabsList className="grid w-full grid-cols-3 bg-gray-100">
             <TabsTrigger value="ongoing" className="data-[state=active]:bg-white">
-              Đang diễn ra ({uniqueDataMain.filter((exam) => exam.status === 1).length})
+              {t('ExamSupervision.OnGoing')} (
+              {uniqueDataMain.filter((exam) => exam.status === 1).length})
             </TabsTrigger>
             <TabsTrigger value="not_start" className="data-[state=active]:bg-white">
-              Chưa bắt đầu ({uniqueDataMain.filter((exam) => exam.status === 0).length})
+              {t('ExamSupervision.NotStarted')} (
+              {uniqueDataMain.filter((exam) => exam.status === 0).length})
             </TabsTrigger>
             <TabsTrigger value="completed" className="data-[state=active]:bg-white">
-              Đã kết thúc ({uniqueDataMain.filter((exam) => exam.status === 2).length})
+              {t('ExamSupervision.Completed')} (
+              {uniqueDataMain.filter((exam) => exam.status === 2).length})
             </TabsTrigger>
           </TabsList>
           <TabsContent value="ongoing" className="mt-6 space-y-4">
@@ -193,7 +198,7 @@ const ExamList = ({
             {uniqueDataMain.filter((exam) => exam.status === 1).length === 0 && (
               <div className="py-12 text-center">
                 <Monitor className="mx-auto mb-4 h-12 w-12 text-gray-400" />
-                <p className="text-gray-500">Không có kỳ thi nào đang diễn ra</p>
+                <p className="text-gray-500">{t('ExamSupervision.NoOngoingExams')}</p>
               </div>
             )}
             {totalPage >= 1 && renderPagination()}
@@ -219,7 +224,7 @@ const ExamList = ({
             {uniqueDataMain.filter((exam) => exam.status === 0).length === 0 && (
               <div className="py-12 text-center">
                 <Monitor className="mx-auto mb-4 h-12 w-12 text-gray-400" />
-                <p className="text-gray-500">Không có kỳ thi nào chưa bắt đầu</p>
+                <p className="text-gray-500">{t('ExamSupervision.NoNotStartedExams')}</p>
               </div>
             )}
             {totalPage >= 1 && renderPagination()}
@@ -245,7 +250,7 @@ const ExamList = ({
             {uniqueDataMain.filter((exam) => exam.status === 2).length === 0 && (
               <div className="py-12 text-center">
                 <Monitor className="mx-auto mb-4 h-12 w-12 text-gray-400" />
-                <p className="text-gray-500">Không có kỳ thi nào đã kết thúc</p>
+                <p className="text-gray-500">{t('ExamSupervision.NoCompletedExams')}</p>
               </div>
             )}
             {totalPage >= 1 && renderPagination()}

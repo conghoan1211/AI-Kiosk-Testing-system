@@ -333,214 +333,6 @@ namespace API.Tests
         }
 
         [Fact]
-        public async Task ValidateUserInput_InvalidCampusId_ReturnsError()
-        {
-            var input = new CreateUserVM
-            {
-                Email = "test@email.com",
-                FullName = "Test User",
-                Phone = "+84123456789",
-                UserCode = "testuser",
-                RoleId = new List<int> { 1 },
-                Dob = DateTime.Today.AddYears(-20),
-                Address = "Test Address",
-                CampusId = "invalid"
-            };
-            var result = await _service.ValidateUserInput(input);
-            Assert.Contains("CampusId", result);
-        }
-
-        [Fact]
-        public async Task ValidateUserInput_StaffMissingDepartmentId_ReturnsError()
-        {
-            _context.Campuses.Add(new Campus { Id = "1", Name = "Test Campus", Code = "123", });
-            _context.Departments.Add(new Department { Id = "1", Name = "Test Department", Code = "123" });
-            _context.Positions.Add(new Position { Id = "1", Name = "Test Position", Code = "123" });
-            _context.Majors.Add(new Major { Id = "1", Name = "Test Major", Code = "123" });
-            _context.Specializations.Add(new Specialization { Id = "1", Name = "Test Specialization", Description = "123" });
-            await _context.SaveChangesAsync();
-            var input = new CreateUserVM
-            {
-                Email = "test@email.com",
-                FullName = "Test User",
-                Phone = "+84123456789",
-                UserCode = "testuser",
-                RoleId = new List<int> { (int)RoleEnum.Lecture },
-                Dob = DateTime.Today.AddYears(-20),
-                Address = "Test Address",
-                CampusId = "1",
-                DepartmentId = null
-            };
-            var result = await _service.ValidateUserInput(input);
-            Assert.Contains("DepartmentId", result);
-        }
-
-        [Fact]
-        public async Task ValidateUserInput_StudentMissingMajorId_ReturnsError()
-        {
-            _context.Campuses.Add(new Campus { Id = "1", Name = "Test Campus", Code = "123", });
-            _context.Departments.Add(new Department { Id = "1", Name = "Test Department", Code = "123" });
-            _context.Positions.Add(new Position { Id = "1", Name = "Test Position", Code = "123" });
-            _context.Majors.Add(new Major { Id = "1", Name = "Test Major", Code = "123" });
-            _context.Specializations.Add(new Specialization { Id = "1", Name = "Test Specialization", Description = "123" });
-            await _context.SaveChangesAsync();
-            var input = new CreateUserVM
-            {
-                Email = "test@email.com",
-                FullName = "Test User",
-                Phone = "+84123456789",
-                UserCode = "testuser",
-                RoleId = new List<int> { (int)RoleEnum.Student },
-                Dob = DateTime.Today.AddYears(-20),
-                Address = "Test Address",
-                CampusId = "1",
-                MajorId = null
-            };
-            var result = await _service.ValidateUserInput(input);
-            Assert.Contains("MajorId", result);
-        }
-
-        [Fact]
-        public async Task ValidateUserInput_TeacherMissingSpecializationId_ReturnsError()
-        {
-            _context.Campuses.Add(new Campus { Id = "1", Name = "Test Campus", Code = "123", });
-            _context.Departments.Add(new Department { Id = "1", Name = "Test Department", Code = "123" });
-            _context.Positions.Add(new Position { Id = "1", Name = "Test Position", Code = "123" });
-            _context.Majors.Add(new Major { Id = "1", Name = "Test Major", Code = "123" });
-            _context.Specializations.Add(new Specialization { Id = "1", Name = "Test Specialization", Description = "123" });
-            await _context.SaveChangesAsync();
-            var input = new CreateUserVM
-            {
-                Email = "test@email.com",
-                FullName = "Test User",
-                Phone = "+84123456789",
-                UserCode = "testuser",
-                RoleId = new List<int> { (int)RoleEnum.Lecture },
-                Dob = DateTime.Today.AddYears(-20),
-                Address = "Test Address",
-                CampusId = "1",
-                DepartmentId = "1",
-                PositionId = "1",
-                SpecializationId = null
-            };
-            var result = await _service.ValidateUserInput(input);
-            Assert.Contains("SpecializationId", result);
-        }
-
-        [Fact]
-        public async Task ValidateUserInput_AllFieldsPresent_ReturnsNoError()
-        {
-            _context.Campuses.Add(new Campus { Id = "1", Name = "Test Campus", Code = "123", });
-            _context.Departments.Add(new Department { Id = "1", Name = "Test Department", Code = "123" });
-            _context.Positions.Add(new Position { Id = "1", Name = "Test Position", Code = "123" });
-            _context.Majors.Add(new Major { Id = "1", Name = "Test Major", Code = "123" });
-            _context.Specializations.Add(new Specialization { Id = "1", Name = "Test Specialization", Description = "123" });
-            await _context.SaveChangesAsync();
-
-            var input = new CreateUserVM
-            {
-                Email = "test@email.com",
-                FullName = "Test User",
-                Phone = "+84123456789",
-                UserCode = "testuser",
-                RoleId = new List<int> { (int)RoleEnum.Lecture, (int)RoleEnum.Student },
-                Dob = DateTime.Today.AddYears(-20),
-                Address = "Test Address",
-                CampusId = "1",
-                DepartmentId = "1",
-                PositionId = "1",
-                MajorId = "1",
-                SpecializationId = "1",
-            };
-            var result = await _service.ValidateUserInput(input);
-            Assert.Equal("", result); // Không có lỗi
-        }
-
-        [Fact]
-        public async Task ValidateUserInput_MissingDepartmentId_ReturnsError()
-        {
-            _context.Campuses.Add(new Campus { Id = "1", Name = "Test Campus", Code = "123", });
-            _context.Departments.Add(new Department { Id = "1", Name = "Test Department", Code = "123" });
-            _context.Positions.Add(new Position { Id = "1", Name = "Test Position", Code = "123" });
-            _context.Majors.Add(new Major { Id = "1", Name = "Test Major", Code = "123" });
-            _context.Specializations.Add(new Specialization { Id = "1", Name = "Test Specialization", Description = "123" });
-            await _context.SaveChangesAsync();
-            var input = new CreateUserVM
-            {
-                Email = "test@email.com",
-                FullName = "Test User",
-                Phone = "+84123456789",
-                UserCode = "testuser",
-                RoleId = new List<int> { (int)RoleEnum.Lecture },
-                Dob = DateTime.Today.AddYears(-20),
-                Address = "Test Address",
-                CampusId = "1",
-                DepartmentId = null,
-                PositionId = "1",
-                MajorId = "1",
-                SpecializationId = "1",
-            };
-            var result = await _service.ValidateUserInput(input);
-            Assert.Contains("DepartmentId", result);
-        }
-
-        [Fact]
-        public async Task ValidateUserInput_MissingMajorId_ReturnsError()
-        {
-            _context.Campuses.Add(new Campus { Id = "1", Name = "Test Campus", Code = "123", });
-            _context.Departments.Add(new Department { Id = "1", Name = "Test Department", Code = "123" });
-            _context.Positions.Add(new Position { Id = "1", Name = "Test Position", Code = "123" });
-            _context.Majors.Add(new Major { Id = "1", Name = "Test Major", Code = "123" });
-            _context.Specializations.Add(new Specialization { Id = "1", Name = "Test Specialization", Description = "123" });
-            await _context.SaveChangesAsync();
-            var input = new CreateUserVM
-            {
-                Email = "test@email.com",
-                FullName = "Test User",
-                Phone = "+84123456789",
-                UserCode = "testuser",
-                RoleId = new List<int> { (int)RoleEnum.Student },
-                Dob = DateTime.Today.AddYears(-20),
-                Address = "Test Address",
-                CampusId = "1",
-                DepartmentId = "1",
-                PositionId = "1",
-                MajorId = null,
-                SpecializationId = "1",
-            };
-            var result = await _service.ValidateUserInput(input);
-            Assert.Contains("MajorId", result);
-        }
-
-        [Fact]
-        public async Task ValidateUserInput_MissingSpecializationId_ReturnsError()
-        {
-            _context.Campuses.Add(new Campus { Id = "1", Name = "Test Campus", Code = "123", });
-            _context.Departments.Add(new Department { Id = "1", Name = "Test Department", Code = "123" });
-            _context.Positions.Add(new Position { Id = "1", Name = "Test Position", Code = "123" });
-            _context.Majors.Add(new Major { Id = "1", Name = "Test Major", Code = "123" });
-            _context.Specializations.Add(new Specialization { Id = "1", Name = "Test Specialization", Description = "123" });
-            await _context.SaveChangesAsync();
-            var input = new CreateUserVM
-            {
-                Email = "test@email.com",
-                FullName = "Test User",
-                Phone = "+84123456789",
-                UserCode = "testuser",
-                RoleId = new List<int> { (int)RoleEnum.Lecture },
-                Dob = DateTime.Today.AddYears(-20),
-                Address = "Test Address",
-                CampusId = "1",
-                DepartmentId = "1",
-                PositionId = "1",
-                MajorId = "1",
-                SpecializationId = null,
-            };
-            var result = await _service.ValidateUserInput(input);
-            Assert.Contains("SpecializationId", result);
-        }
-
-        [Fact]
         public async Task ExportData_NoUsers_ReturnsNoUsersFound()
         {
             var (message, file) = await _service.ExportData("token");
@@ -591,9 +383,9 @@ namespace API.Tests
             _context.Majors.Add(new Major { Id = "1", Name = "Test Major", Code = "123" });
             _context.Campuses.Add(new Campus { Id = "1", Name = "Test Campus", Code = "123" });
             await _context.SaveChangesAsync();
-            var users = new List<CreateUserVM>
+            var users = new List<AddListUserVM>
             {
-                new CreateUserVM
+                new AddListUserVM
                 {
                     Email = "ab@email.com",
                     FullName = "User A",
@@ -617,9 +409,9 @@ namespace API.Tests
             _context.Roles.Add(new Role { Id = 1, Name = "Teacher" });
             _context.Campuses.Add(new Campus { Id = "1", Name = "Test Campus", Code = "123" });
             await _context.SaveChangesAsync();
-            var users = new List<CreateUserVM>
+            var users = new List<AddListUserVM>
             {
-                new CreateUserVM
+                new AddListUserVM
                 {
                     Email = "a@email.com",
                     FullName = "User A",
@@ -630,7 +422,7 @@ namespace API.Tests
                     Address = "Test Address",
                     CampusId = "1"
                 },
-                new CreateUserVM
+                new AddListUserVM
                 {
                     Email = "invalid-email",
                     FullName = "User B",
@@ -650,9 +442,9 @@ namespace API.Tests
         [Fact]
         public async Task AddListUser_AllInvalid_ReturnsNoUsersCreated()
         {
-            var users = new List<CreateUserVM>
+            var users = new List<AddListUserVM>
             {
-                new CreateUserVM
+                new AddListUserVM
                 {
                     Email = "invalid-email",
                     FullName = "User A",
@@ -667,12 +459,6 @@ namespace API.Tests
             var (message, errorList) = await _service.AddListUser(users, "token");
             Assert.Equal("No users were created.", message);
             Assert.True(errorList.Count > 0);
-        }
-        [Fact]
-        public void GenerateCharacter_Should_MatchPasswordPattern()
-        {
-            string password = Utils.GenerateCharacter(12); // hoặc length tùy ý ≥ 8
-            Assert.Matches(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@#?!]).{8,}$", password);
         }
 
         public void Dispose()

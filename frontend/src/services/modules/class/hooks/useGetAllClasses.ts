@@ -1,12 +1,11 @@
 import cachedKeys from '@/consts/cachedKeys';
 import { showError } from '@/helpers/toast';
-import httpService from '@/services/httpService';
 import { useSave } from '@/stores/useStores';
 import { isArray } from 'lodash';
 import cloneDeep from 'lodash/cloneDeep';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ClassList, IClassRequest, ResponseGetListClass } from '../interfaces/class.interface';
 import classService from '../class.service';
+import { ClassList, IClassRequest, ResponseGetListClass } from '../interfaces/class.interface';
 
 /********************************************************
  * SNIPPET GENERATED
@@ -59,7 +58,6 @@ const useGetAllClasses = (
   const [hasMore, setHasMore] = useState(false);
   const [totalPage, setTotalPage] = useState<number>(1);
   const [total, setTotal] = useState<number>(0);
-  const token = httpService.getTokenStorage();
 
   //! Function
   const fetch = useCallback(() => {
@@ -71,7 +69,6 @@ const useGetAllClasses = (
       (async () => {
         try {
           const nextFilters = parseRequest(filters);
-          httpService.attachTokenToHeader(token);
           const response = await requestAPI(nextFilters, {
             signal: signal.current.signal,
           });
@@ -82,7 +79,7 @@ const useGetAllClasses = (
         }
       })();
     });
-  }, [filters, isTrigger, token]);
+  }, [filters, isTrigger]);
 
   const checkConditionPass = useCallback(
     (response: ResponseGetListClass) => {

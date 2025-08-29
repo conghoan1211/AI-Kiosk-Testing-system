@@ -47,7 +47,7 @@ export interface BankQuestionList {
   trueFalseCount: number;
   fillInTheBlank: number;
   essayCount: number;
-  status: boolean;
+  status: number;
   sharedByName: string;
   sharedWithUsers: string[];
 }

@@ -25,6 +25,7 @@ import {
 import { FieldArray, Form, Formik } from 'formik';
 import { Check, Clock, FileText, Mail, Search, Users } from 'lucide-react';
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import * as Yup from 'yup';
 
 interface DialogI<T> {
@@ -34,13 +35,8 @@ interface DialogI<T> {
 }
 interface DialogProps extends DialogI<any> {}
 
-const validationSchema = Yup.object().shape({
-  examId: Yup.array().min(1, 'Vui lòng chọn một kỳ thi').max(1, 'Chỉ được chọn một kỳ thi'),
-  supervisorId: Yup.array().min(1, 'Vui lòng chọn ít nhất một giám thị'),
-  note: Yup.string().max(500, 'Ghi chú không được vượt quá 500 ký tự').optional(),
-});
-
 const DialogAssignSuppervisor = (props: DialogProps) => {
+  const { t } = useTranslation('shared');
   const { isOpen, toggle, onSubmit } = props;
 
   const { filters: examFilters, setFilters: updateExamFilters } = useFiltersHandler({
@@ -52,6 +48,14 @@ const DialogAssignSuppervisor = (props: DialogProps) => {
     PageSize: 10,
     CurrentPage: 1,
     TextSearch: '',
+  });
+
+  const validationSchema = Yup.object().shape({
+    examId: Yup.array()
+      .min(1, t('SupervisorManagement.examRequired'))
+      .max(1, t('SupervisorManagement.maxOne')),
+    supervisorId: Yup.array().min(1, t('SupervisorManagement.supervisorRequired')),
+    note: Yup.string().max(500, t('SupervisorManagement.noteMaxLength')).optional(),
   });
 
   // State for search inputs
@@ -156,7 +160,7 @@ const DialogAssignSuppervisor = (props: DialogProps) => {
             {({ isSubmitting, values, setFieldValue }) => (
               <Fragment>
                 <DialogTitle className="mb-4 text-2xl font-bold">
-                  Phân công giám sát thi
+                  {t('SupervisorManagement.AssignSupervisor')}
                 </DialogTitle>
                 <DialogDescription className="sr-only">
                   Form to assign supervisors to exams.
@@ -165,11 +169,13 @@ const DialogAssignSuppervisor = (props: DialogProps) => {
                   <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                     {/* Left Column: Exams */}
                     <div className="flex flex-col gap-4">
-                      <h3 className="text-lg font-semibold">Chọn kỳ thi cần phân công</h3>
+                      <h3 className="text-lg font-semibold">
+                        {t('SupervisorManagement.SelectExam')}
+                      </h3>
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                         <Input
-                          placeholder="Tìm kiếm kỳ thi..."
+                          placeholder={t('SupervisorManagement.SearchExam')}
                           className="pl-9"
                           value={examSearch}
                           onChange={(e) => setExamSearch(e.target.value)}
@@ -204,7 +210,7 @@ const DialogAssignSuppervisor = (props: DialogProps) => {
                                   />
                                   <div className="grid flex-1 gap-1">
                                     <div className="text-sm font-medium leading-none">
-                                      {exam.subjectName}
+                                      {exam.title}
                                     </div>
                                     <div className="grid gap-1 text-xs text-muted-foreground">
                                       <div className="flex items-center gap-2">
@@ -232,7 +238,7 @@ const DialogAssignSuppervisor = (props: DialogProps) => {
                                   </div>
                                 </div>
                               ))}
-                              {isLoadingExams && <div className="text-center">Đang tải...</div>}
+                              {isLoadingExams && <div className="text-center">Loading...</div>}
                             </div>
                           )}
                         </FieldArray>
@@ -241,11 +247,13 @@ const DialogAssignSuppervisor = (props: DialogProps) => {
 
                     {/* Right Column: Supervisors */}
                     <div className="flex flex-col gap-4">
-                      <h3 className="text-lg font-semibold">Chọn giám thị</h3>
+                      <h3 className="text-lg font-semibold">
+                        {t('SupervisorManagement.SelectSupervisor')}
+                      </h3>
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                         <Input
-                          placeholder="Tìm kiếm giám thị..."
+                          placeholder={t('SupervisorManagement.SearchSupervisor')}
                           className="pl-9"
                           value={supervisorSearch}
                           onChange={(e) => setSupervisorSearch(e.target.value)}
@@ -297,7 +305,7 @@ const DialogAssignSuppervisor = (props: DialogProps) => {
                                 </div>
                               ))}
                               {isLoadingSupervisors && (
-                                <div className="text-center">Đang tải...</div>
+                                <div className="text-center">Loading...</div>
                               )}
                             </div>
                           )}
@@ -309,18 +317,22 @@ const DialogAssignSuppervisor = (props: DialogProps) => {
                   {/* Bottom Section: Notes */}
                   <div className="space-y-4">
                     <div>
-                      <FormikField component={Textarea} name="note" label="Ghi chú (tùy chọn)" />
+                      <FormikField
+                        component={Textarea}
+                        name="note"
+                        label={t('SupervisorManagement.Note')}
+                      />
                     </div>
                   </div>
 
                   {/* Footer Buttons */}
                   <div className="flex justify-end gap-2 border-t pt-4">
                     <Button variant="ghost" type="button" onClick={toggle}>
-                      Hủy bỏ
+                      {t('Close')}
                     </Button>
                     <Button type="submit" disabled={isSubmitting}>
                       <Check className="mr-2 h-4 w-4" />
-                      Phân công
+                      {t('Confirm')}
                     </Button>
                   </div>
                 </Form>

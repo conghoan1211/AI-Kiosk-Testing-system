@@ -18,6 +18,14 @@ namespace API.Controllers
             _questionService = questionService;
         }
 
+        [HttpPost("format-file-questions")]
+        public async Task<IActionResult> ImportFile([FromForm] FormatQuestionList file)
+        {
+            var (message, data) = await _questionService.FormatListQuestion(file);
+            if (message.Length > 0) return BadRequest(new { success = false, message, data = new List<object>() });
+            return Ok(new { success = true, message = "Format data successfully", data });
+        }
+
         [HttpPost("importQuestions")]
         public async Task<IActionResult> ImportQuestions([FromBody] List<AddQuestionRequest> questions)
         {
@@ -36,7 +44,7 @@ namespace API.Controllers
             return BadRequest(new { message });
         }
 
-        
+
 
         [HttpPost("add")]
         public async Task<IActionResult> AddQuestion([FromForm] AddQuestionRequest request)
@@ -46,15 +54,14 @@ namespace API.Controllers
 
             if (string.IsNullOrEmpty(UserToken.UserID))
                 return Unauthorized(new { message = "User not authenticated." });
-
-            var (success, message) = await _questionService.AddQuestionAsync(request, UserToken.UserID);
+            //var (success, message) = await _questionService.AddQuestionAsync(request, UserToken.UserID);
+            var (success, message) = await _questionService.AddQuestionBPAsync(request, UserToken.UserID);
             if (success)
             {
                 return Ok(new { message });
             }
 
             return BadRequest(new { message });
-
         }
 
         [HttpPut("edit")]
@@ -98,7 +105,7 @@ namespace API.Controllers
         [HttpDelete("{questionBankId}/question/{questionId}")]
         public async Task<IActionResult> DeleteQuestion(string questionBankId, string questionId)
         {
-            if (string.IsNullOrEmpty(questionBankId) || string.IsNullOrEmpty(questionId) )
+            if (string.IsNullOrEmpty(questionBankId) || string.IsNullOrEmpty(questionId))
                 return BadRequest(new { message = "Invalid request body, required field(s) questionBankId or questionId are missing." });
 
             if (string.IsNullOrEmpty(UserToken.UserID))

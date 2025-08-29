@@ -1,8 +1,8 @@
-import { AxiosRequestConfig } from 'axios';
-import { IMonitorRequest } from './interfaces/monitor.interface';
-import httpService from '@/services/httpService';
 import { MONITOR_URL } from '@/consts/apiUrl';
 import { AssignMoreTimeValues } from '@/pages/teacher/examsupervision/dialogs/DialogAssignMoreTime';
+import httpService from '@/services/httpService';
+import { AxiosRequestConfig } from 'axios';
+import { IMonitorRequest } from './interfaces/monitor.interface';
 import { IMonitorDetailRequest } from './interfaces/monitorDetail.interface';
 
 interface ReAssignExamInterface {
@@ -24,7 +24,7 @@ interface FinishExamInterface {
   examId: string;
 }
 
-class monitorService {
+class MonitorService {
   getListMonitor(filter?: IMonitorRequest, config?: AxiosRequestConfig) {
     const queryParams = new URLSearchParams({
       PageSize: (filter?.PageSize ?? 50).toString(),
@@ -78,4 +78,4 @@ class monitorService {
   }
 }
 
-export default new monitorService();
+export default new MonitorService();

@@ -8,7 +8,7 @@ export interface CreateUpdatePermissionData {
   description?: string;
 }
 
-class permissionService {
+class PermissionService {
   getAllPermission(filters?: IPermissionRequest, config?: AxiosRequestConfig) {
     return httpService.get(
       `${AUTHORIZE_URL}/get-all-category-permissions?PageSize=${filters?.PageSize}&CurrentPage=${filters?.CurrentPage}&TextSearch=${filters?.TextSearch}`,
@@ -36,4 +36,4 @@ class permissionService {
   }
 }
 
-export default new permissionService();
+export default new PermissionService();

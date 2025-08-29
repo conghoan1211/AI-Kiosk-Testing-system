@@ -1,7 +1,5 @@
 @startuml
-' Class Diagram for View List Permission Feature
-
-title View List Permission Class Diagram
+'Class Diagram - View List Permission
 
 hide empty members
 skinparam packageStyle rectangle
@@ -26,86 +24,77 @@ skinparam package {
     FontSize 14
     FontStyle bold
 }
-
 skinparam interface {
     BackgroundColor LightGreen
     BorderColor DarkGreen
     FontSize 12
 }
 
-skinparam enum {
-    BackgroundColor LightCyan
-    BorderColor DarkCyan
-    FontSize 12
-}
+title View List Permission Class Diagram
 
 package "Controllers" {
     class AuthorizeController <<Controller>> {
         - _authorizeService: IAuthorizeService
-        + GetAllPermissions(search: SearchRequestVM): Task<IActionResult>
+        + GetAllPermissions(search: SearchRequestVM)
     }
 }
 
 package "Services" {
     interface IAuthorizeService <<Interface>> {
-        + GetAllPermissions(search: SearchRequestVM): Task<(string, SearchResult?)>
+        + GetAllPermissions(search: SearchRequestVM)
     }
     class AuthorizeService <<Service>> {
-        - _context: DbContext
-        + GetAllPermissions(search: SearchRequestVM): Task<(string, SearchResult?)>
+        - _unitOfWork: IUnitOfWork
+        + GetAllPermissions(search: SearchRequestVM)
+    }
+}
+
+package "Repositories" {
+    interface IPermissionRepository {
+        + GetPermissions(search: SearchRequestVM)
+        + GetPermissionsByCategory(categoryId: int)
+        + CountPermissions(search: SearchRequestVM)
+    }
+    interface IPermissionCategoryRepository {
+        + GetAllCategories()
+        + GetCategoryById(categoryId: int)
     }
 }
 
 package "Models & DTOs" {
     class SearchRequestVM <<DTO>> {
-        + PageSize: int
-        + CurrentPage: int
-        + TextSearch: string
+        + PageSize
+        + CurrentPage
+        + TextSearch
     }
     class SearchResult <<DTO>> {
-        + Result: object
-        + TotalPage: int
-        + PageSize: int
-        + CurrentPage: int
-        + Total: int
+        + Result
+        + TotalPage
+        + PageSize
+        + CurrentPage
+        + Total
     }
     class CategoryPermissionsVM <<DTO>> {
-        + CategoryId: string
-        + Description: string
-        + Permissions: List<PermissionVM>
+        + CategoryId
+        + Description
+        + Permissions
     }
     class PermissionVM <<DTO>> {
-        + Id: string
-        + Name: string
-        + Action: string
-        + Resource: string
-    }
-}
-
-package "Entities" {
-    class Permission {
-        + Id: string
-        + Name: string
-        + Action: string
-        + Resource: string
-        + CategoryID: string
-        + Category: PermissionCategory
-    }
-    class PermissionCategory {
-        + CategoryID: string
-        + Description: string
+        + Id
+        + Name
+        + Action
+        + Resource
     }
 }
 
 ' Relationships
 AuthorizeController ..> IAuthorizeService : <<uses>>
 AuthorizeController ..> SearchRequestVM : <<uses>>
-IAuthorizeService <|.. AuthorizeService
-AuthorizeService ..> Permission : <<queries>>
-AuthorizeService ..> PermissionCategory : <<includes>>
+IAuthorizeService <|.. AuthorizeService : <<implements>>
+AuthorizeService ..> IPermissionRepository : <<uses>>
+AuthorizeService ..> IPermissionCategoryRepository : <<uses>>
 AuthorizeService ..> SearchResult : <<returns>>
-Permission o-- PermissionCategory : has
 SearchResult o-- CategoryPermissionsVM : <<contains>>
 CategoryPermissionsVM o-- PermissionVM : <<has>>
 
-@enduml 
+@enduml

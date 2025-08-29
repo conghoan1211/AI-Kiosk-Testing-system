@@ -11,7 +11,7 @@ interface ScoreDistributionProps {
   data: ScoreRange[];
 }
 
-export function ScoreDistribution({ data }: ScoreDistributionProps) {
+export function ScoreDistribution({ data }: Readonly<ScoreDistributionProps>) {
   const maxCount = Math.max(...data.map((item) => item.count));
 
   return (

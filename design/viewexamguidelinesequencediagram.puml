@@ -1,57 +1,64 @@
 @startuml
-
-title View Exam Guideline Sequence Diagram
+title View Exam Guideline Sequence Diagram (with repository, SQL summarized)
 
 actor "User" as Client
+boundary ":ButtonViewExamGuideline" as UI <<boundary>>
+control "StudentExamController" as Controller <<controller>>
+participant ":StudentExamService" as Service <<service>>
 
-boundary "c:StudentExamController" as Controller
-control "s:StudentExamService" as Service
+entity "examRepository" as ExamRepo <<repository>>
+
 database "Database" as DB
 
 == View Exam Guideline ==
 
-Client -> Controller: GET /exam-guideline (ExamId)
+Client -> UI: Click "Take Exam"
+activate UI
+UI -> Controller: GET /exam-guideline?examId={id}
 activate Controller
 
 alt User not authenticated
-    Controller -> Controller: Log unauthorized access attempt
-    Controller --> Client: 401 Unauthorized { message: "User not authenticated" }
-    deactivate Controller
+  Controller --> UI: 401 Unauthorized { message: "User not authenticated" }
+  deactivate Controller
+  UI --> Client: Show unauthorized
+  deactivate UI
 else User authenticated
-    Controller -> Service: GetExamGuideline(ExamId, usertoken)
-    activate Service
+  Controller -> Service: GetExamGuidelinesAsync(examId, userId)
+  activate Service
 
-    Service -> DB: Check user role and permissions (UserId, RoleId)
-    activate DB
-    alt User is not student
-        DB --> Service: Not found or invalid role
-        deactivate DB
-        Service -> Service: Log authorization failure
-        Service --> Controller: ("You do not have permission to access student exams.", null)
-        deactivate Service
-        Controller --> Client: 403 Forbidden { success: false, message }
-        deactivate Controller
-    else User is student
-        DB --> Service: User role confirmed
-        deactivate DB
+  '--- Authorization from token/claims (must be Student) ---
+  Service -> Service: Ensure role = Student
+  alt Not student
+    Service --> Controller: 403 Forbidden { message: "You do not have permission to access student exams." }
+    deactivate Service
+    Controller --> UI: 403 Forbidden
+    deactivate Controller
+    UI --> Client: Show forbidden
+    deactivate UI
+  else Is student
+    '--- Read guideline ---
+    Service -> ExamRepo: GetById(examId)
+    activate ExamRepo
+    ExamRepo -> DB: [SQL: SELECT ExamId, GuideLines FROM Exams WHERE ExamId=@id]
+    DB --> ExamRepo: exam|null
+    ExamRepo --> Service: exam|null
+    deactivate ExamRepo
 
-        Service -> DB: Query ExamGuideline Where ExamId = ExamId
-        activate DB
-        DB --> Service: Return ExamGuideline
-        deactivate DB
-
-        alt ExamGuideline not found
-            Service --> Controller: ("Exam guideline not found.", null)
-            deactivate Service
-            Controller --> Client: 400 Bad Request { success: false, message }
-        else
-            Service --> Controller: ("", data)
-            deactivate Service
-            Controller --> Client: 200 OK { success: true, message, data }
-        end
-    end
-end
-
-deactivate Controller
-
-@enduml 
+    alt Exam guideline not found
+      Service --> Controller: 404 Not Found { message: "Exam guideline not found." }
+      deactivate Service
+      Controller --> UI: 404 Not Found
+      deactivate Controller
+      UI --> Client: Show not found
+      deactivate UI
+    else Found
+      Service --> Controller: 200 OK { data: { ExamId, GuideLines } }
+      deactivate Service
+      Controller --> UI: 200 OK { success: true, data }
+      deactivate Controller
+      UI --> Client: Show guideline
+      deactivate UI
+    end alt
+  end alt
+end alt
+@enduml

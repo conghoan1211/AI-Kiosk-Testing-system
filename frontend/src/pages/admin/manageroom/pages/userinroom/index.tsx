@@ -33,9 +33,11 @@ import { useParams } from 'react-router-dom';
 import DialogAddStudentInRoom, {
   StudentInRoomFormValues,
 } from '../../dialogs/DialogAddStudentToRoom';
+import { useTranslation } from 'react-i18next';
 
 const StudentList = () => {
   //!State
+  const { t } = useTranslation('shared');
   const { roomId } = useParams();
   const [
     openAskNewSdtudentToRoom,
@@ -47,7 +49,7 @@ const StudentList = () => {
   const [userDeleteId, setUserDeleteId] = useState<string[] | null>(null);
   // Khởi tạo filters với cấu trúc phù hợp với IUserInRoomRequest
   const { filters: rawFilters, setFilters } = useFiltersHandler({
-    RoomId: roomId || '',
+    RoomId: roomId ?? '',
     PageSize: 50,
     CurrentPage: 1,
     TextSearch: '',
@@ -58,10 +60,10 @@ const StudentList = () => {
   // Chuyển đổi rawFilters sang định dạng IUserInRoomRequest
   const stableFilters = useMemo(
     (): IUserInRoomRequest => ({
-      RoomId: rawFilters.RoomId || '',
-      PageSize: rawFilters.PageSize || 50,
-      CurrentPage: rawFilters.CurrentPage || 1,
-      TextSearch: rawFilters.TextSearch || '',
+      RoomId: rawFilters.RoomId ?? '',
+      PageSize: rawFilters.PageSize ?? 50,
+      CurrentPage: rawFilters.CurrentPage ?? 1,
+      TextSearch: rawFilters.TextSearch ?? '',
       Role: rawFilters.Role !== undefined ? rawFilters.Role : null,
       Status: rawFilters.Status !== undefined ? rawFilters.Status : null,
     }),
@@ -81,60 +83,60 @@ const StudentList = () => {
   const statItems = useMemo(
     () => [
       {
-        title: 'Tổng số người trong phòng',
-        value: total || 0,
+        title: t('ExamRoomManagement.TotalUsersInRoom'),
+        value: total ?? 0,
         icon: <User2Icon className="h-6 w-6 text-blue-500" />,
         bgColor: 'bg-blue-50',
       },
       {
-        title: 'Đang hoạt động',
+        title: t('ExamRoomManagement.ActiveRooms'),
         value: 1,
         icon: <User2Icon className="h-6 w-6 text-green-500" />,
         bgColor: 'bg-green-50',
       },
       {
-        title: 'Không hoạt động',
+        title: t('ExamRoomManagement.InactiveRooms'),
         value: 1,
         icon: <User2Icon className="h-6 w-6 text-yellow-500" />,
         bgColor: 'bg-yellow-50',
       },
     ],
-    [total],
+    [total, t],
   );
 
   const columns = [
     {
-      label: 'Mã người dùng',
+      label: t('ExamRoomManagement.UserCode'),
       accessor: 'userCode',
       sortable: false,
       Cell: (row: UserElement) => <span className="font-medium">{row?.user?.userCode}</span>,
     },
     {
-      label: 'Tên người dùng',
+      label: t('ExamRoomManagement.FullName'),
       accessor: 'fullname',
       sortable: false,
       Cell: (row: UserElement) => (
-        <span className="text-sm text-gray-600">{row?.user?.fullname || 'Không có mô tả'}</span>
+        <span className="text-sm text-gray-600">{row?.user?.fullname ?? 'Không có mô tả'}</span>
       ),
     },
     {
-      label: 'Vai trò',
+      label: t('ExamRoomManagement.Role'),
       accessor: 'subjectName',
       sortable: false,
       Cell: (row: UserElement) => (
         <span className="font-medium">
           {row?.role === 1
-            ? 'Sinh viên'
+            ? t('ExamRoomManagement.Student')
             : row?.role === 2
-              ? 'Giảng viên'
+              ? t('ExamRoomManagement.Lecturer')
               : row?.role === 3
-                ? 'Giám sát viên'
-                : 'Admin'}
+                ? t('ExamRoomManagement.Supervisor')
+                : t('ExamRoomManagement.Admin')}
         </span>
       ),
     },
     {
-      label: 'Giờ tham gia',
+      label: t('ExamRoomManagement.JoinTime'),
       accessor: 'joinTime',
       sortable: false,
       Cell: (row: UserElement) => (
@@ -142,20 +144,22 @@ const StudentList = () => {
           {convertUTCToVietnamTime(
             row?.joinTime,
             DateTimeFormat.DateTimeWithTimezone,
-          )?.toString() || 'Không có mô tả'}
+          )?.toString() ?? 'Không có mô tả'}
         </span>
       ),
     },
     {
-      label: 'Giới tính',
+      label: t('ExamRoomManagement.Gender'),
       accessor: 'sex',
       sortable: false,
       Cell: (row: UserElement) => (
-        <span className="text-sm text-gray-600">{row?.user?.sex === 0 ? 'Nam' : 'Nữ'}</span>
+        <span className="text-sm text-gray-600">
+          {row?.user?.sex === 0 ? t('ExamRoomManagement.Male') : t('ExamRoomManagement.Female')}
+        </span>
       ),
     },
     {
-      label: 'Active/Deactive',
+      label: t('ExamRoomManagement.ActiveDeactive'),
       accessor: 'isActive',
       width: 120,
       sortable: false,
@@ -184,7 +188,7 @@ const StudentList = () => {
       ),
     },
     {
-      label: 'Chức năng',
+      label: t('ExamRoomManagement.Actions'),
       accessor: 'actions',
       width: 120,
       sortable: false,
@@ -204,7 +208,7 @@ const StudentList = () => {
                 }}
                 className="cursor-pointer text-red-600"
               >
-                <Trash2 className="mr-2 h-4 w-4" /> Xoá
+                <Trash2 className="mr-2 h-4 w-4" /> {t('Delete')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -238,7 +242,7 @@ const StudentList = () => {
   const handleAddStudentToRoom = async (values: StudentInRoomFormValues) => {
     try {
       await userinroomService.addUserToRoom(stableFilters.RoomId, values.studentList);
-      showSuccess('Thêm học sinh vào phòng thành công');
+      showSuccess(t('ExamRoomManagement.AddStudentSuccess'));
       toggleAskAddNewStudentToRoom();
       refetch();
     } catch (error) {
@@ -261,12 +265,12 @@ const StudentList = () => {
       input.onchange = async (event: any) => {
         const file = event.target.files[0];
         if (!file) {
-          showError('Vui lòng chọn tệp để nhập');
+          showError(t('ExamRoomManagement.NoFileSelected'));
           return;
         }
 
         if (!file.name.match(/\.(xlsx|xls|csv)$/)) {
-          showError('Vui lòng chọn tệp Excel hoặc CSV hợp lệ');
+          showError(t('ExamRoomManagement.InvalidFileType'));
           return;
         }
 
@@ -275,7 +279,7 @@ const StudentList = () => {
           formData.append('fileData', file);
           await userinroomService.importUserToRoom(stableFilters.RoomId, formData);
           refetch();
-          showSuccess('Nhập học sinh vào phòng thành công');
+          showSuccess(t('ExamRoomManagement.ImportStudentSuccess'));
         } catch (error) {
           showError(error);
         }
@@ -289,7 +293,7 @@ const StudentList = () => {
   const handleExportUserInRoom = async () => {
     try {
       await userinroomService.exportUserInRoom(stableFilters.RoomId);
-      showSuccess('Xuất danh sách học sinh thành công');
+      showSuccess(t('ExamRoomManagement.ExportStudentSuccess'));
     } catch (error) {
       showError(error);
     }
@@ -300,7 +304,7 @@ const StudentList = () => {
       setFilters((prev: any) => {
         const newParams = {
           ...prev,
-          TextSearch: value.textSearch || '',
+          TextSearch: value.textSearch ?? '',
           CurrentPage: 1,
         };
         return newParams;
@@ -311,10 +315,10 @@ const StudentList = () => {
 
   //!Render
   return (
-    <PageWrapper name="Danh sách học sinh trong phòng" className="bg-white dark:bg-gray-900">
+    <PageWrapper name={t('ExamRoomManagement.StudentList')} className="bg-white dark:bg-gray-900">
       <ExamHeader
-        title="Quản lý chi tiết phòng thi"
-        subtitle="Danh sách học sinh trong phòng"
+        title={t('ExamRoomManagement.Detail')}
+        subtitle={t('ExamRoomManagement.StudentList')}
         icon={<HomeIcon className="h-8 w-8 text-white" />}
         className="border-b border-white/20 bg-gradient-to-r from-blue-600 to-green-700 px-6 py-6 shadow-lg"
       />
@@ -325,18 +329,19 @@ const StudentList = () => {
             isOpen={openAskNewSdtudentToRoom}
             toggle={toggleAskAddNewStudentToRoom}
             onSubmit={handleAddStudentToRoom}
+            roomId={roomId ?? ''}
           />
         )}
         {shouldRenderAskConfirmDelete && (
           <DialogConfirm
             isOpen={openAskConfirmDelete}
             toggle={handleToggleAskConfirmDelete}
-            title="Xoá học sinh khỏi phòng"
-            content={`Bạn có chắc chắn muốn xoá học sinh này khỏi phòng này không?`}
+            title={t('ExamRoomManagement.DeleteStudentSuccess')}
+            content={t('ExamRoomManagement.DeleteStudentConfirmation')}
             onSubmit={async () => {
               try {
-                await userinroomService.removeUserFromRoom(roomId || '', userDeleteId ?? []);
-                showSuccess('Xoá học sinh khỏi phòng thành công');
+                await userinroomService.removeUserFromRoom(roomId ?? '', userDeleteId ?? []);
+                showSuccess(t('ExamRoomManagement.DeleteStudentSuccess'));
                 handleToggleAskConfirmDelete();
                 refetch();
               } catch (error) {
@@ -347,28 +352,28 @@ const StudentList = () => {
         )}
         <GenericFilters
           className="md:grid-cols-7"
-          searchPlaceholder="Tìm kiếm lớp học..."
+          searchPlaceholder={t('ExamRoomManagement.SearchStudentPlaceholder')}
           onSearch={handleSearch}
-          initialSearchQuery={stableFilters.TextSearch || ''}
+          initialSearchQuery={stableFilters.TextSearch ?? ''}
           filters={[
             {
               key: 'Status',
-              placeholder: 'Trạng thái',
+              placeholder: t('ExamRoomManagement.Status'),
               options: [
-                { value: null, label: 'Tất cả' },
-                { value: 0, label: 'Inactive' },
-                { value: 1, label: 'Active' },
+                { value: null, label: t('All') },
+                { value: 0, label: t('ExamRoomManagement.Inactive') },
+                { value: 1, label: t('ExamRoomManagement.Active') },
               ],
             },
             {
               key: 'Role',
-              placeholder: 'Vai trò',
+              placeholder: t('ExamRoomManagement.Role'),
               options: [
-                { value: null, label: 'Tất cả' },
-                { value: 1, label: 'Student' },
-                { value: 2, label: 'Lecturer' },
-                { value: 3, label: 'Supervisor' },
-                { value: 4, label: 'Admin' },
+                { value: null, label: t('All') },
+                { value: 1, label: t('ExamRoomManagement.Student') },
+                { value: 2, label: t('ExamRoomManagement.Lecturer') },
+                { value: 3, label: t('ExamRoomManagement.Supervisor') },
+                { value: 4, label: t('ExamRoomManagement.Admin') },
               ],
             },
           ]}
@@ -384,24 +389,24 @@ const StudentList = () => {
             });
           }}
           onAddNew={toggleAskAddNewStudentToRoom}
-          addNewButtonText="Thêm học sinh vào phòng"
-          importButtonText="Nhập học sinh vào phòng"
+          addNewButtonText={t('ExamRoomManagement.AddNewStudentToRoom')}
+          importButtonText={t('ExamRoomManagement.ImportStudentToRoom')}
           onImport={handleImportUserToRoom}
-          exportButtonText="Xuất danh sách học sinh"
+          exportButtonText={t('ExamRoomManagement.ExportStudentList')}
           onExport={handleExportUserInRoom}
         />
         <MemoizedTablePaging
-          id="student-list-table"
           columns={columns}
-          data={dataUserList || []}
+          data={dataUserList ?? []}
           keyRow="roomUserId"
           loading={loading}
-          currentPage={stableFilters.CurrentPage || 1}
-          currentSize={stableFilters.PageSize || 50}
-          totalPage={totalPage || 1}
-          total={total || 0}
+          currentPage={stableFilters.CurrentPage ?? 1}
+          currentSize={stableFilters.PageSize ?? 50}
+          totalPage={totalPage ?? 1}
+          total={total ?? 0}
           handleChangePage={handleChangePage}
           handleChangeSize={handleChangePageSize}
+          noResultText={t('NoDataFound')}
         />
       </div>
     </PageWrapper>

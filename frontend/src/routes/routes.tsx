@@ -25,7 +25,6 @@ const BankQuestion = lazy(() => import('@/pages/teacher/bankquestion'));
 const QuestionBankDetailPage = lazy(
   () => import('@/pages/teacher/bankquestion/pages/bank-question-detail'),
 );
-const ManageQuestion = lazy(() => import('@/pages/teacher/managequestion'));
 const AddQuestion = lazy(() => import('@/pages/teacher/addquestion'));
 const AdminLoginPage = lazy(() => import('@/pages/admin/adminlogin'));
 const AdminManageUsers = lazy(() => import('@/pages/admin/manageuser'));
@@ -179,13 +178,13 @@ const routes: Route[] = [
         component: withCheckRole(QuestionBankDetailPage, [ROLE_ENUM.Lecture]),
       },
       {
-        name: 'ManageQuestion',
-        path: BaseUrl.ManageQuestion,
-        component: withCheckRole(ManageQuestion, [ROLE_ENUM.Lecture]),
-      },
-      {
         name: 'AddNewQuestion',
         path: BaseUrl.AddQuestion,
+        component: withCheckRole(AddQuestion, [ROLE_ENUM.Lecture]),
+      },
+      {
+        name: 'Edit Question',
+        path: `${BaseUrl.AddQuestion}/:questionId`,
         component: withCheckRole(AddQuestion, [ROLE_ENUM.Lecture]),
       },
       {
@@ -434,13 +433,13 @@ const routes: Route[] = [
         component: withCheckRole(QuestionBankDetailPage, [ROLE_ENUM.ADMIN]),
       },
       {
-        name: 'Admin ManageQuestion',
-        path: BaseUrl.AdminManageQuestion,
-        component: withCheckRole(ManageQuestion, [ROLE_ENUM.ADMIN]),
-      },
-      {
         name: 'Admin AddNewQuestion',
         path: BaseUrl.AdminAddQuestion,
+        component: withCheckRole(AddQuestion, [ROLE_ENUM.ADMIN]),
+      },
+      {
+        name: 'Admin Edit Question',
+        path: `${BaseUrl.AdminAddQuestion}/:questionId`,
         component: withCheckRole(AddQuestion, [ROLE_ENUM.ADMIN]),
       },
     ],

@@ -1,6 +1,5 @@
 import cachedKeys from '@/consts/cachedKeys';
 import { showError } from '@/helpers/toast';
-import httpService from '@/services/httpService';
 import { useSave } from '@/stores/useStores';
 import { isArray } from 'lodash';
 import cloneDeep from 'lodash/cloneDeep';
@@ -60,7 +59,6 @@ const useGetListUserLog = (
   const [hasMore, setHasMore] = useState(false);
   const [totalPage, setTotalPage] = useState<number>(1);
   const [total, setTotal] = useState<number>(0);
-  const token = httpService.getTokenStorage();
 
   //! Function
   const fetch = useCallback(() => {
@@ -72,7 +70,6 @@ const useGetListUserLog = (
       (async () => {
         try {
           const nextFilters = parseRequest(filters);
-          httpService.attachTokenToHeader(token);
           const response = await requestAPI(nextFilters, {
             signal: signal.current.signal,
           });
@@ -83,7 +80,7 @@ const useGetListUserLog = (
         }
       })();
     });
-  }, [filters, isTrigger, token]);
+  }, [filters, isTrigger]);
 
   const checkConditionPass = useCallback(
     (response: UserLogListResponse) => {

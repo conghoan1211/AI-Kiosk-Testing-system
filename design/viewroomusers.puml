@@ -13,7 +13,6 @@ skinparam classFontName Arial
 skinparam noteFontSize 11
 skinparam noteFontName Arial
 
-' Increase spacing and sizing
 skinparam class {
     BackgroundColor LightBlue
     BorderColor DarkBlue
@@ -52,8 +51,21 @@ package "Services" {
         + GetUsersInRoom(search: SearchRoomUserVM): Task<(string, SearchResult?)>
     }
     class RoomUserService <<Service>> {
-        - _context: DbContext
+        - _unitOfWork: IUnitOfWork
         + GetUsersInRoom(search: SearchRoomUserVM): Task<(string, SearchResult?)>
+    }
+}
+
+package "Repositories" {
+    interface IRoomUserRepository {
+        + GetRoomUsers(search: SearchRoomUserVM)
+        + CountRoomUsers(search: SearchRoomUserVM)
+    }
+    interface IUserRepository {
+        + GetUserById(userId: string)
+    }
+    interface IRoomRepository {
+        + GetRoomById(roomId: string)
     }
 }
 
@@ -106,36 +118,6 @@ package "Models" {
     }
 }
 
-package "Entities" {
-    class RoomUser {
-        + RoomUserId: string
-        + RoomId: string
-        + UserId: string
-        + RoleId: int
-        + Status: int
-        + JoinTime: DateTime?
-        + UpdatedAt: DateTime?
-        + User: User
-        + Room: Room
-    }
-    class User {
-        + UserId: string
-        + FullName: string
-        + UserCode: string
-        + Email: string
-        + AvatarUrl: string
-        + Sex: int?
-        + CreateAt: DateTime?
-        + UpdateAt: DateTime?
-    }
-    class Room {
-        + RoomId: string
-        + RoomCode: string
-        + Description: string
-        + IsActive: bool
-    }
-}
-
 package "Enums" {
     enum RoleEnum {
         Student
@@ -152,14 +134,12 @@ package "Enums" {
 
 ' Relationships
 RoomUserController ..> IRoomUserService : <<uses>>
-IRoomUserService <|.. RoomUserService
 RoomUserController ..> SearchRoomUserVM : <<uses>>
-RoomUserService ..> RoomUser : <<uses>>
+IRoomUserService <|.. RoomUserService
+RoomUserService ..> IRoomUserRepository : <<uses>>
+RoomUserService ..> IUserRepository : <<uses>>
+RoomUserService ..> IRoomRepository : <<uses>>
 RoomUserService ..> RoomWithUserVM : <<maps to>>
-RoomUser o-- User : <<has>>
-RoomUser o-- Room : <<has>>
-RoomUser ..> RoleEnum : <<uses>>
-RoomUser ..> UserStatus : <<uses>>
 SearchRoomUserVM --|> SearchRequestVM
 RoomWithUserVM o-- UserInRoomVM : <<has>>
 UserInRoomVM o-- UserVM : <<has>>
@@ -167,4 +147,4 @@ SearchResult o-- RoomWithUserVM : <<has>>
 UserInRoomVM ..> RoleEnum : <<uses>>
 UserInRoomVM ..> UserStatus : <<uses>>
 
-@enduml 
+@enduml

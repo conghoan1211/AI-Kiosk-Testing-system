@@ -1,12 +1,11 @@
 import cachedKeys from '@/consts/cachedKeys';
 import { showError } from '@/helpers/toast';
-import httpService from '@/services/httpService';
 import { useSave } from '@/stores/useStores';
 import { isArray } from 'lodash';
 import cloneDeep from 'lodash/cloneDeep';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { IAlertRequest, ListAlert, ResponseAlertList } from '../interfaces/alert.interface';
 import alertService from '../alert.service';
+import { IAlertRequest, ListAlert, ResponseAlertList } from '../interfaces/alert.interface';
 
 //* Check parse body request
 const parseRequest = (filters: IAlertRequest) => {
@@ -44,7 +43,6 @@ const useGetListAlert = (
   const [hasMore, setHasMore] = useState(false);
   const [totalPage, setTotalPage] = useState<number>(1);
   const [total, setTotal] = useState<number>(0);
-  const token = httpService.getTokenStorage();
   const [loadingMore, setLoadingMore] = useState(false);
 
   //! Function
@@ -57,7 +55,6 @@ const useGetListAlert = (
       (async () => {
         try {
           const nextFilters = parseRequest(filters);
-          httpService.attachTokenToHeader(token);
           const response = await requestAPI(nextFilters, {
             signal: signal.current.signal,
           });
@@ -68,7 +65,7 @@ const useGetListAlert = (
         }
       })();
     });
-  }, [filters, isTrigger, token]);
+  }, [filters, isTrigger]);
 
   const checkConditionPass = useCallback(
     (response: ResponseAlertList, options: { isLoadmore?: boolean } = {}) => {
@@ -114,10 +111,8 @@ const useGetListAlert = (
         checkConditionPass(response as ResponseAlertList);
       }
       setRefetching(false);
-    } catch (error: any) {
-      if (!error.isCanceled) {
-        showError(error);
-      }
+    } catch (error) {
+      setData([]);
     }
   }, [fetch, checkConditionPass]);
 
@@ -136,7 +131,7 @@ const useGetListAlert = (
           checkConditionPass(response as ResponseAlertList);
         }
       } catch (error) {
-        console.log('Error fetching alerts:', error);
+        setData([]);
       } finally {
         setLoading(false);
       }

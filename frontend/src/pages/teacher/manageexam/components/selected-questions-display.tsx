@@ -37,7 +37,7 @@ const SelectedQuestionsDisplay: React.FC<SelectedQuestionsDisplayProps> = ({
             <div className="min-w-0 flex-1">
               <div className="mb-1 text-sm font-medium text-gray-900">{question.content}</div>
               <div className="text-xs text-gray-500">
-                {question.subjectName || question.questionBankName || 'Toán học cơ bản'}
+                {question.subjectName ?? question.questionBankName ?? 'Toán học cơ bản'}
               </div>
             </div>
 

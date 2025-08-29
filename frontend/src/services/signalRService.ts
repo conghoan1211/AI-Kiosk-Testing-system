@@ -32,7 +32,6 @@ class SignalRService {
   public async stop(): Promise<void> {
     if (this.connection && this.connection.state !== 'Disconnected') {
       await this.connection.stop();
-      console.log('SignalR connection stopped');
     }
   }
 
@@ -49,6 +48,9 @@ class SignalRService {
   }
 
   public async invoke(method: string, ...args: any[]): Promise<any> {
+    if (this.connection.state !== 'Connected') {
+      await this.start();
+    }
     return this.connection.invoke(method, ...args).catch((error) => {
       console.error(`SignalR invoke error for method ${method}:`, error);
       throw error;

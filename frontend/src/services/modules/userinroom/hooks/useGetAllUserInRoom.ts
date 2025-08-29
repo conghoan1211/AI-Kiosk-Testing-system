@@ -1,5 +1,4 @@
 import { showError } from '@/helpers/toast';
-import httpService from '@/services/httpService';
 import { isArray } from 'lodash';
 import cloneDeep from 'lodash/cloneDeep';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -44,7 +43,6 @@ const useGetListUserInRoom = (
   const [hasMore, setHasMore] = useState(false);
   const [totalPage, setTotalPage] = useState<number>(1);
   const [total, setTotal] = useState<number>(0);
-  const token = httpService.getTokenStorage();
 
   const fetch = useCallback(() => {
     if (!isTrigger) {
@@ -55,7 +53,6 @@ const useGetListUserInRoom = (
       (async () => {
         try {
           const nextFilters = parseRequest(filters);
-          httpService.attachTokenToHeader(token);
           const response = await requestAPI(nextFilters, {
             signal: signal.current.signal,
           });
@@ -66,7 +63,7 @@ const useGetListUserInRoom = (
         }
       })();
     });
-  }, [filters, isTrigger, token]);
+  }, [filters, isTrigger]);
 
   const checkConditionPass = useCallback((response: ResponseUserInRoom) => {
     setTotalPage(response?.data?.data?.totalPage || 1);

@@ -7,7 +7,7 @@ import {
 } from './interfaces/log.interface';
 import { AxiosRequestConfig } from 'axios';
 
-class logService {
+class LogService {
   writeUserActivity(body: WriteUserActivity) {
     return httpService.post(`${LOG_URL}/write-user-activity`, body);
   }
@@ -40,4 +40,4 @@ class logService {
   }
 }
 
-export default new logService();
+export default new LogService();

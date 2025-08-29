@@ -1,15 +1,11 @@
-import { useSave } from "@/stores/useStores";
-import { isEmpty } from "lodash";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useSave } from '@/stores/useStores';
+import { isEmpty } from 'lodash';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { errorHandler } from "@/helpers/errors";
-import { showError } from "@/helpers/toast";
-import httpService from "@/services/httpService";
-import {
-  DetailClass,
-  ResponseGetDetailClass,
-} from "../interfaces/class.interface";
-import classService from "../class.service";
+import { errorHandler } from '@/helpers/errors';
+import { showError } from '@/helpers/toast';
+import classService from '../class.service';
+import { DetailClass, ResponseGetDetailClass } from '../interfaces/class.interface';
 
 /**
  * Please check:
@@ -21,47 +17,44 @@ const useGetDetailClass = (
   id: string | undefined,
   options: { isTrigger?: boolean; cachedKey?: string } = {
     isTrigger: true,
-    cachedKey: "",
+    cachedKey: '',
   },
 ) => {
   //! State
   const signal = useRef(new AbortController());
-  const { isTrigger = true, cachedKey = "" } = options;
+  const { isTrigger = true, cachedKey = '' } = options;
 
   const save = useSave();
   const [data, setData] = useState<DetailClass>();
   const [isLoading, setLoading] = useState(false);
   const [isRefetching, setRefetching] = useState(false);
   const [error, setError] = useState<unknown>(null);
-  const token = httpService.getTokenStorage();
 
   //! Function
-  const fetch: () => Promise<ResponseGetDetailClass> | undefined =
-    useCallback(() => {
-      if (!isTrigger) {
-        return;
-      }
+  const fetch: () => Promise<ResponseGetDetailClass> | undefined = useCallback(() => {
+    if (!isTrigger) {
+      return;
+    }
 
-      return new Promise((resolve, reject) => {
-        (async () => {
-          try {
-            httpService.attachTokenToHeader(token);
-            const response = await classService.getClassById(id as string);
-            resolve(response);
-          } catch (error) {
-            setError(error);
-            reject(error);
-          }
-        })();
-      });
-    }, [id, isTrigger, token]);
+    return new Promise((resolve, reject) => {
+      (async () => {
+        try {
+          const response = await classService.getClassById(id as string);
+          resolve(response);
+        } catch (error) {
+          setError(error);
+          reject(error);
+        }
+      })();
+    });
+  }, [id, isTrigger]);
 
   const checkConditionPass = useCallback(
     (response: ResponseGetDetailClass) => {
       //* Check condition of response here to set data
       if (!isEmpty(response?.data?.data)) {
         setData(response.data?.data);
-        save("detailUser", response.data?.data);
+        save('detailUser', response.data?.data);
       }
     },
     [save],

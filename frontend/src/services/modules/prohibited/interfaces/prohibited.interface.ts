@@ -33,7 +33,7 @@ export interface ProhbitedList {
   category: number;
   createdAt: Date;
   updatedAt: Date;
-  typeApp: string;
+  typeApp: number;
 }
 
 export interface Response<T> {

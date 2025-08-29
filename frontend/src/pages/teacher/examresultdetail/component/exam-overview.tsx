@@ -11,7 +11,7 @@ interface ExamOverviewProps {
   stats: Stats;
 }
 
-export function ExamOverview({ stats }: ExamOverviewProps) {
+export function ExamOverview({ stats }: Readonly<ExamOverviewProps>) {
   const statCards = [
     {
       title: 'Tổng số học sinh',
