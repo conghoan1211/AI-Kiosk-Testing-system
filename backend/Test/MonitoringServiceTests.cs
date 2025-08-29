@@ -3,8 +3,8 @@ using API.Factory;
 using API.Helper;
 using API.Hubs;
 using API.Models;
-using API.Observers.Interface;
 using API.Repository;
+using API.Repository.Interface;
 using API.Services;
 using API.Services.Interfaces;
 using API.Subjects;
@@ -12,6 +12,7 @@ using API.ViewModels;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Storage;
 using Moq;
 using Xunit;
 
@@ -27,6 +28,7 @@ namespace API.Tests
         private readonly Mock<IUnitOfWork> _unitOfWork;
         private readonly Mock<IMonitoringSubject> _monitorSubject;
         private readonly Mock<IScoringStrategyFactory> _factory;
+        private readonly Mock<IMonitoringSubject> _subject;
 
         public MonitoringServiceTests()
         {
@@ -37,6 +39,7 @@ namespace API.Tests
 
             _context = new Sep490Context(options);
             _mockLogger = new Mock<ILog>();
+            _subject = new Mock<IMonitoringSubject>();
             _s3Service = new Mock<IAmazonS3Service>();
             _unitOfWork = new Mock<IUnitOfWork>();
             _monitorSubject = new Mock<IMonitoringSubject>();
@@ -311,39 +314,46 @@ namespace API.Tests
         }
 
         [Fact]
-        public async Task AddStudentExtraTime_ValidRequest_ReturnsSuccess()
+        public async Task AddStudentExtraTime_ValidStudent_ReturnsSuccess()
         {
             // Arrange
-            var user = new User { UserId = "student1", FullName = "Test Student", Email = "student@email.com", UserCode = "ST001" };
-            var exam = new Exam { ExamId = "exam1", Title = "Test Exam", Duration = 60, CreateUser = "student1", RoomId = "1" };
+            var exam = new Exam { ExamId = "exam1", Duration = 60 };
             var studentExam = new StudentExam
             {
                 StudentExamId = "se1",
-                ExamId = "exam1",
                 StudentId = "student1",
-                Status = (int)StudentExamStatus.InProgress,
+                Exam = exam,
                 StartTime = DateTime.UtcNow.AddMinutes(-30),
-                User = user,
-                Exam = exam
+                ExtraTimeMinutes = 0,
+                Status = (int)StudentExamStatus.InProgress
             };
 
-            _context.Users.Add(user);
-            _context.Exams.Add(exam);
-            _context.StudentExams.Add(studentExam);
-            await _context.SaveChangesAsync();
-
-            var request = new StudentExamExtraTime
+            var timeRequest = new StudentExamExtraTime
             {
                 StudentExamId = "se1",
-                ExtraMinutes = 15
+                ExtraMinutes = 10
             };
 
+            var studentExamRepo = new Mock<IStudentExamRepository>();
+            studentExamRepo.Setup(r => r.GetStudentExamWithExamUser("se1", StudentExamStatus.InProgress, false))
+                           .ReturnsAsync(studentExam);
+
+            _unitOfWork.Setup(u => u.StudentExams).Returns(studentExamRepo.Object);
+            _unitOfWork.Setup(u => u.BeginTransactionAsync()).ReturnsAsync(Mock.Of<IDbContextTransaction>());
+            _unitOfWork.Setup(u => u.CommitTransactionAsync()).Returns(Task.CompletedTask);
+            _unitOfWork.Setup(u => u.SaveChangesAsync()).ReturnsAsync(1);
+
+            _subject.Setup(s => s.Notify(timeRequest, studentExam, "student1")).Returns(Task.CompletedTask);
+
             // Act
-            var result = await _service.AddStudentExtraTime(request, "admin");
+            var result = await _service.AddStudentExtraTime(timeRequest, "student1");
 
             // Assert
-            Assert.Empty(result);
+            Assert.Equal("", result);
+            Assert.Equal(10, studentExam.ExtraTimeMinutes);
+            Assert.NotNull(studentExam.SubmitTime);
         }
+
 
         [Fact]
         public async Task AddStudentExtraTime_StudentExamNotFound_ReturnsError()
@@ -355,11 +365,19 @@ namespace API.Tests
                 ExtraMinutes = 15
             };
 
+            var studentExamRepo = new Mock<IStudentExamRepository>();
+            studentExamRepo.Setup(r => r.GetStudentExamWithExamUser("nonexistent", StudentExamStatus.InProgress, false))
+                           .ReturnsAsync((StudentExam?)null);
+
+            _unitOfWork.Setup(u => u.StudentExams).Returns(studentExamRepo.Object);
+            _unitOfWork.Setup(u => u.BeginTransactionAsync()).ReturnsAsync(Mock.Of<IDbContextTransaction>());
+            _unitOfWork.Setup(u => u.RollbackTransactionAsync()).Returns(Task.CompletedTask);
+
             // Act
             var result = await _service.AddStudentExtraTime(request, "admin");
 
             // Assert
-            Assert.Equal("Student is not found in exam.", result);
+            Assert.Equal("Student is not taking in exam.", result);
         }
 
         [Fact]

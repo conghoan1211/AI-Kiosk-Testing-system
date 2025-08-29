@@ -1,7 +1,9 @@
+using API.Hubs;
 using API.Models;
 using API.Services;
 using API.Services.Interfaces;
 using API.ViewModels;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using Xunit;
@@ -13,6 +15,8 @@ namespace API.Tests
         private readonly Sep490Context _context;
         private readonly Mock<IAmazonS3Service> _mockS3;
         private readonly FaceCaptureService _service;
+        private readonly IHubContext<ExamHub> _hubContext;
+        private readonly HttpClient _httpClient;
 
         public FaceCaptureServiceTests()
         {
@@ -20,8 +24,11 @@ namespace API.Tests
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options;
             _context = new Sep490Context(options);
+            _hubContext = new Mock<IHubContext<ExamHub>>().Object; // Mocking the hub context if needed
             _mockS3 = new Mock<IAmazonS3Service>();
-            _service = new FaceCaptureService(_context, _mockS3.Object);
+            // Mocking the HttpClient if needed
+            _httpClient = new HttpClient();
+            _service = new FaceCaptureService(_context, _mockS3.Object, _hubContext, _httpClient);
         }
 
         [Fact]
@@ -131,6 +138,32 @@ namespace API.Tests
         }
 
         [Fact]
+        public async Task Create_NoResult_ReturnsEmptyList()
+        {
+            var user = new User
+            {
+                UserId = "1",
+                FullName = "Tester",
+                AvatarUrl = "avatar.jpg",
+                Email = "tester@email.com"
+            };
+            _context.Users.Add(user);
+            _context.Exams.Add(new Exam { ExamId = "1", Title = "Test Exam", CreateUser = "1", RoomId = "1" });
+
+            var studentExam = new StudentExam { StudentExamId = "se1", ExamId = "1", StudentId = "1" };
+            _context.StudentExams.Add(studentExam);
+            await _context.SaveChangesAsync();
+
+            var message = await _service.AddCapture(new FaceCaptureRequest
+            {
+                StudentExamId = "se1",
+                ImageCapture = null, // Simulating no image provided
+                Description = "Test capture",
+            });
+            Assert.Equal("Student exam not found or students not in the exam process.", message);
+        }
+
+        [Fact]
         public async Task GetOne_InvalidFormat_ReturnsError()
         {
             var (message, result) = await _service.GetOne("");
@@ -164,7 +197,6 @@ namespace API.Tests
             Assert.Equal("Capture not found.", message);
         }
 
-    
         //[Fact]
         //public async Task Delete_ValidId_ReturnsEmptyMessage()
         //{

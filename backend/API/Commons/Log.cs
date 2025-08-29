@@ -18,8 +18,8 @@ namespace API.Commons
         public Task<(string, ExamLogVM?)> GetLogExamById(string logExamId);
         public Task<string> DeleteUserLog(List<string> logIds);
         public Task<string> DeleteExamLog(List<string> logIds);
-        public Task<(string, MemoryStream?)> ExportLog(string usertoken, List<string> logIds);
-        public Task<(string, MemoryStream?)> ExportExamLog(string usertoken, List<string> logIds);
+        public Task<(string, MemoryStream?)> ExportLog(string usertoken, List<string> logIds); 
+        public Task<(string, MemoryStream?)> ExportExamLog(string usertoken, string studentExamId);
     }
 
     public class Log : ILog
@@ -66,16 +66,15 @@ namespace API.Commons
         public async Task<string> WriteActivity(AddExamLogVM log)
         {
             if (log == null) return "";
-            var studentExam = await _context.StudentExams.AnyAsync(se => se.StudentExamId == log.StudentExamId &&
-                       se.StudentId == log.UserId && se.Status == (int)StudentExamStatus.InProgress);
-            if (!studentExam) return "Student is not in a exam process.";
-
+            var studentExam = await _context.StudentExams.Include(x=> x.Exam).Include(x=> x.User).AsNoTracking()
+                .FirstOrDefaultAsync(se => se.StudentExamId == log.StudentExamId && se.StudentId == log.UserId && se.Status == (int)StudentExamStatus.InProgress);
+            if (studentExam == null) return "Student is not in a exam process.";
             try
             {
                 var uploadedUrls = "";
                 if (log.ScreenshotPath != null)
                 {
-                    string key = $"{UrlS3.Log}StudentId:_{log.StudentExamId}/{log.ScreenshotPath.FileName}";
+                    string key = $"{UrlS3.Log}ExamTitle:_{studentExam.Exam.Title}/{studentExam.User.UserCode}/{log.ScreenshotPath.FileName}";
                     uploadedUrls = await _s3Service.UploadFileAsync(key, log.ScreenshotPath);
                 }
                 var userLog = new ExamLog
@@ -88,8 +87,8 @@ namespace API.Commons
                     ScreenshotPath = uploadedUrls,
                     DeviceId = log.DeviceId,
                     DeviceUsername = log.DeviceUsername,
-                    IpAddress = Utils.GetClientIpAddress(_httpContextAccessor.HttpContext),
-                    BrowserInfo = Utils.GetClientBrowser(_httpContextAccessor.HttpContext),
+                    IpAddress = studentExam.IpAddress,
+                    BrowserInfo = studentExam.BrowserInfo,
                     LogType = (int)log.LogType,
                     MetaData = log.Metadata,
                     CreatedAt = DateTime.UtcNow
@@ -250,10 +249,10 @@ namespace API.Commons
             if (msg.Length > 0) return (msg, null);
             return ("", file);
         }
-        public async Task<(string, MemoryStream?)> ExportExamLog(string usertoken, List<string> logIds)
+        public async Task<(string, MemoryStream?)> ExportExamLog(string usertoken, string studentExamId)
         {
             var list = await _context.ExamLogs.Include(x => x.User)
-                    .Where(x => logIds.Contains(x.ExamLogId))
+                    .Where(x => x.StudentExamId == studentExamId)
                     .Select(x => new
                     {
                         LogId = x.ExamLogId,

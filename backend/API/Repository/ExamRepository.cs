@@ -1,4 +1,5 @@
-﻿using API.Helper;
+﻿using System.Text.RegularExpressions;
+using API.Helper;
 using API.Models;
 using API.Repository.Interface;
 using Microsoft.EntityFrameworkCore;
@@ -12,6 +13,13 @@ namespace API.Repository
         public ExamRepository(Sep490Context context)
         {
             _context = context;
+        }
+        public async Task<bool> TitleExistsAsync(string title, string userId)
+        {
+            //đại diện cho các ký tự khoảng trắng, + "quantifier" (bộ lặp) - > \s+ Một hoặc nhiều ký tự khoảng trắng
+            var normalized = Regex.Replace(title.Trim().ToLower(), @"\s+", "");
+            return await _context.Exams
+                .AnyAsync(e => e.CreateUser == userId && e.Title.Trim().ToLower() == normalized);
         }
 
         public async Task AddAsync(Exam exam)

@@ -111,7 +111,7 @@ namespace API.Services
         {
             if (input.AppId.IsEmpty())
             {
-                var existingApp = await _context.ProhibitedApps.AnyAsync(a => a.AppName == input.AppName || a.ProcessName == input.ProcessName);
+                var existingApp = await _context.ProhibitedApps.AnyAsync(a => a.AppName.ToLower() == input.AppName.ToLower() || a.ProcessName.ToLower() == input.ProcessName.ToLower());
                 if (existingApp) return "Prohibited app name or process is already in use. Please enter a different one.";
 
                 var newApp = new ProhibitedApp
@@ -134,7 +134,7 @@ namespace API.Services
                 var app = await _context.ProhibitedApps.FindAsync(input.AppId);
                 if (app == null) return "Prohibited app not found.";
 
-                var duplicate = await _context.ProhibitedApps.AnyAsync(a => a.AppId != input.AppId && (a.AppName == input.AppName || a.ProcessName == input.ProcessName));
+                var duplicate = await _context.ProhibitedApps.AnyAsync(a => a.AppId != input.AppId && (a.AppName.ToLower() == input.AppName.ToLower() || a.ProcessName.ToLower() == input.ProcessName.ToLower()));
                 if (duplicate) return "Another prohibited app already uses this name or process. Please choose a different one.";
 
                 app.AppName = input.AppName;

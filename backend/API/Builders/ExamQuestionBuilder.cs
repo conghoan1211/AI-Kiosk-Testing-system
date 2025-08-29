@@ -1,4 +1,5 @@
-﻿using API.Models;
+﻿using System.Runtime.CompilerServices;
+using API.Models;
 
 namespace API.Builders
 {

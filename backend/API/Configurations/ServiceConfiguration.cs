@@ -12,6 +12,8 @@ using API.Services.Interfaces;
 using API.Strategy;
 using API.Subjects;
 using API.Tasks;
+using API.Validators;
+using API.Validators.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace API.Configurations
@@ -61,12 +63,17 @@ namespace API.Configurations
             services.AddScoped<IStudentViolationService, StudentViolationService>();
             services.AddHostedService<AutoSubmitExam>();
             services.AddScoped<IFeedbackService, FeedbackService>();
+            services.AddScoped<IAddExamValidator, AddExamValidator>();
+
 
             services.AddScoped<IExamRepository, ExamRepository>();
             services.AddScoped<IRoomRepository, RoomRepository>();
             services.AddScoped<IQuestionBankRepository, QuestionBankRepository>();
             services.AddScoped<IExamQuestionRepository, ExamQuestionRepository>();
             services.AddScoped<IExamSupervisorRepository, ExamSupervisorRepository>();
+            services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<ISubjectRepository, SubjectRepository>();
+            services.AddScoped<IQuestionRepository, QuestionRepository>();
 
             // Unit of Work
             services.AddScoped<IUnitOfWork, UnitOfWork>();

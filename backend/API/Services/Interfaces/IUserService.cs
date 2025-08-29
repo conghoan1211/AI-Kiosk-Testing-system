@@ -15,7 +15,7 @@ namespace API.Services.Interfaces
         public Task<string> CheckUserCodeExisted(string? code, string? userId = null);
         public Task<(string, MemoryStream?)> ExportData(string? usertoken);
         public string CheckImportData(IFormFile fileData, out List<ErrorImport> result);
-        public Task<(string, List<(CreateUserVM, string)>)> AddListUser(List<CreateUserVM> users, string? userToken);
+        public Task<(string, List<(AddListUserVM, string)>)> AddListUser(List<AddListUserVM> users, string? userToken);
         public Task<string> ChangeAvatar(ChangeAvatarVM avatarVM, string usertoken);
 
     }

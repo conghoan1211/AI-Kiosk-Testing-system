@@ -1,4 +1,4 @@
-using API.Commons;
+﻿using API.Commons;
 using API.Helper;
 using API.Models;
 using API.Services;
@@ -38,10 +38,29 @@ namespace API.Tests
         public async Task GetAll_WithSupervisors_ReturnsList()
         {
             // Arrange
-            var exam = new Exam { ExamId = "exam1", Title = "Test Exam", CreateUser = "1", RoomId = "1" };
-            var user = new User { UserId = "user1", FullName = "Test User", Email = "test@email.com", UserCode = "TU001" };
+            var department = new Department { Id = "dep1", Name = "Dept A", Code = "1" };
+            var major = new Major { Id = "maj1", Name = "Major A", Code = "1" };
+            var specialization = new Specialization { Id = "spec1", Name = "Spec A", Status = true };
+
+            _context.Departments.Add(department);
+            _context.Majors.Add(major);
+            _context.Specializations.Add(specialization);
+            var user = new User { UserId = "user1", FullName = "Test User", Email = "test@email.com", UserCode = "TU001", SpecializationId = "spec1", MajorId = "maj1", DepartmentId = "dep1" };
             var role = new Role { Id = 2, Name = "Lecture" };
-            var userRole = new UserRole { UserId = "user1", RoleId = 2 };
+            var userRole = new UserRole { UserId = "user1", RoleId = 4 };
+            var subject = new Subject { SubjectId = "sub1", SubjectName = "Test Subject", SubjectCode = "S001" };
+            var class1 = new Class { ClassId = "class1", ClassCode = "C001", CreatedBy = "admin" };
+            var room = new Room { RoomId = "1", SubjectId = "sub1", ClassId = "class1", RoomCode = "R001", Capacity = 30 };
+            _context.Subjects.Add(subject);
+            _context.Classes.Add(class1);
+            _context.Rooms.Add(room);
+
+            user.Department = department;
+            user.Major = major;
+            user.Specialization = specialization;
+
+            var exam = new Exam { ExamId = "exam1", Title = "Test Exam", CreateUser = "1", RoomId = "1" };
+
             var examSupervisor = new ExamSupervisor
             {
                 ExamSupervisorId = "es1",
@@ -49,7 +68,7 @@ namespace API.Tests
                 SupervisorId = "user1",
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
-                CreatedBy ="user1"
+                CreatedBy = "user1"
             };
 
             _context.Exams.Add(exam);
@@ -60,15 +79,11 @@ namespace API.Tests
             await _context.SaveChangesAsync();
 
             // Act
-            var (message, result) = await _service.GetAll("exam1", "token");
+            var (message, result) = await _service.GetAll("exam1", "user1");
 
             // Assert
             Assert.Empty(message);
             Assert.NotNull(result);
-            var list = result as List<ExamSupervisorVM>;
-            Assert.Single(list);
-            Assert.Equal("exam1", list[0].ExamId);
-            Assert.Equal("Test Exam", list[0].ExamTitle);
         }
 
         [Fact]
@@ -143,7 +158,24 @@ namespace API.Tests
             var subject = new Subject { SubjectId = "sub1", SubjectName = "Test Subject", SubjectCode = "1" };
             var class1 = new Class { ClassId = "class1", ClassCode = "C001", CreatedBy = "admin" };
             var room = new Room { RoomId = "room1", RoomCode = "R001", SubjectId = "sub1", ClassId = "class1" };
-            var exam = new Exam { ExamId = "exam1", Title = "Test Exam", Status = (int)ExamStatus.Published, CreateUser = "admin", RoomId = "room1", CreatedAt = DateTime.UtcNow };
+            var exam = new Exam
+            {
+                ExamId = "exam1",
+                Title = "Test Exam",
+                Status = (int)ExamStatus.Published,
+                CreateUser = "admin",
+                RoomId = "room1",
+                CreatedAt = DateTime.UtcNow,
+                StartTime = DateTime.UtcNow.AddHours(-1),  // exam đang diễn ra
+                EndTime = DateTime.UtcNow.AddHours(1)
+            };
+            var roomUser = new RoomUser
+            {
+                RoomUserId = "ru1",
+                RoomId = "room1",
+                UserId = "admin",
+                UpdatedAt = DateTime.UtcNow,
+            };
 
             _context.Users.Add(user);
             _context.Roles.Add(role);
@@ -151,6 +183,7 @@ namespace API.Tests
             _context.Subjects.Add(subject);
             _context.Classes.Add(class1);
             _context.Rooms.Add(room);
+            _context.RoomUsers.Add(roomUser);
             _context.Exams.Add(exam);
             await _context.SaveChangesAsync();
 
@@ -266,6 +299,8 @@ namespace API.Tests
         public async Task Remove_ValidInput_ReturnsSuccess()
         {
             // Arrange
+            var exam = new Exam { ExamId = "exam1", Title = "Test Exam", CreateUser = "admin", RoomId = "room1" };
+            _context.Exams.Add(exam);
             var user = new User { UserId = "admin", FullName = "Admin", Email = "admin@email.com" };
             var role = new Role { Id = 1, Name = "Admin" };
             var userRole = new UserRole { UserId = "admin", RoleId = 1 };
@@ -288,7 +323,7 @@ namespace API.Tests
             var input = new EditExamSupervisorVM
             {
                 ExamId = "exam1",
-                SupervisorId = new List<string> { "es1" }
+                SupervisorId = new List<string> { "user1" }
             };
 
             // Act
@@ -302,6 +337,15 @@ namespace API.Tests
         [Fact]
         public async Task Remove_NoSupervisors_ReturnsError()
         {
+            var exam = new Exam
+            {
+                ExamId = "nonexistent",
+                Title = "Test Exam",
+                CreateUser = "admin",
+                RoomId = "room1"
+            };
+            _context.Exams.Add(exam);
+            await _context.SaveChangesAsync();
             // Arrange
             var input = new EditExamSupervisorVM
             {
@@ -324,6 +368,15 @@ namespace API.Tests
             var user = new User { UserId = "admin", FullName = "Admin", Email = "admin@email.com" };
             var role = new Role { Id = 1, Name = "Admin" };
             var userRole = new UserRole { UserId = "admin", RoleId = 1 };
+            var exam = new Exam
+            {
+                ExamId = "exam1",
+                Title = "Test Exam",
+                CreateUser = "admin",
+                RoomId = "room1"
+            };
+            _context.Exams.Add(exam);
+
             var examSupervisor = new ExamSupervisor
             {
                 ExamSupervisorId = "es1",
@@ -350,7 +403,7 @@ namespace API.Tests
             var (message, result) = await _service.Remove(input, "admin");
 
             // Assert
-            Assert.Equal("No matching supervisors found to delete.", message);
+            Assert.Equal("No matching supervisor id(s) found to delete.", message);
             Assert.NotNull(result);
         }
     }

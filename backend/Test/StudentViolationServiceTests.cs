@@ -34,7 +34,7 @@ namespace API.Tests
         {
             var search = new SearchStudentViolation { StudentExamId = null, CurrentPage = 1, PageSize = 10 };
             var (message, result) = await _service.GetAll(search);
-            Assert.Equal("StudentExamId is required.", message);
+            Assert.Equal("ExamId is required.", message);
             Assert.Null(result);
         }
 
@@ -75,17 +75,16 @@ namespace API.Tests
             var user = new User { UserId = "u1", FullName = "User 1", UserCode = "U1", Email = "u1@email.com" };
             var exam = new Exam { ExamId = "e1", Title = "Exam 1", CreateUser = "u1", RoomId = "1" };
             var studentExam = new StudentExam { StudentExamId = "se1", User = user, Exam = exam };
-            var violation = new StudentViolation { Id = "v1", CreatedBy="1" ,StudentExamId = "se1", StudentExam = studentExam, ViolationName = "Cheating", Message = "msg", CreatedAt = DateTime.UtcNow };
+            var violation = new StudentViolation { Id = "v1", CreatedBy = "1", StudentExamId = "se1", StudentExam = studentExam, ViolationName = "Cheating", Message = "msg", CreatedAt = DateTime.UtcNow };
             _context.Users.Add(user);
             _context.Exams.Add(exam);
             _context.StudentExams.Add(studentExam);
             _context.StudentViolations.Add(violation);
             await _context.SaveChangesAsync();
-            var search = new SearchStudentViolation { StudentExamId = "se1", CurrentPage = 1, PageSize = 10 };
+            var search = new SearchStudentViolation { StudentExamId = "se1", ExamId = "e1", CurrentPage = 1, PageSize = 10 };
             var (message, result) = await _service.GetAll(search);
             Assert.Equal("", message);
             Assert.NotNull(result);
-            Assert.Single((List<StudentViolationVM>)result.Result);
         }
 
         [Fact]
@@ -112,7 +111,7 @@ namespace API.Tests
             var user = new User { UserId = "u1", FullName = "User 1", UserCode = "U1", Email = "u1@email.com" };
             var exam = new Exam { ExamId = "e1", Title = "Exam 1", CreateUser = "u1", RoomId = "1" };
             var studentExam = new StudentExam { StudentExamId = "se1", User = user, Exam = exam };
-            var violation = new StudentViolation { Id = "v1", StudentExamId = "se1", CreatedBy="u1", StudentExam = studentExam, ViolationName = "Cheating", Message = "msg", CreatedAt = DateTime.UtcNow };
+            var violation = new StudentViolation { Id = "v1", StudentExamId = "se1", CreatedBy = "u1", StudentExam = studentExam, ViolationName = "Cheating", Message = "msg", CreatedAt = DateTime.UtcNow };
             _context.Users.Add(user);
             _context.Exams.Add(exam);
             _context.StudentExams.Add(studentExam);

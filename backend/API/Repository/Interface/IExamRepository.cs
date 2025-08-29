@@ -11,5 +11,6 @@ namespace API.Repository.Interface
         Task<Exam?> GetById(string examId);
         Task<Exam?> GetExamWithQuestionAndRoom(string examId);
         Task<Exam?> GetExamOnGoing(string examId);
+        Task<bool> TitleExistsAsync(string title, string userId);
     }
 }

@@ -7,9 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+	  <PackageReference Include="Aspose.Words" Version="25.8.0" />
 	  <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.0" />
 	  <PackageReference Include="AWSSDK.S3" Version="3.7.411.1" />
 	  <PackageReference Include="DocumentFormat.OpenXml" Version="3.3.0" />
+	  <PackageReference Include="DotNetEnv" Version="3.1.1" />
 	  <PackageReference Include="EPPlus" Version="4.5.3.3" />
 	  <PackageReference Include="ExpressiveAnnotations" Version="2.9.6" />
 	  <PackageReference Include="Google.Apis.Auth" Version="1.68.0" />
@@ -35,5 +37,7 @@
 	  <PackageReference Include="Spire.Doc" Version="13.2.3" />
 	  <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
   </ItemGroup>
+
+  <ProjectExtensions><VisualStudio><UserProperties appsettings_1json__JsonSchema="https://www.schemastore.org/appsscript.json" /></VisualStudio></ProjectExtensions>
 
 </Project>

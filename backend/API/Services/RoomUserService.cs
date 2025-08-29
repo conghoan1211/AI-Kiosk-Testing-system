@@ -27,7 +27,7 @@ namespace API.Services
 
             // Query tất cả học sinh chưa có mặt trong Room
             var query = _context.Users.Include(u => u.UserRoles).Include(u => u.Major)
-                .Where(u => u.UserRoles.Any(r => r.RoleId == (int)RoleEnum.Student) && !existingUserIds.Contains(u.UserId))
+                .Where(u => !existingUserIds.Contains(u.UserId) && u.UserRoles.Any(r => r.RoleId == (int)RoleEnum.Student))
                 .AsNoTracking().AsQueryable();
 
             if (!search.TextSearch.IsEmpty())
@@ -49,6 +49,7 @@ namespace API.Services
                     FullName = x.FullName,
                     UserCode = x.UserCode,
                     Major = x.Major!.Name,
+                    RoleId = x.UserRoles.FirstOrDefault()!.RoleId,
                 }).ToListAsync();
             if (results.IsObjectEmpty()) return ("No users found.", null);
 
@@ -66,8 +67,8 @@ namespace API.Services
         {
             if (search.RoomId.IsEmpty()) return ("RoomId is required.", null);
 
-            var query = _context.RoomUsers.Include(ru => ru.User).Include(ru => ru.Room)
-                .Where(ru => ru.RoomId == search.RoomId)
+            var query = _context.RoomUsers.Include(ru => ru.User).ThenInclude(x=> x.UserRoles).Include(ru => ru.Room)
+                .Where(ru => ru.RoomId == search.RoomId).AsNoTracking()
                 .AsQueryable();
 
             if (search.Role != null && search.Role.Any())
@@ -78,7 +79,7 @@ namespace API.Services
 
             if (!search.TextSearch.IsEmpty())
             {
-                var loweredText = search.TextSearch.ToLower();
+                var loweredText = search.TextSearch!.ToLower();
                 query = query.Where(ru => ru.User != null && (ru.User.FullName.ToLower().Contains(loweredText)
                 || ru.User.Email.ToLower().Contains(loweredText) || ru.User.UserCode.ToLower().Contains(loweredText)));
             }
@@ -105,7 +106,7 @@ namespace API.Services
                     RoomId = ru.RoomId,
                     RoomUserId = ru.RoomUserId,
                     UserId = ru.UserId,
-                    Role = ru.RoleId,
+                    Role = ru.User.UserRoles.FirstOrDefault()!.RoleId,
                     UserStatus = ru.Status,
                     JoinTime = ru.JoinTime,
                     UpdatedAt = ru.UpdatedAt,
@@ -137,7 +138,7 @@ namespace API.Services
         {
             if (roomId.IsEmpty() || userIds.IsObjectEmpty())
                 return "RoomId and list of UserIds cannot be null or empty.";
-            // Lấy Room để lấy các ExamId thuộc room
+            // Lấy Room để lấy các ExamId thuộc room 
             var examsInRoom = await _context.Exams.Where(e => e.RoomId == roomId).Select(e => e.ExamId).ToListAsync();
             if (examsInRoom.Any())
             {
@@ -183,8 +184,8 @@ namespace API.Services
             if (roomId.IsEmpty() || userCodesOrIds.IsObjectEmpty())
                 return ("Room ID and User Codes/IDs cannot be null or empty.", new(), new(), new());
 
-            var roomExists = await _context.Rooms.AnyAsync(r => r.RoomId == roomId);
-            if (!roomExists) return ("Room not found.", new(), new(), new());
+            var roomExists = await _context.Rooms.FindAsync(roomId);
+            if (roomExists == null) return ("Room not found.", new(), new(), new());
 
             // Tìm tất cả user có UserId hoặc UserCode khớp với input
             var users = await _context.Users.Where(u => userCodesOrIds.Contains(u.UserId) || userCodesOrIds.Contains(u.UserCode!))
@@ -209,11 +210,24 @@ namespace API.Services
             var duplicatedInputs = inputToUserId.Where(kvp => duplicatedUserIds.Contains(kvp.Value))
                 .Select(kvp => kvp.Key).Distinct().ToList();
 
+            // Danh sách user hợp lệ cần thêm
+            var validNewInputs = userCodesOrIds.Except(invalidInputs).Except(duplicatedInputs).ToList();
+
+            // Kiểm tra capacity
+            var currentCount = await _context.RoomUsers.CountAsync(ru => ru.RoomId == roomId);
+            var availableSlots = roomExists.Capacity - currentCount;
+
+            if (availableSlots <= 0)
+                return ($"Room is full. Capacity = {roomExists.Capacity}, Current = {currentCount}.", new(), invalidInputs, duplicatedInputs);
+
+            if (validNewInputs.Count > availableSlots)
+                return ($"Not enough capacity. Available slots: {availableSlots}, Requested: {validNewInputs.Count}.", new(), invalidInputs, duplicatedInputs);
+
             var newRoomUsers = new List<RoomUser>();
             var addedInputs = new List<string>();
-            foreach (var input in userCodesOrIds.Except(invalidInputs).Except(duplicatedInputs))
+            foreach (var input in validNewInputs)
             {
-                var uid = inputToUserId[input];
+                var uid = inputToUserId[input]; 
                 newRoomUsers.Add(new RoomUser
                 {
                     RoomUserId = Guid.NewGuid().ToString(),
@@ -236,7 +250,7 @@ namespace API.Services
             var msg = await _logger.WriteActivity(new AddUserLogVM
             {
                 ActionType = "Add",
-                Description = "User(s) have been added to the room.",
+                Description = $"User(s) [{string.Join(", ", newRoomUsers)}] have been added to the room.",
                 ObjectId = roomId,
                 UserId = usertoken,
                 Metadata = string.Join(", ", addedInputs),

@@ -7,8 +7,6 @@ using Newtonsoft.Json;
 using System.ComponentModel;
 using System.Runtime.Versioning;
 using System.Windows;
-using DesktopApp.Constants;
-using Microsoft.Web.WebView2.Wpf;
 
 namespace DesktopApp
 {
@@ -84,7 +82,7 @@ namespace DesktopApp
                 WebView.CoreWebView2.WebMessageReceived += async (sender, e) => await _examEventHandler.HandleWebMessageAsync(sender, e);
                 WebView.Source = new Uri(_config!.ProtectedUrl);
 
-               // WindowManager.LockToForeground(this);
+                WindowManager.LockToForeground(this);
                 _monitoringService.LogInfo("Application initialized and configuration applied.");
             }
             catch (Exception ex)
@@ -143,7 +141,6 @@ namespace DesktopApp
                 return false;
             }
         }
-
 
         private void WebView_NavigationStarting(object sender, CoreWebView2NavigationStartingEventArgs args)
         {

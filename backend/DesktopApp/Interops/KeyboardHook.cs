@@ -1,12 +1,7 @@
 ﻿using DesktopApp.Constants;
 using DesktopApp.Services;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Input;
 
 namespace DesktopApp.Interops
@@ -67,7 +62,7 @@ namespace DesktopApp.Interops
                 _monitoringService?.LogInfo("Keyboard hook stopped.");
             }
         }
-
+         
         private static IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
         {
             if (nCode >= 0 && (wParam == (IntPtr)WM_KEYDOWN || wParam == (IntPtr)WM_SYSKEYDOWN))

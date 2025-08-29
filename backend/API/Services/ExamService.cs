@@ -1,4 +1,6 @@
+using System.Runtime.CompilerServices;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using API.Builders;
 using API.Commons;
 using API.Helper;
@@ -8,6 +10,7 @@ using API.Services.Interfaces;
 using API.Subjects;
 using API.Utilities;
 using API.Validators;
+using API.Validators.Interfaces;
 using API.ViewModels;
 using Microsoft.EntityFrameworkCore;
 
@@ -18,12 +21,12 @@ namespace API.Services
         private readonly Sep490Context _context;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IExamSubject _subject;
+        private readonly IAddExamValidator _validator;
 
-        public ExamService(Sep490Context context, IUnitOfWork unitOfWork, IExamSubject subject)
+        public ExamService(Sep490Context context, IUnitOfWork unitOfWork)
         {
             _context = context;
             _unitOfWork = unitOfWork;
-            _subject = subject;
         }
 
         //UpdateExam
@@ -49,8 +52,15 @@ namespace API.Services
                 return (false, "You can only update exams you created.");
 
             // Only allow updates if exam is Inactive
-            if (exam.LiveStatus != ExamLiveStatus.Inactive)
-                return (false, "Only inactive exams can be updated.");
+            //if (exam.LiveStatus != ExamLiveStatus.Inactive)
+            //    return (false, "Only inactive exams can be updated.");
+
+            // Only allow updates if exam is Draft
+            if ((ExamStatus)exam.Status != ExamStatus.Draft)
+                return (false, "Only exams is Draft can be updated.");
+
+            //if (exam.VerifyCamera == request.VerifyCamera)
+            //    return (false, $"Exam already has VerifyCamera = {request.VerifyCamera}.");
 
             if (request.EndTime <= request.StartTime)
                 return (false, "EndTime must be later than StartTime.");
@@ -59,6 +69,23 @@ namespace API.Services
             var roomExists = await _context.Rooms.AnyAsync(r => r.RoomId == request.RoomId);
             if (!roomExists)
                 return (false, "The selected room does not exist.");
+            //var normalized = Regex.Replace(request.Title.Trim().ToLower(), @"\s+", "");
+            //return await _context.Exams
+            //    .AnyAsync(e => e.CreateUser == userId && e.Title.Trim().ToLower() == normalized);
+            //var titleExists = await _context.Exams.AnyAsync(e => Regex.Replace(e.Title.Trim().ToLower(), @"\s+", "") == normalized && e.CreateUser == userId);
+            
+            var normalized = request.Title.Trim().ToLower()
+                                                           .Replace(" ", "")
+                                                           .Replace("\t", "")
+                                                           .Replace("\n", "");
+            var titleExists = await _context.Exams
+            .Where(e => e.CreateUser == userId && e.ExamId != request.ExamId)
+            .AnyAsync(e => e.Title.Trim().ToLower()
+                    .Replace(" ", "")
+                    .Replace("\t", "")
+                    .Replace("\n", "") == normalized);
+            if (titleExists)
+                return (false, "An exam with the same title already exists.");
             var bankExists = await _context.QuestionBanks.AnyAsync(qb => qb.QuestionBankId == request.QuestionBankId);
             if (!bankExists)
                 return (false, "Question bank does not exist.");
@@ -90,7 +117,7 @@ namespace API.Services
             var scale = 10.0m / totalPoints;
 
             // Update exam fields
-            exam.Title = request.Title;
+            exam.Title = request.Title.Trim();
             exam.Description = request.Description;
             exam.RoomId = request.RoomId;
             exam.StartTime = request.StartTime;
@@ -104,7 +131,7 @@ namespace API.Services
             exam.TotalQuestions = selectedQuestions.Count;
             exam.TotalPoints = 10;
             exam.GuildeLines = request.GuideLines;
-
+            exam.VerifyCamera = request.VerifyCamera;
             // Remove old exam questions
             _context.ExamQuestions.RemoveRange(exam.ExamQuestions);
 
@@ -136,7 +163,10 @@ namespace API.Services
             //if (!userExist)
             //    return (false, "User does not have permission to view exam detail.", null);
 
-            var exam = await _unitOfWork.Exams.GetExamWithQuestionAndRoom(examId);
+            //var exam = await _unitOfWork.Exams.GetExamWithQuestionAndRoom(examId);
+            var exam = await _context.Exams.AsNoTracking().Include(e => e.Room).Include(e => e.Creator)
+                .Include(e => e.ExamQuestions).ThenInclude(eq => eq.Question).ThenInclude(qb => qb.QuestionBank)
+                .FirstOrDefaultAsync(e => e.ExamId == examId);
             if (exam == null) return (false, "Exam not found.", null);
 
             var examDetail = new ExamDetail
@@ -158,7 +188,7 @@ namespace API.Services
                 ExamType = exam.ExamType,
                 GuideLines = exam.GuildeLines,
                 LiveStatus = exam.LiveStatus.ToString(),
-
+                verifyCamera = exam.VerifyCamera,
                 Questions = exam.ExamQuestions.Select(eq => new SelectedQuestionDto
                 {
                     QuestionId = eq.Question.QuestionId,
@@ -172,70 +202,128 @@ namespace API.Services
 
             return (true, "Success", examDetail);
         }
-        public async Task<string> Handle(AddExamRequest request, string userId)
-        {
-            var (isValid, error) = await AddExamValidator.ValidateAsync(request, _unitOfWork);
-            if (!isValid)
-                return error;
+        //public async Task<string> Handle(AddExamRequest request, string userId)
+        //{
+        //    var (isValid, error) = await AddExamValidator.ValidateAsync(request, _unitOfWork);
+        //    if (!isValid)
+        //        return error;
 
-            var bank = await _unitOfWork.QuestionBanks.GetWithQuestionsAsync(request.QuestionBankId);
-            if (bank?.Questions == null || !bank.Questions.Any())
-                return "Invalid or empty question bank.";
+        //    var bank = await _unitOfWork.QuestionBanks.GetQuestionBankByIdAsync(request.QuestionBankId);
+        //    if (bank?.Questions == null || !bank.Questions.Any())
+        //        return "Invalid or empty question bank.";
 
-            var selectedQuestions = bank.Questions
-                .Where(q => request.QuestionIds.Contains(q.QuestionId) && q.Status == 1)
-                .ToList();
+        //    var selectedQuestions = bank.Questions
+        //        .Where(q => request.QuestionIds.Contains(q.QuestionId) && q.Status == 1)
+        //        .ToList();
 
-            if (selectedQuestions.Count() != request.QuestionIds.Count)
-                return "Some selected questions were not found.";
+        //    if (selectedQuestions.Count() != request.QuestionIds.Count)
+        //        return "Some selected questions were not found.";
 
-            var distinctTypes = selectedQuestions.Select(q => q.Type).Distinct().ToList();
-            if (distinctTypes.Count() > 1 || distinctTypes.First() != request.ExamType)
-                return "All questions must be of the same type and match ExamType.";
+        //    var distinctTypes = selectedQuestions.Select(q => q.Type).Distinct().ToList();
+        //    if (distinctTypes.Count() > 1 || distinctTypes.First() != request.ExamType)
+        //        return "All questions must be of the same type and match ExamType.";
 
-            var totalPoints = selectedQuestions.Sum(q => q.Point);
-            if (totalPoints == 0)
-                return "Total points must be greater than 0.";
+        //    var totalPoints = selectedQuestions.Sum(q => q.Point);
+        //    if (totalPoints == 0)
+        //        return "Total points must be greater than 0.";
 
-            var scale = 10.0m / totalPoints;
-            var examId = Guid.NewGuid().ToString();
+        //    var scale = 10.0m / totalPoints;
+        //    var examId = Guid.NewGuid().ToString();
 
-            await _unitOfWork.BeginTransactionAsync();
-            try
-            {
-                var exam = new ExamBuilder()
-                    .WithBasicInfo(examId, request, userId)
-                    .Build();
-                await _unitOfWork.Exams.AddAsync(exam);
+        //    await _unitOfWork.BeginTransactionAsync();
+        //    try
+        //    {
+        //        var exam = new ExamBuilder()
+        //            .WithBasicInfo(examId, request, userId)
+        //            .Build();
+        //        await _unitOfWork.Exams.AddAsync(exam);
 
-                foreach (var q in selectedQuestions)
-                {
-                    var examQuestion = new ExamQuestionBuilder()
-                        .SetExamId(examId)
-                        .SetQuestion(q, scale)
-                        .Build();
-                    await _unitOfWork.ExamQuestions.AddAsync(examQuestion);
-                }
+        //        foreach (var q in selectedQuestions)
+        //        {
+        //            var examQuestion = new ExamQuestionBuilder()
+        //                .SetExamId(examId)
+        //                .SetQuestion(q, scale)
+        //                .Build();
+        //            await _unitOfWork.ExamQuestions.AddAsync(examQuestion);
+        //        }
 
-                var examSupervisor = new ExamSupervisorBuilder()
-                    .SetExamId(examId)
-                    .SetSupervisorId(null)
-                    .SetCreatedBy(userId)
-                    .Build();
-                await _unitOfWork.ExamSupervisors.AddAsync(examSupervisor);
+        //        var examSupervisor = new ExamSupervisorBuilder()
+        //            .SetExamId(examId)
+        //            .SetSupervisorId(null)
+        //            .SetCreatedBy(userId)
+        //            .Build();
+        //        await _unitOfWork.ExamSupervisors.AddAsync(examSupervisor);
 
-                await _unitOfWork.SaveChangesAsync();
-                await _unitOfWork.CommitTransactionAsync();
-                await _subject.Notify(exam, userId);
+        //        await _unitOfWork.SaveChangesAsync();
+        //        await _unitOfWork.CommitTransactionAsync();
+        //        await _subject.Notify(exam, userId);
 
-                return string.Empty;
-            }
-            catch (Exception ex)
-            {
-                await _unitOfWork.RollbackTransactionAsync();
-                return $"Error adding exam: {ex.Message}";
-            }
-        }
+        //        return string.Empty;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        await _unitOfWork.RollbackTransactionAsync();
+        //        return $"Error adding exam: {ex.Message}";
+        //    }
+        //}
+
+        //Add Exam with design pattern
+        //public async Task<(bool Success, string Message, List<SelectedQuestionDto>? Questions)> AddExamBuilderPatternAsync(AddExamRequest request, string userId)
+        //{
+        //    var (isValid, errorMessage, selectedQuestions) = await _validator.ValidateAsync(request, userId);
+
+        //    if (!isValid)
+        //        return (false, errorMessage, null);
+
+        //    var totalPoints = selectedQuestions.Sum(q => q.Point);
+        //    var scale = 10.0m / totalPoints;
+        //    var examId = Guid.NewGuid().ToString();
+
+        //    using var transaction = await _context.Database.BeginTransactionAsync();
+        //    try
+        //    {
+        //        var exam = new ExamBuilder()
+        //            .WithBasicInfo(examId, request, userId)
+        //            .Build();
+        //        await _unitOfWork.Exams.AddAsync(exam);
+
+        //        var selectedDtos = new List<SelectedQuestionDto>();
+        //        foreach (var question in selectedQuestions)
+        //        {
+        //            var examQuestion = new ExamQuestionBuilder()
+        //                .SetExamId(examId)
+        //                .SetQuestion(question, scale)
+        //                .Build();
+        //            await _unitOfWork.ExamQuestions.AddAsync(examQuestion);
+        //            selectedDtos.Add(new SelectedQuestionDto
+        //            {
+        //                QuestionId = question.QuestionId,
+        //                Content = question.Content.Trim(),
+        //                Difficulty = (DifficultyLevel)question.DifficultLevel,
+        //                Type = (QuestionTypeChoose)question.Type,
+        //                QuestionBankId = question.QuestionBankId,
+        //                QuestionBankName = question.QuestionBank?.Title ?? "(Unknown)"
+        //            });
+        //        }
+
+        //        var examSupervisor = new ExamSupervisorBuilder()
+        //            .SetExamId(examId)
+        //            .SetSupervisorId(null)
+        //            .SetCreatedBy(userId)
+        //            .Build();
+        //        await _unitOfWork.ExamSupervisors.AddAsync(examSupervisor);
+        //        await _unitOfWork.SaveChangesAsync();
+        //        await transaction.CommitAsync();
+        //        await _subject.Notify(exam, userId);
+
+        //        return (true, $"Exam {(ExamStatus)request.Status} successfully.", selectedDtos);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        await transaction.RollbackAsync();
+        //        return (false, $"Error adding exam: {ex.Message}", null);
+        //    }
+        //}
         //List Exams
         public async Task<(bool Success, string Message, SearchResult?)> GetExamListAsync(ExamListRequest request, string userId)
         {
@@ -288,6 +376,7 @@ namespace API.Services
                     ExamType = e.ExamType,
                     GuideLines = e.GuildeLines,
                     LiveStatus = (int)e.LiveStatus,
+                    verifyCamera = e.VerifyCamera
                 }).ToListAsync();
 
             return (true, "Success", new SearchResult
@@ -314,11 +403,23 @@ namespace API.Services
             var roomExists = await _context.Rooms.AnyAsync(r => r.RoomId == request.RoomId);
             if (!roomExists)
                 return (false, "The selected room does not exist.", null);
-            var titleExists = await _context.Exams.AnyAsync(e => e.Title.ToLower() == request.Title.ToLower() && e.CreateUser == userId);
+            var normalized = request.Title.Trim().ToLower()
+                                                           .Replace(" ", "")
+                                                           .Replace("\t", "")
+                                                           .Replace("\n", "");
+            //return await _context.Exams
+            //    .AnyAsync(e => e.CreateUser == userId && e.Title.Trim().ToLower() == normalized);
+            //var titleExists = await _context.Exams.AnyAsync(e => Regex.Replace(e.Title.Trim().ToLower(), @"\s+", "") == normalized && e.CreateUser == userId);
+            //var titleExists = await _context.Exams.AnyAsync(e => e.CreateUser == userId&& e.Title.Trim().ToLower().Replace(" ", "") == normalized);
+            var titleExists = await _context.Exams
+            .Where(e => e.CreateUser == userId)
+            .AnyAsync(e => e.Title.Trim().ToLower()
+                    .Replace(" ", "")
+                    .Replace("\t", "")
+                    .Replace("\n", "") == normalized);
             if (titleExists)
                 return (false, "An exam with the same title already exists.", null);
-
-            List<Question> selectedQuestions;
+            List<Models.Question> selectedQuestions;
             var bank = await _context.QuestionBanks
                     .Include(qb => qb.Questions)
                     .FirstOrDefaultAsync(qb => qb.QuestionBankId == request.QuestionBankId);
@@ -354,10 +455,10 @@ namespace API.Services
                 return (false, "All selected questions must be of the same type.", null);
 
             if (distinctTypes.First() != request.ExamType)
-                return (false, $"ExamType mismatch. Selected questions are of type {(QuestionTypeChoose)distinctTypes.First()}, but ExamType is {(QuestionTypeChoose)request.ExamType}. (0: Essay, 1: MultipleChoice, 2: TrueFalse, 3: FillInTheBlank)", null);
+                return (false, $"ExamType mismatch. Selected questions are of type {(QuestionTypeChoose)distinctTypes.First()}, but ExamType is {(QuestionTypeChoose)request.ExamType}. (0: Essay, 1: MultipleChoice)", null);
 
             var totalPoints = selectedQuestions.Sum(q => q.Point);
-            if (totalPoints == 0)
+            if (totalPoints <= 0)
                 return (false, "Total point of selected questions must be greater than 0.", null);
 
             var scale = 10.0m / totalPoints;
@@ -369,7 +470,7 @@ namespace API.Services
                 {
                     ExamId = examId,
                     RoomId = request.RoomId,
-                    Title = request.Title,
+                    Title = request.Title.Trim(),
                     Description = request.Description,
                     Duration = request.Duration,
                     TotalPoints = 10,
@@ -383,7 +484,8 @@ namespace API.Services
                     UpdatedAt = DateTime.UtcNow,
                     CreateUser = userId,
                     GuildeLines = request.GuideLines,
-                    ExamType = request.ExamType
+                    ExamType = request.ExamType,
+                    VerifyCamera = request.VerifyCamera
                 };
 
                 _context.Exams.Add(newExam);
@@ -609,7 +711,7 @@ namespace API.Services
             //    return (false, "Cannot publish a finished exam.");
 
             if (currentStatus == (ExamStatus)newStatus)
-                return (false, $"Exam is already in status: {newStatus}.");
+                return (false, $"Exam is already in status: {(ExamStatus)newStatus}.");
 
             exam.Status = newStatus;
             exam.UpdatedAt = DateTime.UtcNow;
@@ -618,6 +720,7 @@ namespace API.Services
             await _context.SaveChangesAsync();
             return (true, $"Exam status changed to {(ExamStatus)newStatus} successfully.");
         }
+
         //Get Guideline
         public async Task<(bool Success, string Message, string? GuideLines)> GetExamGuideLinesAsync(string examId, string userId)
         {
@@ -628,7 +731,8 @@ namespace API.Services
             //if (!userExist)
             //    return (false, "User does not have permission to view exam guide lines.", null);
 
-            var exam = await _unitOfWork.Exams.GetById(examId);
+            //var exam = await _unitOfWork.Exams.GetById(examId);
+            var exam = await _context.Exams.AsNoTracking().FirstOrDefaultAsync(e => e.ExamId.ToLower() == examId.ToLower());
             if (exam == null) return (false, "Exam not found.", null);
 
             return (true, "Success", exam.GuildeLines ?? "");

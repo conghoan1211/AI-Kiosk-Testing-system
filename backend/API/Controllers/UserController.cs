@@ -46,7 +46,7 @@ namespace API.Controllers
         }
 
         [HttpPost("create")]
-        public async Task<IActionResult> Create([FromBody] CreateUserVM input)
+        public async Task<IActionResult> Create([FromForm] CreateUserVM input)
         {
             string message = await _iService.Create(input, UserToken.UserID);
             if (message.Length > 0) return BadRequest(new { success = false, message });
@@ -54,7 +54,7 @@ namespace API.Controllers
         }
 
         [HttpPost("update")]
-        public async Task<IActionResult> Update([FromBody] UpdateUserVM input)
+        public async Task<IActionResult> Update([FromForm] UpdateUserVM input)
         {
             string message = await _iService.Update(input, UserToken.UserID);
             if (message.Length > 0) return BadRequest(new { success = false, message });
@@ -107,7 +107,7 @@ namespace API.Controllers
         }
 
         [HttpPost("add-list-user")]
-        public async Task<IActionResult> AddListUser([FromBody] List<CreateUserVM> users)
+        public async Task<IActionResult> AddListUser([FromBody] List<AddListUserVM> users)
         {
             if (users == null || !users.Any())
                 return BadRequest(new { success = false, message = "Invalid user list." });

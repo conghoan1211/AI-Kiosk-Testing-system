@@ -6,6 +6,7 @@ using API.Services.Interfaces;
 using API.Utilities;
 using API.ViewModels;
 using AutoMapper;
+using DocumentFormat.OpenXml.Spreadsheet;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.ComponentModel.DataAnnotations;
@@ -111,7 +112,7 @@ namespace API.Services
 
             var totalCount = await query.CountAsync();
             var totalPage = (int)Math.Ceiling(totalCount / (double)search.PageSize);
-          
+
             var results = await query
             .Skip((search.CurrentPage - 1) * search.PageSize)
             .Take(search.PageSize)
@@ -182,10 +183,10 @@ namespace API.Services
             return "";
         }
 
-        public async Task<(string, List<(CreateUserVM, string)>)> AddListUser(List<CreateUserVM> users, string? userToken)
+        public async Task<(string, List<(AddListUserVM, string)>)> AddListUser(List<AddListUserVM> users, string? userToken)
         {
             if (users == null || users.Count == 0) return ("List Users cannot null or empty.", null);
-            var errorList = new List<(CreateUserVM, string)>();
+            var errorList = new List<(AddListUserVM, string)>();
             var newUsers = new List<User>();
             var newUserRoles = new List<UserRole>();
 
@@ -194,7 +195,11 @@ namespace API.Services
             {
                 try
                 {
-                    var msg = await CheckEmailExisted(input.Email);
+                    var password = Utils.GenerateCharacter(8);
+                    var msg = Converter.StringToMD5(password, out string mkMd5);
+                    if (msg.Length > 0) { errorList.Add((input, msg)); continue; }
+
+                    msg = await CheckEmailExisted(input.Email);
                     if (msg.Length > 0) { errorList.Add((input, msg)); continue; }
 
                     msg = await CheckPhoneExisted(input.Phone);
@@ -221,6 +226,7 @@ namespace API.Services
                         Email = input.Email,
                         Address = input.Address,
                         CampusId = input.CampusId,
+                        UserCode = input.UserCode,
                         CreateAt = DateTime.UtcNow,
                         CreateUser = userToken,
                         DepartmentId = input.DepartmentId,
@@ -230,9 +236,12 @@ namespace API.Services
                         SpecializationId = input.SpecializationId,
                         Status = input.Status,
                         Dob = input.Dob,
-                        Password = Utils.GenerateCharacter(10),
+                        Password = mkMd5,
                     };
                     newUsers.Add(user);
+                    msg = await EmailHandler.SendEmailAsync(input.Email, "Mật khẩu mới", $"Đây là mật khẩu mới của bạn: {password}");
+                    if (msg.Length > 0) { errorList.Add((input, "No valid roles found.")); continue; }
+
                     var roles = validRoles.Select(roleId => new UserRole
                     {
                         UserId = newUserId,
@@ -354,12 +363,17 @@ namespace API.Services
             var validationError = await ValidateUserInput(input);
             if (!string.IsNullOrEmpty(validationError)) return validationError;
 
+            var userId = Guid.NewGuid().ToString();
+            var newFileKey = $"{UrlS3.Avatar}/{userId}/{input.Avatar.FileName}";
+            var newUrl = await _s3Service.UploadFileAsync(newFileKey, input.Avatar);
+            if (string.IsNullOrEmpty(newUrl)) return "Failed to upload new avatar.";
+
             using var trans = await _context.Database.BeginTransactionAsync();
             try
             {
                 var newUser = new User
                 {
-                    UserId = Guid.NewGuid().ToString(),
+                    UserId = userId,
                     FullName = input.FullName,
                     Phone = input.Phone,
                     UserCode = input.UserCode,
@@ -375,6 +389,7 @@ namespace API.Services
                     SpecializationId = input.SpecializationId.IsEmpty() ? null : input.SpecializationId,
                     Status = input.Status,
                     Dob = input.Dob,
+                    AvatarUrl = newUrl,
                     Password = mkMd5,
                 };
                 await _context.Users.AddAsync(newUser);
@@ -443,6 +458,19 @@ namespace API.Services
                 existingUser.SpecializationId = input.SpecializationId.IsEmpty() ? null : input.SpecializationId;
                 existingUser.Status = input.Status;
                 existingUser.Dob = input.Dob;
+
+                if (!string.IsNullOrEmpty(existingUser.AvatarUrl))
+                {
+                    var fileKey = Helper.Common.ExtractKeyFromUrl(existingUser.AvatarUrl);
+                    if (!string.IsNullOrEmpty(fileKey))
+                    {
+                        await _s3Service.DeleteFileAsync(fileKey);
+                    }
+                }
+                var newFileKey = $"{UrlS3.Avatar}/{existingUser.UserId}/{input.Avatar.FileName}";
+                var newUrl = await _s3Service.UploadFileAsync(newFileKey, input.Avatar);
+                if (string.IsNullOrEmpty(newUrl)) return "Failed to upload new avatar.";
+                existingUser.AvatarUrl = newUrl;
 
                 var oldRoles = _context.UserRoles.Where(ur => ur.UserId == existingUser.UserId);
                 _context.UserRoles.RemoveRange(oldRoles);

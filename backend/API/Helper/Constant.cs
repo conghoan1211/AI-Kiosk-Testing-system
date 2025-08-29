@@ -9,6 +9,7 @@ namespace API.Helper
         public static readonly IList<string> IMAGE_EXTENDS = new List<string> { ".png", ".jpg", ".jpeg" }.AsReadOnly();
 
         public const long IMAGE_FILE_SIZE = 1 * 1024 * 1024;
+        public const long FILE_SIZE = 2 * 1024 * 1024;
 
         public const string PERMISSIONS = "001";
         public const string USER_PERMISSION_KEYS = "all_user_permission";
@@ -131,6 +132,12 @@ namespace API.Helper
         Active,
         [Display(Name = "Pending")]
         Pending,
+    }
+
+    public enum VerifyCamStatus
+    {
+        TurnOff = 0, // Bật camera
+        TurnOn,    // Tắt camera
     }
 
     public enum ExamStatus

@@ -5,7 +5,6 @@ using Newtonsoft.Json;
 using System.Diagnostics;
 using System.IO;
 using System.Security.Cryptography.X509Certificates;
-using System.Xml.Linq;
 
 namespace DesktopApp.Interops
 {
@@ -127,7 +126,7 @@ namespace DesktopApp.Interops
 
             if (_monitorTimer == null)
             {
-                _monitorTimer = new System.Timers.Timer(15000);
+                _monitorTimer = new System.Timers.Timer(10000);
                 _monitorTimer.Elapsed += (s, e) =>
                 {
                     foreach (var kvp in _monitoredProcesses)
@@ -170,15 +169,15 @@ namespace DesktopApp.Interops
                         };
                         if (!isTrusted || !trustedPublishers.Any(pub => cert2.Subject.Contains(pub)))
                         {
-                            //    _monitoringService.LogWarning( $"Process {process.ProcessName} (PID: {process.Id}) at {path} has invalid or unknown digital signature. May be spoofed!");
+                            return false; // Chữ ký không hợp lệ hoặc không phải nhà phát hành tin cậy
+                                _monitoringService.LogWarning( $"Process {process.ProcessName} (PID: {process.Id}) at {path} has invalid or unknown digital signature. May be spoofed!");
                         }
-                        //_monitoringService.LogInfo($"Process {process.ProcessName} identified as trusted system process at {path}.");     // Có chữ ký số hợp lệ
                         return true;
                     }
                     catch (Exception certEx)
                     {
-                        // _monitoringService.LogWarning($"Failed to verify digital signature for process {process.ProcessName} (PID: {process.Id}): {certEx.Message}");
-                        return true; // Không kiểm tra được chữ ký, coi như system để an toàn
+                        _monitoringService.LogWarning($"Failed to verify digital signature for process {process.ProcessName} (PID: {process.Id}): {certEx.Message}");
+                        return true;
                     }
                 }
                 return false; // Không phải ở system folder thì không phải system process
@@ -257,13 +256,14 @@ namespace DesktopApp.Interops
                 .Where(item => item.Contains('\\')).Select(item => item.TrimEnd('\\')),
                 StringComparer.OrdinalIgnoreCase
             );
+
             foreach (var process in Process.GetProcesses())
             {
                 try { _knownProcesses.Add(process.ProcessName.ToLowerInvariant()); }
                 catch { /* Bỏ qua các lỗi quyền truy cập */ }
             }
             // Tạo timer để kiểm tra tiến trình mới
-            var newProcessTimer = new System.Timers.Timer(15000);
+            var newProcessTimer = new System.Timers.Timer(10000);
             newProcessTimer.Elapsed += async (s, e) =>
             {
                 foreach (var process in Process.GetProcesses())
@@ -287,15 +287,14 @@ namespace DesktopApp.Interops
                             _knownProcesses.Add(processName);
                             _monitoringService?.LogInfo($"New process detected during exam: {processName} (PID: {process.Id})");
                             onNewProcessDetected?.Invoke(processName);
-                            // Chặn process nếu chưa được giám sát
-                            if (!_monitoredProcesses.ContainsKey(processName))
+                            await ReportNewProcessToApi(process, processName);
+                            if (!_monitoredProcesses.ContainsKey(processName)) // Chặn process nếu chưa được giám sát
                             {
                                 MonitorProcess(processName, () =>
                                 {
                                     BlockProcess(processName, context: "DetectBlocked");
                                 });
                             }
-                            await ReportNewProcessToApi(process, processName);
                         }
                     }
                     catch
@@ -323,7 +322,10 @@ namespace DesktopApp.Interops
         private static async Task ReportNewProcessToApi(Process process, string processName)
         {
             if (string.IsNullOrEmpty(DataStorage.StudentExamId) || string.IsNullOrEmpty(DataStorage.UserId))
+            {
                 _monitoringService?.LogWarning("StudentExamId or UserId is null.");
+                return;
+            }
 
             var screenshot = ScreenCaptureHelper.CaptureScreenAsJpeg();
             if (screenshot == null)
@@ -346,6 +348,5 @@ namespace DesktopApp.Interops
             });
             _monitoringService?.LogInfo(msg);
         }
-
     }
 }

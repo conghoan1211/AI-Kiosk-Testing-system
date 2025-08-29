@@ -15,6 +15,9 @@ namespace API.Repository
         IStudentExamRepository StudentExams { get; }
         IStudentAnswerRepository StudentAnswers { get; }
         IFaceCaptureRepository FaceCaptures { get; }
+        IUserRepository Users { get; }
+        ISubjectRepository Subjects { get; }
+        IQuestionRepository Questions { get; }
 
         Task<int> SaveChangesAsync();
         Task<IDbContextTransaction> BeginTransactionAsync();

@@ -119,7 +119,8 @@ namespace API.Services
                     e.EndTime,
                     e.LiveStatus,
                     e.ExamType,
-                    Status = status
+                    Status = status,
+                    e.VerifyCamera
                 };
             }).ToList();
             return ("", result);

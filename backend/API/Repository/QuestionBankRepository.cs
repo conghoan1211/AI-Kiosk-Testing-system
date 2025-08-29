@@ -13,12 +13,19 @@ namespace API.Repository
             _context = context;
         }
 
-        public async Task<QuestionBank?> GetWithQuestionsAsync(string questionBankId)
+        public async Task<QuestionBank?> GetQuestionBankByIdAsync(string questionBankId)
         {
             return await _context.QuestionBanks
                 .Include(qb => qb.Questions)
-                .FirstOrDefaultAsync(qb => qb.QuestionBankId == questionBankId);
+                .FirstOrDefaultAsync(qb => qb.QuestionBankId.ToLower() == questionBankId.ToLower());
+        }
+
+        public async Task<bool> IsQuestionBankIdExist(string questionBankId, bool IsTracking = false)
+        {
+            var query = _context.QuestionBanks.AsQueryable();
+            if (!IsTracking) query = query.AsNoTracking();
+
+            return await query.AnyAsync(qb => qb.QuestionBankId == questionBankId);
         }
     }
-
 }

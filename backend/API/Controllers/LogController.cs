@@ -119,9 +119,9 @@ namespace API.Controllers
         }
 
         [HttpPost("export-exam-log")]
-        public async Task<IActionResult> ExportExamActivity([Required] List<string> logExamIds)
+        public async Task<IActionResult> ExportExamActivity([Required] string studentExamId)
         {
-            var (message, fileStream) = await _log.ExportExamLog(UserToken.UserID, logExamIds);
+            var (message, fileStream) = await _log.ExportExamLog(UserToken.UserID, studentExamId);
             if (message.Length > 0) return BadRequest(new { success = false, message });
 
             var fileName = $"ExamExport_{DateTime.UtcNow :yyyyMMddHHmmss}.xlsx";

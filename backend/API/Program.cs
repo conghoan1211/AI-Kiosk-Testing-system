@@ -9,9 +9,14 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 using System.Text.Json;
+using DotNetEnv;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSignalR();
+
+//// Cho phép config đọc từ Environment Variables
+Env.Load("../API/env.env");
+builder.Configuration.AddEnvironmentVariables();
 
 // add config manager appsettings
 builder.Services.ConfigureServices(builder.Configuration);

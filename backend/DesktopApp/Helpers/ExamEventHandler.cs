@@ -42,7 +42,7 @@ namespace DesktopApp.Helpers
                         await HandleStartExamAsync(eventData);
                         break;
                     case ExamEventType.CaptureScreenshot:
-                        await HandleCaptureScreenshotAsync(eventData);
+                       // await HandleCaptureScreenshotAsync(eventData);
                         break;
                     default:
                         _monitoringService.LogWarning($"Received unknown event type: {eventData.Type}");
@@ -51,7 +51,8 @@ namespace DesktopApp.Helpers
             }
             catch (Exception ex)
             {
-                _monitoringService.LogError($"Error handling web message: {ex.Message}");
+                _monitoringService.LogError($"Error handling web message: {ex.Message}; {ex.InnerException}; {ex.StackTrace}");
+                return;
             }
         }
 
@@ -104,6 +105,12 @@ namespace DesktopApp.Helpers
                 _monitoringService.LogError("Failed to capture screenshot.");
                 return;
             }
+            if (eventData.StudentExamId == null && DataStorage.StudentExamId == null)
+            {
+                _monitoringService.LogError("Error sent screenshot: Not found studentExamId");
+                return; 
+            }
+            eventData.StudentExamId ??= DataStorage.StudentExamId;
 
             var capture = new CaptureRequest
             {

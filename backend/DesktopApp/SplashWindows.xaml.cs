@@ -14,7 +14,6 @@ namespace DesktopApp
         {
             _apiService = new ApiService();
             _monitoringService = MonitoringService.GetInstance(_apiService);
-
             InitializeComponent();
             Loaded += async (s, e) => await RunConfigurations();
         }
@@ -45,16 +44,16 @@ namespace DesktopApp
                 StatusText.Text = "Checking external displays...";
                 _monitoringService.LogInfo("Checking for external displays.");
                 MonitorWatcher.Start();
-                // Check virtual machine
+                // Check duplicate monitors
                 if (MonitorWatcher.HasMultipleMonitors())
                 {
-                    _monitoringService.LogWarning("Virtual machine detected. Application shut down.");
+                    _monitoringService.LogWarning("External displays detected. Application shut down.");
                     MessageBox.Show(
                         "External displays detected.\nPlease disconnect external displays before launching the application.",
                         "Warning",
                         MessageBoxButton.OK,
                         MessageBoxImage.Warning);
-                    await Task.Delay(200);  
+                    await Task.Delay(200);
                     Application.Current.Shutdown();
                     return;
                 }
@@ -73,6 +72,9 @@ namespace DesktopApp
                     return;
                 }
                 _monitoringService.LogInfo("Configuration loaded from API." + config.ProtectedUrl + "\n" + string.Join("", config.ShortcutKeys.ToString()) + "\n" + string.Join("", config.BlockedApps.ToString()));
+                _monitoringService.LogInfo("WhiteList loaded from API: " + (config.WhitelistApps != null ? string.Join(", ", config.WhitelistApps) : "Empty"));
+                _monitoringService.LogInfo("BlackList loaded from API: " + (config.BlockedApps != null ? string.Join(", ", config.BlockedApps) : "Empty"));
+
                 var runningProcesses = ProcessMonitor.ListAllProcessesForServer();
                 _monitoringService.LogInfo("Running processes: " + string.Join(", ", runningProcesses));
 
@@ -117,7 +119,7 @@ namespace DesktopApp
                 }
                 else
                 {
-                    _monitoringService.LogInfo("Không phát hiện tiến trình bị chặn nào đang chạy.");
+                    _monitoringService.LogInfo("No blocked processes are currently running.");
                 }
                 await Task.Delay(400);
                 LoadingBar.Value = 30;
@@ -153,7 +155,7 @@ namespace DesktopApp
                 StatusText.Text = "Detecting and monitoring new progress...";
                 ProcessMonitor.MonitorNewProcesses(config.WhitelistApps, processName =>
                 {
-                    _monitoringService.LogInfo($"New process detected and added to block list: {processName}");
+                    //  _monitoringService.LogInfo($"New process detected and added to block list: {processName}");
                 });
                 await Task.Delay(400);
                 LoadingBar.Value = 60;
@@ -184,7 +186,7 @@ namespace DesktopApp
                     _monitoringService.LogInfo("Screen lock prevention enabled.");
                 }
                 _monitoringService.LogInfo("All configurations applied successfully.");
-                await Task.Delay(1000);
+                await Task.Delay(200);
                 LoadingBar.Value = 100;
 
                 StatusText.Text = "Configuration complete. Please confirm to continue..";

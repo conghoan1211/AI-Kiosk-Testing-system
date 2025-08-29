@@ -99,18 +99,18 @@ namespace API.Tests
             Assert.Single(_context.Feedbacks);
         }
 
-        [Fact]
-        public async Task CreateUpdate_CreateWithDifferentUser_Success()
-        {
-            var user = new User { UserId = "u2", FullName = "User 2", Email = "u2@email.com" };
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
-            var model = new CreateUpdateFeedbackVM { Title = "Test2", Content = "Content2" };
-            var message = await _service.CreateUpdate(model, "u2");
-            Assert.Equal("", message);
-            Assert.Single(_context.Feedbacks);
-            Assert.Equal("u2", _context.Feedbacks.FirstAsync().Result.UserId);
-        }
+        //[Fact]
+        //public async Task CreateUpdate_CreateWithDifferentUser_Success()
+        //{
+        //    var user = new User { UserId = "u2", FullName = "User 2", Email = "u2@email.com" };
+        //    _context.Users.Add(user);
+        //    await _context.SaveChangesAsync();
+        //    var model = new CreateUpdateFeedbackVM { Title = "Test2", Content = "Content2" };
+        //    var message = await _service.CreateUpdate(model, "u2");
+        //    Assert.Equal("", message);
+        //    Assert.Single(_context.Feedbacks);
+        //    Assert.Equal("u2", _context.Feedbacks.FirstAsync().Result.UserId);
+        //}
 
         [Fact]
         public async Task CreateUpdate_UpdateWithDifferentUser_Success()

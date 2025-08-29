@@ -1,6 +1,5 @@
 ﻿using API.Models;
 using API.Repository.Interface;
-using Microsoft.EntityFrameworkCore;
 
 namespace API.Strategy.Interface
 {

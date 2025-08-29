@@ -130,7 +130,11 @@ namespace API.Services
                     StartTime = e.StartTime,
                     EndTime = e.EndTime,
                     ExamType = e.ExamType,
-                    Status = e.Status,
+                    Status = (e.StartTime <= DateTime.UtcNow && e.EndTime >= DateTime.UtcNow)
+                                ? (int)ExamStatus.Published
+                                : (e.EndTime < DateTime.UtcNow || e.Status == (int)ExamStatus.Finished)
+                                    ? (int)ExamStatus.Finished
+                                    : (int)ExamStatus.Draft,
                     IsCompleted = e.EndTime < DateTime.UtcNow || e.Status == (int)ExamStatus.Finished,
 
                     CreateUserId = e.Creator?.UserId ?? "",
@@ -175,7 +179,7 @@ namespace API.Services
             if (!search.TextSearch.IsEmpty())
             {
                 var text = search.TextSearch!.ToLower().Trim();
-                query = query.Where(c => (c.User.UserCode.ToLower() ?? "").Contains(text)
+                query = query.Where(c => (c.User.UserCode!.ToLower() ?? "").Contains(text)
                 || (c.User.FullName!.ToLower() ?? "").Contains(text)
                 || (c.User.Email!.ToLower() ?? "").Contains(text));
             }
@@ -209,7 +213,6 @@ namespace API.Services
                 .GroupBy(sw => sw.StudentExamId)
                 .Select(g => new { g.Key, Count = g.Count(x => x.IsDetected == false) })
                 .ToDictionaryAsync(x => x.Key, x => x.Count);
-
 
             var monitorExamVm = new MonitorExamVM
             {

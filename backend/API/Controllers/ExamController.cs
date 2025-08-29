@@ -157,6 +157,7 @@ namespace API.Controllers
                 return Unauthorized(new { message = "User not authenticated." });
 
             var (success, message, questions) = await _examService.AddExamAsync(request, UserToken.UserID);
+            //var (success, message, questions) = await _examService.AddExamBuilderPatternAsync(request, UserToken.UserID);
 
             if (success)
             {
@@ -183,15 +184,15 @@ namespace API.Controllers
         }
 
         //**
-        [HttpPost("create")]
-        public async Task<IActionResult> CreateExam([FromBody] AddExamRequest request)
-        {
-            string message = await _examService.Handle(request, UserToken.UserID);
-            if (message.Length > 0)
-            {
-                return BadRequest(new { success = false, message });
-            }
-            return Ok(new { success = true, message = "User created successfully." });
-        }
+        //[HttpPost("create")]
+        //public async Task<IActionResult> CreateExam([FromBody] AddExamRequest request)
+        //{
+        //    string message = await _examService.Handle(request, UserToken.UserID);
+        //    if (message.Length > 0)
+        //    {
+        //        return BadRequest(new { success = false, message });
+        //    }
+        //    return Ok(new { success = true, message = "User created successfully." });
+        //}
     }
 }
